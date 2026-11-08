@@ -77,7 +77,7 @@ Something else the model said`;
       '',
     ]) {
       const r = parseTailorOutput(raw);
-      expect(r).toEqual({ ok: false, plainText: raw.trim() });
+      expect(r).toEqual({ ok: false, plainText: raw.trim(), redacted: 0 });
     }
   });
 

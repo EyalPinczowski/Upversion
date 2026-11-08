@@ -1,5 +1,5 @@
 import { findCatalogMentions } from '../profile/cv-match';
-import { CATALOG_TAXONOMY } from '../profile/catalog';
+import { CATALOG_TAXONOMY, catalogToolLabels } from '../profile/catalog';
 import type { MatchTaxonomy } from '../profile/types';
 import type { RedactOptions } from '../practice/redact';
 import { MAX_CV_TAILOR_OUTPUT } from './limits';
@@ -33,14 +33,23 @@ export type ParsedTailorOutput =
       keywords: string[];
       /** False when the answer had no `===NOTES===` marker (the text is still usable). */
       hasNotes: boolean;
+      /** How many personal-detail spans were removed from the notes. */
+      notesRedacted: number;
     }
   | {
       ok: false;
-      /** The whole answer, trimmed, to show as plain text with a warning. */
+      /** The whole answer, trimmed and with personal details removed, to show as plain text. */
       plainText: string;
+      /** How many personal-detail spans were removed from it. */
+      redacted: number;
     };
 
-const HEADING_RE = /^[\s#*_]*(SUMMARY|EXPERIENCE|SKILLS)[\s*_]*(?::[\s*_]*(.*))?$/iu;
+/** A heading alone on its line, any case, optional markdown decoration and colon. */
+const HEADING_ALONE_RE = /^[\s#*_]*(SUMMARY|EXPERIENCE|SKILLS)[\s*_]*:?[\s*_]*$/iu;
+/** `SUMMARY: text`: the heading in capitals exactly as specified, text on the same line. */
+const HEADING_INLINE_RE = /^[\s#*_]*(SUMMARY|EXPERIENCE|SKILLS)[\s*_]*:[\s*_]*(\S.*)$/u;
+/** Longer lines are never headings (also keeps the heading regexes cheap). */
+const MAX_HEADING_LINE = 200;
 const NOTES_RE = /^[\s#*_]*={2,}\s*NOTES\s*={2,}[\s*_]*$/iu;
 const NOTE_RE = /^\s*(?:[-*•]\s*)?[*_]*(gap|keyword)s?[*_]*\s*:\s*(.*)$/iu;
 
@@ -51,8 +60,9 @@ const NOTE_RE = /^\s*(?:[-*•]\s*)?[*_]*(gap|keyword)s?[*_]*\s*:\s*(.*)$/iu;
  * is missing or empty it returns `{ ok: false, plainText }`, and the caller shows the answer as
  * plain text with a warning. A missing `===NOTES===` still parses (`hasNotes: false`).
  */
-export function parseTailorOutput(raw: string): ParsedTailorOutput {
+export function parseTailorOutput(raw: string, options: RedactOptions = {}): ParsedTailorOutput {
   const lines = raw.split(/\r\n|\r|\n/u);
+  let notesRedacted = 0;
   const body: Record<'summary' | 'experience' | 'skills', string[]> = {
     summary: [],
     experience: [],
@@ -68,7 +78,10 @@ export function parseTailorOutput(raw: string): ParsedTailorOutput {
       hasNotes = true;
       continue;
     }
-    const h = state === 'notes' ? null : HEADING_RE.exec(line);
+    const h =
+      state === 'notes' || line.length > MAX_HEADING_LINE
+        ? null
+        : (HEADING_ALONE_RE.exec(line) ?? HEADING_INLINE_RE.exec(line));
     if (h) {
       state = (h[1] as string).toLowerCase() as keyof typeof body;
       if (h[2] && h[2].trim() !== '') body[state].push(h[2].trim());
@@ -76,8 +89,10 @@ export function parseTailorOutput(raw: string): ParsedTailorOutput {
     }
     if (state === 'notes') {
       const n = NOTE_RE.exec(line);
-      const text = n?.[2]?.trim().slice(0, MAX_NOTE_LENGTH);
+      const red = redactCvPii(removeControlChars(n?.[2]?.trim() ?? '').slice(0, 1000), options);
+      const text = red.text.slice(0, MAX_NOTE_LENGTH).trim();
       if (n && text) {
+        notesRedacted += red.count;
         const list = (n[1] as string).toLowerCase() === 'gap' ? gaps : keywords;
         if (list.length < MAX_NOTES_EACH) list.push(text);
       }
@@ -91,10 +106,11 @@ export function parseTailorOutput(raw: string): ParsedTailorOutput {
     skills: body.skills.join('\n').trim(),
   };
   if (!sections.summary || !sections.experience || !sections.skills) {
-    return { ok: false, plainText: raw.trim() };
+    const red = redactCvPii(raw.trim(), options);
+    return { ok: false, plainText: red.text, redacted: red.count };
   }
   const text = `SUMMARY\n${sections.summary}\n\nEXPERIENCE\n${sections.experience}\n\nSKILLS\n${sections.skills}`;
-  return { ok: true, sections, text, gaps, keywords, hasNotes };
+  return { ok: true, sections, text, gaps, keywords, hasNotes, notesRedacted };
 }
 
 // ---------------------------------------------------------------- checks
@@ -155,14 +171,22 @@ function containsWord(haystackNorm: string, needleNorm: string): boolean {
 }
 
 const NUMBER_RE = /(?<![\p{L}\p{N}])\d+(?:[.,]\d+)*(?:\s?%)?/gu;
-const numberKey = (s: string): string => s.replace(/[,\s%]/gu, '');
+/** `25%` and `25` are different numbers: the percent sign stays in the key. */
+const numberKey = (s: string): string => s.replace(/[,\s]/gu, '');
+
+const SPELLED_NUMBER = new RegExp(
+  '(?<![\\p{L}\\p{N}])(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|' +
+    'fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|' +
+    'eighty|ninety|hundred|thousand|million)(?![\\p{L}\\p{N}])',
+  'giu',
+);
 
 const CERT_ACRONYMS =
-  'PMP|PMI-ACP|CAPM|CISSP|CISA|CISM|CPA|CFA|CCNA|CCNP|CSM|PSM|ITIL|PRINCE2|TOGAF|CEH|OSCP|PHR|SPHR|SHRM-CP|Security\\+|Network\\+';
+  'PMP|PMI-ACP|CAPM|CISSP|CISA|CISM|CPA|CFA|CCNA|CCNP|CSM|PSM|ITIL|PRINCE2|TOGAF|CEH|OSCP|PHR|SPHR|SHRM-CP|CKA|CKAD|CKS|Security\\+|Network\\+';
 const CERT_RES: RegExp[] = [
   new RegExp(`(?<![\\p{L}\\p{N}])(?:${CERT_ACRONYMS})(?![\\p{L}\\p{N}])`, 'gu'),
   /(?<![\p{L}\p{N}])certified\s+\p{L}[\p{L}\p{N}-]*(?:\s+\p{Lu}[\p{L}\p{N}-]*){0,3}/giu,
-  /(?<![\p{L}\p{N}])(?:\p{Lu}[\p{L}\p{N}&-]*\s+){1,4}(?:certification|certificate)(?![\p{L}\p{N}])/gu,
+  /(?<![\p{L}\p{N}])(?:[\p{L}\p{N}&-]+\s+){1,4}(?:certification|certificate)(?![\p{L}\p{N}])/giu,
   /(?<![\p{L}\p{N}])(?:lean\s+)?six\s+sigma\s+(?:white|yellow|green|black)\s+belt/giu,
 ];
 const DEGREE_RES: RegExp[] = [
@@ -186,14 +210,70 @@ const MONTH =
   '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)';
 /** A capitalised word that is not a month name (dates sit next to employers). */
 const CAP = `(?!${MONTH}(?![\\p{L}\\p{N}]))\\p{Lu}\\p{Ll}[\\p{L}\\p{N}'’-]*`;
-/** Two or more capitalised words separated by single spaces. */
-const CAP_RUN = new RegExp(`${CAP}(?: ${CAP})+`, 'gu');
+const CAP_LEFT = `(?<![\\p{L}\\p{N}.'’-])`;
+/** Two or more capitalised words separated by single spaces (and `of` / `and` / `&`). */
+const CAP_RUN = new RegExp(`${CAP_LEFT}${CAP}(?:(?: (?:of|and|&))? ${CAP})+`, 'gu');
+/** One capitalised word. */
+const CAP_WORD = new RegExp(`${CAP_LEFT}${CAP}`, 'gu');
+const CONNECTORS = new Set(['of', 'and', '&']);
+/** A modifier before a CV phrase (`Senior Operations Analyst`) does not make a new phrase. */
+const MODIFIERS = new Set(
+  'former senior junior lead bilingual associate assistant chief head principal interim acting'.split(
+    ' ',
+  ),
+);
+/** Capitalised words that are not names of employers. */
+const COMMON_CAPITALISED = new Set(
+  (
+    'i english hebrew arabic russian french spanish german italian chinese present current ' +
+    'monday tuesday wednesday thursday friday saturday sunday january february march april ' +
+    'june july august september october november december mr ms mrs dr'
+  ).split(' '),
+);
 /** Headings of the answer and generic CV words that are not employer-like phrases. */
 const IGNORED_PHRASES = new Set(['work experience', 'technical skills', 'key skills']);
 
 const PLACEHOLDER_RE = /\[[^[\]\n]{0,80}\]/gu;
+/** Other placeholder shapes: `{Company}`, `<Your Name>`, `XX%`, `____`. */
+const OTHER_PLACEHOLDER_RES: RegExp[] = [
+  /\{[^{}\n]{1,60}\}/gu,
+  /<[^<>\n]{1,60}>/gu,
+  /(?<![\p{L}\p{N}])X{2,}%?(?![\p{L}\p{N}])/gu,
+  /_{3,}/gu,
+];
 const NUMBER_PLACEHOLDER = /^\[\s*number\s*\?\s*\]$/iu;
 const REMOVED_MARKER = /^\[removed\]$/iu;
+
+/**
+ * A certificate phrase is in the CV when the phrase, or its last two words (`data certificate`
+ * after `Hold a Google Data certificate`), appears there.
+ */
+function certInCv(cvNorm: string, phrase: string): boolean {
+  const words = norm(phrase).split(' ');
+  for (let k = 0; k <= Math.max(0, words.length - 2); k += 1) {
+    if (containsWord(cvNorm, words.slice(k).join(' '))) return true;
+  }
+  return false;
+}
+
+const catalogWordCache = new WeakMap<MatchTaxonomy, Set<string>>();
+
+/** Every lower-case word of a catalog skill name, keyword or tool label. */
+function catalogWords(taxonomy: MatchTaxonomy, tools: readonly string[] | undefined): Set<string> {
+  const base =
+    catalogWordCache.get(taxonomy) ??
+    new Set(
+      taxonomy.skills
+        .flatMap((sk) => [sk.name, ...sk.keywords])
+        .flatMap((t) => norm(t).split(/[^\p{L}\p{N}+#]+/u))
+        .filter(Boolean),
+    );
+  catalogWordCache.set(taxonomy, base);
+  const labels = tools ?? catalogToolLabels();
+  const all = new Set(base);
+  for (const w of labels.flatMap((t) => norm(t).split(/[^\p{L}\p{N}+#]+/u))) if (w) all.add(w);
+  return all;
+}
 
 function isSentenceStart(text: string, at: number): boolean {
   let i = at - 1;
@@ -259,7 +339,7 @@ export function checkTailoredOutput(
   // Certificates and degrees: the matched phrase must be in the CV.
   for (const re of CERT_RES) {
     for (const m of matches(re, text)) {
-      if (!containsWord(cvNorm, norm(m[0]))) add('certificate', m[0].trim());
+      if (!certInCv(cvNorm, m[0])) add('certificate', m[0].trim());
     }
   }
   for (const re of DEGREE_RES) {
@@ -270,11 +350,15 @@ export function checkTailoredOutput(
 
   // Employer-like phrases: two or more capitalised words in a row.
   const roleNorm = norm(options.targetRole ?? '');
+  const known = catalogWords(taxonomy, options.tools);
+  const runRanges: [number, number][] = [];
   for (const m of matches(CAP_RUN, text)) {
+    const at = m.index ?? 0;
+    runRanges.push([at, at + m[0].length]);
     let phrase = m[0];
     // The first word of a bullet is capitalised anyway and is usually an action verb
     // (`Led Weekly Reviews`, `Managed Vendor Contracts`): leave it out of the phrase.
-    if (isSentenceStart(text, m.index ?? 0)) {
+    if (isSentenceStart(text, at)) {
       const first = phrase.slice(0, phrase.indexOf(' '));
       if (ACTION_VERB.test(first) || IRREGULAR_VERBS.has(first)) {
         phrase = phrase.slice(first.length + 1);
@@ -284,11 +368,66 @@ export function checkTailoredOutput(
         if (words.length < 3 && !COMPANY_SUFFIX.has(last)) continue;
       }
     }
+    // `Senior Operations Analyst` when the CV has `Operations Analyst`.
+    const head = phrase.slice(0, phrase.indexOf(' ')).toLowerCase();
+    if (MODIFIERS.has(head)) {
+      const rest = phrase.slice(phrase.indexOf(' ') + 1);
+      if (containsWord(cvNorm, norm(rest)) || !rest.includes(' ')) continue;
+      phrase = rest;
+    }
     const key = norm(phrase);
+    // `Tableau and Python`: only catalog names.
+    if (
+      phrase
+        .split(' ')
+        .filter((w) => !CONNECTORS.has(w))
+        .every((w) => known.has(norm(w)))
+    ) {
+      continue;
+    }
     if (IGNORED_PHRASES.has(key) || containsWord(cvNorm, key) || containsWord(roleNorm, key)) {
       continue;
     }
+    // An expansion of an acronym the CV has (`Project Management Professional` for `PMP`).
+    const initials = phrase
+      .split(' ')
+      .filter((w) => !CONNECTORS.has(w))
+      .map((w) => w.charAt(0))
+      .join('');
+    if (
+      initials.length >= 2 &&
+      /^\p{Lu}+$/u.test(initials) &&
+      new RegExp(`(?<![\\p{L}\\p{N}])${initials}(?![\\p{L}\\p{N}])`, 'u').test(cvText)
+    ) {
+      continue;
+    }
     add('term', phrase);
+  }
+
+  // A single capitalised word in the middle of a sentence that is not in the CV, not a catalog
+  // name and not a common word: possibly an invented employer or tool. Noisy by design.
+  for (const m of matches(CAP_WORD, text)) {
+    const at = m.index ?? 0;
+    if (runRanges.some(([s0, e0]) => at >= s0 && at < e0)) continue;
+    if (isSentenceStart(text, at)) continue;
+    const lower = norm(m[0]);
+    if (
+      COMMON_CAPITALISED.has(lower) ||
+      known.has(lower) ||
+      containsWord(cvNorm, lower) ||
+      containsWord(roleNorm, lower)
+    ) {
+      continue;
+    }
+    add('term', m[0]);
+  }
+
+  // Numbers written as words (`thirty`), unless the CV uses the word.
+  for (const m of matches(SPELLED_NUMBER, text)) {
+    const word = norm(m[0]);
+    const after = text.slice((m.index ?? 0) + m[0].length, (m.index ?? 0) + m[0].length + 8);
+    if (word === 'one' && /^\s+(?:of|another|or)\b/iu.test(after)) continue;
+    if (!containsWord(cvNorm, word)) add('number', m[0]);
   }
 
   // Placeholders.
@@ -298,6 +437,9 @@ export function checkTailoredOutput(
     if (NUMBER_PLACEHOLDER.test(m[0])) numberPlaceholders += 1;
     else if (REMOVED_MARKER.test(m[0])) removedMarkers += 1;
     else add('placeholder', m[0]);
+  }
+  for (const re of OTHER_PLACEHOLDER_RES) {
+    for (const m of matches(re, text)) add('placeholder', m[0]);
   }
 
   return {

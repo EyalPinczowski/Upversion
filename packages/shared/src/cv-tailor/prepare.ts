@@ -2,7 +2,7 @@ import { catalogToolLabels, CATALOG_TAXONOMY } from '../profile/catalog';
 import { dropContactLines, splitCvLines } from '../profile/cv-match';
 import { neutraliseMarkup } from '../practice/prompt';
 import type { PiiKind, RedactOptions } from '../practice/redact';
-import { findPii, redactPii } from '../practice/redact';
+import { findPii, normaliseForMatching, redactPii } from '../practice/redact';
 
 /**
  * Cleaning of CV and job-post text before it can go to an AI model (ADR 016 section 2.2).
@@ -72,37 +72,76 @@ let skipRe: RegExp | null = null;
 function skipPattern(): RegExp | null {
   const names = allowedNames();
   if (names.length === 0) return null;
-  skipRe ??= new RegExp(
-    `(?<![\\p{L}\\p{N}@/_:.-])(?:${names.map(escapeRe).join('|')})(?![\\p{L}\\p{N}@/_:-]|\\.[\\p{L}\\p{N}])`,
-    'giu',
-  );
+  // No lookarounds here: `redactPii` reads a NORMALISED copy of the text (NFKC, ignorable and
+  // combining characters removed), so the boundary is tested on the normalised neighbours
+  // (`boundaryOk`), never on the raw characters.
+  skipRe ??= new RegExp(`(?:${names.map(escapeRe).join('|')})`, 'giu');
   return skipRe;
 }
 
+/** How far to look left and right of a name when testing its boundary. */
+const CONTEXT = 32;
+const LEFT_BLOCK = /[\p{L}\p{N}@/\\_:.-]/u;
+const RIGHT_BLOCK = /^(?:[\p{L}\p{N}@/\\_:-]|\.[\p{L}\p{N}])/u;
+
+/**
+ * True when the name at [start, end) stands alone after normalisation. Fails closed: when
+ * the context cannot be read (a long run of ignorable characters hides the neighbour), the name
+ * is NOT allowed, so `redactPii` sees it as before.
+ */
+function boundaryOk(text: string, start: number, end: number): boolean {
+  const left = normaliseForMatching(text.slice(Math.max(0, start - CONTEXT), start));
+  if (left === '' && start > 0) return false;
+  if (left !== '' && LEFT_BLOCK.test(left.charAt(left.length - 1))) return false;
+  const rightRaw = text.slice(end, end + CONTEXT);
+  const right = normaliseForMatching(rightRaw);
+  if (right === '' && rightRaw !== '' && end + CONTEXT < text.length) return false;
+  if (right === '' && rightRaw.length >= CONTEXT) return false;
+  return !RIGHT_BLOCK.test(right);
+}
+
 /** A letters-only stand-in: no digit, dot or `@`, so no PII rule can match it. */
-function standIn(index: number): string {
+function standIn(prefix: string, index: number): string {
   let letters = '';
   let n = index;
   do {
     letters += String.fromCharCode(97 + (n % 26));
     n = Math.floor(n / 26);
   } while (n > 0);
-  return `qzskipx${letters}xqz`;
+  return `${prefix}x${letters}x${prefix}`;
+}
+
+/** A prefix that does not occur in `text` (any case), so a stand-in cannot be forged. */
+function freshPrefix(text: string): string {
+  const lower = text.toLowerCase();
+  for (let i = 0; ; i += 1) {
+    let tag = '';
+    let n = i;
+    do {
+      tag += String.fromCharCode(97 + (n % 26));
+      n = Math.floor(n / 26);
+    } while (n > 0);
+    const prefix = `qzs${tag}`;
+    if (!lower.includes(prefix)) return prefix;
+  }
 }
 
 interface Masked {
   text: string;
   names: string[];
+  prefix: string;
 }
 
 function mask(text: string, options: RedactOptions): Masked {
   const re = skipPattern();
-  if (!re) return { text, names: [] };
+  const prefix = freshPrefix(text);
+  if (!re) return { text, names: [], prefix };
   const names: string[] = [];
   const index = new Map<string, number>();
   const blocked = new Map<string, boolean>();
   const ids = options.knownIdentifiers ?? [];
-  const out = text.replace(re, (name: string) => {
+  const out = text.replace(re, (name: string, offset: number) => {
+    if (!boundaryOk(text, offset, offset + name.length)) return name;
     const key = name.toLowerCase();
     let isBlocked = blocked.get(key);
     if (isBlocked === undefined) {
@@ -116,17 +155,18 @@ function mask(text: string, options: RedactOptions): Masked {
       names.push(name);
       index.set(name, i);
     }
-    return standIn(i);
+    return standIn(prefix, i);
   });
-  return { text: out, names };
+  return { text: out, names, prefix };
 }
 
-function unmask(text: string, names: readonly string[]): string {
-  if (names.length === 0) return text;
-  return text.replace(/qzskipx([a-z]+)xqz/g, (whole, letters: string) => {
+function unmask(text: string, m: Masked): string {
+  if (m.names.length === 0) return text;
+  const re = new RegExp(`${m.prefix}x([a-z]+)x${m.prefix}`, 'g');
+  return text.replace(re, (whole, letters: string) => {
     let n = 0;
     for (let k = letters.length - 1; k >= 0; k -= 1) n = n * 26 + (letters.charCodeAt(k) - 97);
-    return names[n] ?? whole;
+    return m.names[n] ?? whole;
   });
 }
 
@@ -137,7 +177,7 @@ export function redactCvPii(
 ): { text: string; count: number } {
   const m = mask(text, options);
   const r = redactPii(m.text, options);
-  return { text: unmask(r.text, m.names), count: r.count };
+  return { text: unmask(r.text, m), count: r.count };
 }
 
 /** `findPii` with the shared tool-name allowance: what the server runs on CV and job text. */
@@ -152,13 +192,22 @@ export interface PreparedText {
   dropped: string[];
   /** How many personal-detail spans were replaced by `[removed]`. */
   removed: number;
+  /** True when the input was longer than MAX_PREPARE_INPUT and the rest was cut. */
+  truncated: boolean;
+}
+
+/** Removes trailing spaces and tabs with a loop (no regex backtracking). */
+function trimLineEnd(line: string): string {
+  let end = line.length;
+  while (end > 0 && (line.charAt(end - 1) === ' ' || line.charAt(end - 1) === '\t')) end -= 1;
+  return line.slice(0, end);
 }
 
 function collapseBlankLines(lines: readonly string[]): string {
   const out: string[] = [];
   let blank = 0;
   for (const raw of lines) {
-    const line = raw.replace(/[ \t]+$/u, '');
+    const line = trimLineEnd(raw);
     if (line === '') {
       blank += 1;
       if (blank > 1) continue;
@@ -170,10 +219,14 @@ function collapseBlankLines(lines: readonly string[]): string {
   return out.join('\n').trim();
 }
 
-/** C0/C1 controls (except tab and newline), bidi overrides and zero-width characters. */
+/**
+ * C0/C1 controls (except tab and newline), every default-ignorable character (soft hyphen,
+ * word joiner, zero-width, bidi marks and overrides, variation selectors, U+034F) and the
+ * byte-order mark.
+ */
 const CONTROL_CHARS = new RegExp(
   // eslint-disable-next-line no-control-regex
-  '[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u200b-\\u200f\\u202a-\\u202e\\u2066-\\u2069\\ufeff]',
+  '[\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f]|\\p{Default_Ignorable_Code_Point}',
   'gu',
 );
 
@@ -181,18 +234,21 @@ export function removeControlChars(text: string): string {
   return text.replace(CONTROL_CHARS, '');
 }
 
+/** Longest input read at all; the rest is cut first (the API limits are far lower). */
+export const MAX_PREPARE_INPUT = 50_000;
+
 /**
  * Prepares CV text for an AI model: drops the contact block, a Contact / Personal details
  * section and a References section (the matcher's rule, `dropContactLines`), neutralises markup
  * and control characters, then removes personal details with `redactCvPii`.
  */
 export function prepareCvForAi(text: string, options: RedactOptions = {}): PreparedText {
-  const lines = splitCvLines(removeControlChars(text));
+  const lines = splitCvLines(removeControlChars(text.slice(0, MAX_PREPARE_INPUT)));
   const drop = dropContactLines(lines);
   const dropped = lines.filter((l, i) => drop.has(i) && l.trim() !== '').map((l) => l.trim());
   const kept = lines.filter((_, i) => !drop.has(i));
   const r = redactCvPii(neutraliseMarkup(collapseBlankLines(kept)), options);
-  return { text: r.text, dropped, removed: r.count };
+  return { text: r.text, dropped, removed: r.count, truncated: text.length > MAX_PREPARE_INPUT };
 }
 
 /**
@@ -200,7 +256,14 @@ export function prepareCvForAi(text: string, options: RedactOptions = {}): Prepa
  * its title).
  */
 export function prepareJobForAi(text: string, options: RedactOptions = {}): PreparedText {
-  const clean = collapseBlankLines(splitCvLines(removeControlChars(text)));
+  const clean = collapseBlankLines(
+    splitCvLines(removeControlChars(text.slice(0, MAX_PREPARE_INPUT))),
+  );
   const r = redactCvPii(neutraliseMarkup(clean), options);
-  return { text: r.text, dropped: [], removed: r.count };
+  return {
+    text: r.text,
+    dropped: [],
+    removed: r.count,
+    truncated: text.length > MAX_PREPARE_INPUT,
+  };
 }

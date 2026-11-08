@@ -5,6 +5,7 @@ import {
   MAX_CV_TAILOR_ROLE,
   MAX_CV_TAILOR_SYSTEM,
 } from './limits';
+import { removeControlChars } from './prepare';
 
 /**
  * The CV agent's instructions, word for word from `docs/ai-prompts/cv-tailor.md` section 2.
@@ -60,27 +61,47 @@ export interface CvTailorPrompt {
   user: string;
 }
 
-const FENCE_TAG = /<\s*\/?\s*(?:cv|job)\s*>/giu;
+/** Longest text `stripCvTailorFences` reads; the rest is cut before any regex runs. */
+export const MAX_FENCE_INPUT = 100_000;
+
+const M = '\\p{M}*';
+/** Letters of CV / JOB with the Latin, Cyrillic and Greek look-alikes of C, V, J, O and B. */
+const L_C = `[CcСсϹϲ]${M}`;
+const L_V = `[VvѴѵ]${M}`;
+const L_J = `[JjЈј]${M}`;
+const L_O = `[OoОоΟο]${M}`;
+const L_B = `[BbВвΒβ]${M}`;
+/** `<` and `>` as themselves, as HTML entities, and as angle quotes and brackets. */
+const LT = '(?:<|&lt;|&#0*60;|&#x0*3c;|[‹〈⟨❬❮«《⟪])';
+const GT = '(?:>|&gt;|&#0*62;|&#x0*3e;|[›〉⟩❭❯»》⟫])';
+const SLASH = '[/⁄∕]';
+/** A fence tag: optional slash, optional attributes (`</CV x>`), any of the look-alikes. */
+const FENCE_TAG = new RegExp(
+  `${LT}\\s*(?:${SLASH}\\s*)?(?:${L_C}${L_V}|${L_J}${L_O}${L_B})(?:\\s[^<>]{0,100})?\\s*${GT}`,
+  'giu',
+);
 
 /**
- * Removes the four fence strings (`<CV>`, `</CV>`, `<JOB>`, `</JOB>`, any case, spaces inside the
- * brackets, full-width brackets) from user text. Each becomes one space. Repeats until none is
- * left, so `<<CV>/CV>` cannot rebuild one.
+ * Removes the four fence strings (`<CV>`, `</CV>`, `<JOB>`, `</JOB>`) from user text, also when
+ * written with spaces, attributes, angle-quote or full-width brackets, HTML entities, zero-width
+ * characters or Latin look-alike letters. Each becomes one space. The text is first cut to
+ * MAX_FENCE_INPUT, normalised (NFKC, ignorable characters removed), then matched repeatedly until
+ * none is left, so `<<CV>/CV>` cannot rebuild one. The result is the normalised text.
  */
 export function stripCvTailorFences(text: string): string {
-  let current = text.replace(/[＜﹤]/gu, '<').replace(/[＞﹥]/gu, '>');
+  let current = removeControlChars(text.slice(0, MAX_FENCE_INPUT).normalize('NFKC'));
   for (let i = 0; i < 20; i += 1) {
     const next = current.replace(FENCE_TAG, ' ');
     if (next === current) return next;
     current = next;
   }
-  // Pathological nesting: drop every angle bracket.
-  return current.replace(/[<>]/gu, ' ');
+  // Pathological nesting: drop every angle bracket and entity opener.
+  return current.replace(/[<>&]/gu, ' ');
 }
 
-/** One line: no line breaks, no angle brackets. */
+/** One line: no line breaks, no angle brackets. The input is cut to 1,000 characters first. */
 function oneLine(text: string): string {
-  return stripCvTailorFences(text)
+  return stripCvTailorFences(text.slice(0, 1000))
     .replace(/[<>＜＞﹤﹥]/gu, ' ')
     .replace(/\s+/gu, ' ')
     .trim();
