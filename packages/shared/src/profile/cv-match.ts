@@ -18,14 +18,26 @@ import type {
  * Matching runs on the RAW text (redaction would break `03/2018 - 06/2021`, `ASP.NET`,
  * `monday.com`). `redactPii` is applied only to evidence snippets and free-text titles.
  * Everything is linear in the text length: one tokenizer pass per line and hash lookups on the
- * first token of each term, no nested unbounded regexes.
+ * first token of each term, no nested unbounded regexes. Every line is capped at
+ * MAX_LINE_LENGTH characters before any regex runs, and trailing-character trimming uses loops.
+ *
+ * Known limits (by design, see ADR 015 "Risks"):
+ * - Phone numbers are removed from evidence by `redactPii`; 7-digit local numbers without a
+ *   prefix may survive in an evidence snippet.
+ * - Handles written without a URL or `@` (for example "linkedin: dana-example") may survive in
+ *   evidence.
+ * - A sentence of the CV can appear in evidence, cut to at most 80 characters. The import
+ *   payload never carries evidence.
+ * - `skills.json` keywords are English: Hebrew words (apart from a few section headings) are not
+ *   matched. Hebrew letters stuck to a Latin term (`בSQL`) are split off so the term is found.
+ * - Two-column layouts can pair a title with the wrong date; years are suggestions.
  */
 
 export const MAX_EVIDENCE_LENGTH = 80;
 const MAX_LINE_LENGTH = 2000;
 const MAX_TITLE_LINE_LENGTH = 120;
 
-type SectionKind = 'experience' | 'education' | 'skills' | 'other';
+type SectionKind = 'experience' | 'education' | 'skills' | 'contact' | 'other';
 
 const HEADINGS = new Map<string, SectionKind>([
   ...[
@@ -67,6 +79,24 @@ const HEADINGS = new Map<string, SectionKind>([
   ...['השכלה'].map((h): [string, SectionKind] => [h, 'education']),
   ...['כישורים', 'מיומנויות'].map((h): [string, SectionKind] => [h, 'skills']),
   ...[
+    'contact',
+    'contact details',
+    'contact information',
+    'personal details',
+    'personal information',
+    'פרטים אישיים',
+    'פרטי קשר',
+  ].map((h): [string, SectionKind] => [h, 'contact']),
+  ...[
+    'contact',
+    'contact details',
+    'contact information',
+    'personal details',
+    'personal information',
+    'פרטים אישיים',
+    'פרטי קשר',
+  ].map((h): [string, SectionKind] => [h, 'contact']),
+  ...[
     'summary',
     'profile',
     'professional summary',
@@ -89,10 +119,23 @@ const HEADINGS = new Map<string, SectionKind>([
   ].map((h): [string, SectionKind] => [h, 'other']),
 ]);
 
+/** Removes trailing characters of `chars` (a loop: no regex, no backtracking). */
+function trimEndChars(s: string, chars: string): string {
+  let end = s.length;
+  while (end > 0 && chars.includes(s.charAt(end - 1))) end -= 1;
+  return s.slice(0, end);
+}
+
+function trimBothChars(s: string, chars: string): string {
+  let start = 0;
+  while (start < s.length && chars.includes(s.charAt(start))) start += 1;
+  return trimEndChars(s.slice(start), chars);
+}
+
 function headingKind(line: string): SectionKind | null {
-  const t = line
-    .trim()
-    .replace(/[:\s]+$/u, '')
+  const trimmed = line.trim();
+  if (trimmed.length > 60) return null;
+  const t = trimEndChars(trimmed, ': \t')
     .toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/\s+/g, ' ')
@@ -103,6 +146,7 @@ function headingKind(line: string): SectionKind | null {
 
 /** `Skills: Excel, SQL` on one line counts as a skills line even without a heading. */
 const INLINE_SKILLS_RE = /^\s*(?:technical skills|key skills|skills|tools|technologies)\s*[:\-–]/iu;
+const SEPARATORS = ' \t|,;·•–—-';
 const BULLET_RE = /^\s*[-•*▪◦·–]\s/u;
 
 // ---------------------------------------------------------------- tokens and term index
@@ -115,7 +159,9 @@ interface Tok {
 }
 
 /** Words, with `.` kept inside (`ASP.NET`, `monday.com`) and trailing `+`/`#` (`C++`, `C#`). */
-const TOKEN_RE = /[\p{L}\p{N}]+(?:\.[\p{L}\p{N}]+)*[+#]*/gu;
+/** Hebrew letters stuck to a Latin term (`בSQL`) are separate tokens. */
+const ATOM = '(?:\\p{Script=Hebrew}+|(?:(?!\\p{Script=Hebrew})[\\p{L}\\p{N}])+)';
+const TOKEN_RE = new RegExp(`${ATOM}(?:\\.${ATOM})*[+#]*`, 'gu');
 
 function tokenize(line: string): Tok[] {
   const out: Tok[] = [];
@@ -134,6 +180,8 @@ interface Term<O> {
   cs: boolean;
   strong: boolean;
   text: string;
+  /** Per gap between tokens: the term wrote a hyphen there (`no-code`). */
+  hyphen: boolean[];
 }
 
 function isAbbreviation(text: string): boolean {
@@ -151,6 +199,7 @@ function makeTerm<O>(owner: O, text: string, forceCs = false): Term<O> | null {
     cs: forceCs || isAbbreviation(text),
     strong: toks.length > 1,
     text,
+    hyphen: toks.slice(1).map((t, k) => text.slice((toks[k] as Tok).end, t.start) === '-'),
   };
 }
 
@@ -185,6 +234,8 @@ interface Match<O> {
   start: number;
   end: number;
   tokens: number;
+  /** A hyphenated term found with something else between its words (`no code`). */
+  loose: boolean;
 }
 
 function matchLine<O>(line: string, index: TermIndex<O>): Match<O>[] {
@@ -197,11 +248,16 @@ function matchLine<O>(line: string, index: TermIndex<O>): Match<O>[] {
       const n = term.lower.length;
       if (i + n > toks.length) continue;
       let ok = true;
+      let loose = false;
       for (let k = 0; k < n; k += 1) {
         const t = toks[i + k] as Tok;
         if (t.lower !== term.lower[k] || (term.cs && t.raw !== term.raw[k])) {
           ok = false;
           break;
+        }
+        if (k > 0 && term.hyphen[k - 1]) {
+          const prev = toks[i + k - 1] as Tok;
+          if (line.slice(prev.end, t.start) !== '-') loose = true;
         }
       }
       if (ok) {
@@ -210,6 +266,7 @@ function matchLine<O>(line: string, index: TermIndex<O>): Match<O>[] {
           start: (toks[i] as Tok).start,
           end: (toks[i + n - 1] as Tok).end,
           tokens: n,
+          loose,
         });
       }
     }
@@ -245,9 +302,9 @@ function taxonomyIndexes(taxonomy: MatchTaxonomy): TaxonomyIndexes {
 // ---------------------------------------------------------------- dates
 
 const MONTHS = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
-const DATE = `(?:(?:${MONTHS})[a-z]{0,6}\\.?\\s+\\d{4}|\\d{1,2}/\\d{4}|\\d{4})`;
+const DATE = `(?:(?:${MONTHS})[a-z]{0,6}\\.?\\s+\\d{4}|\\d{1,2}[./]\\d{4}|\\d{4}-\\d{2}(?!\\d)|\\d{4})`;
 const RANGE_SOURCE =
-  `(?<![\\d/])(${DATE})\\s*(?:-|–|—|to)\\s*` +
+  `(?<![\\d/.])(${DATE})\\s*(?:-|–|—|to)\\s*` +
   `(${DATE}|present|current|now|today|ongoing)(?![\\d/])`;
 
 interface DateRange {
@@ -261,13 +318,19 @@ function parseDate(s: string, now: Date): number | null {
   if (/^(present|current|now|today|ongoing)$/.test(t)) return nowFrac;
   let y: number;
   let m = 0;
-  const slash = /^(\d{1,2})\/(\d{4})$/.exec(t);
+  const slash = /^(\d{1,2})[./](\d{4})$/.exec(t);
+  const iso = /^(\d{4})-(\d{2})$/.exec(t);
   const named = new RegExp(`^(${MONTHS})[a-z]{0,6}\\.?\\s+(\\d{4})$`).exec(t);
   if (slash) {
     const mm = Number(slash[1]);
     if (mm < 1 || mm > 12) return null;
     m = mm - 1;
     y = Number(slash[2]);
+  } else if (iso) {
+    const mm = Number(iso[2]);
+    if (mm < 1 || mm > 12) return null;
+    m = mm - 1;
+    y = Number(iso[1]);
   } else if (named) {
     m = MONTHS.split('|').indexOf(named[1] as string);
     y = Number(named[2]);
@@ -276,7 +339,8 @@ function parseDate(s: string, now: Date): number | null {
   } else {
     return null;
   }
-  if (y < 1950 || y > now.getUTCFullYear() + 1) return null;
+  // Future years are kept here; `findRanges` caps an end date at now.
+  if (y < 1950 || y > 2100) return null;
   return y + m / 12;
 }
 
@@ -286,7 +350,7 @@ function findRanges(line: string, now: Date): DateRange[] {
   for (const m of line.matchAll(new RegExp(RANGE_SOURCE, 'giu'))) {
     const start = parseDate(m[1] as string, now);
     let end = parseDate(m[2] as string, now);
-    if (start === null || end === null) continue;
+    if (start === null || end === null || start > nowFrac) continue;
     end = Math.min(end, nowFrac);
     if (end < start) continue;
     out.push({ start, end });
@@ -324,8 +388,30 @@ function unionYears(ranges: readonly DateRange[]): number {
 
 // ---------------------------------------------------------------- evidence
 
+/**
+ * Caps a line before any regex runs. When the cut falls inside a line, the last 3 words are
+ * dropped too, so an email or phone number straddling the cut cannot leave a fragment that
+ * `redactPii` would no longer recognise.
+ */
+function capLine(line: string): string {
+  if (line.length <= MAX_LINE_LENGTH) return line;
+  const cut = line.slice(0, MAX_LINE_LENGTH);
+  let end = cut.length;
+  let words = 0;
+  while (end > 0) {
+    while (end > 0 && /\s/u.test(cut.charAt(end - 1))) end -= 1;
+    const wordEnd = end;
+    while (end > 0 && !/\s/u.test(cut.charAt(end - 1))) end -= 1;
+    words += 1;
+    // After 3 words, keep dropping words that look like part of a phone number or address.
+    if (words >= 3 && !/[\d+@()]/u.test(cut.slice(end, wordEnd))) break;
+  }
+  return cut.slice(0, end).trimEnd();
+}
+
 function snippet(line: string, needle: string | undefined): string {
-  const red = redactPii(line.slice(0, MAX_LINE_LENGTH)).text.replace(/\s+/g, ' ').trim();
+  // Lines are already capped (and a cut token dropped) by `capLine`; redact the whole line.
+  const red = redactPii(line).text.replace(/\s+/g, ' ').trim();
   if (red.length <= MAX_EVIDENCE_LENGTH) return red;
   const idx = needle ? red.toLowerCase().indexOf(needle.toLowerCase()) : -1;
   const start = idx < 0 ? 0 : Math.max(0, idx - 30);
@@ -380,6 +466,13 @@ const EDU_INDEX: TermIndex<EducationLevel> = buildIndex(
 const EXACT_CASE_TOOLS = new Set(['excel', 'notion', 'make']);
 const MAKE_CONTEXT_RE = /zapier|integromat|automation|no-code|workflow/i;
 
+/** `Make` (the tool, or the skill keyword) needs automation context or a Skills line. */
+function isUnguardedMake(lower: readonly string[], section: SectionKind, line: string): boolean {
+  return (
+    lower.length === 1 && lower[0] === 'make' && section !== 'skills' && !MAKE_CONTEXT_RE.test(line)
+  );
+}
+
 function buildToolIndex(labels: readonly string[]): TermIndex<string> {
   return buildIndex(
     labels.flatMap((label) =>
@@ -410,7 +503,10 @@ export function extractProfileFromText(text: string, options: CvMatchOptions = {
   const now = options.now ?? new Date();
   const { skills: skillIndex, roles: roleIndex } = taxonomyIndexes(taxonomy);
 
-  const lines = text.normalize('NFKC').split(/\r\n|\r|\n|\u2028|\u2029/u);
+  const lines = text
+    .normalize('NFKC')
+    .split(/\r\n|\r|\n|\u2028|\u2029/u)
+    .map(capLine);
   const n = lines.length;
 
   // Sections. With no heading at all every line counts as experience (best effort) and the
@@ -431,6 +527,7 @@ export function extractProfileFromText(text: string, options: CvMatchOptions = {
         seenHeading = true;
       }
       kind[i] = !h && INLINE_SKILLS_RE.test(lines[i] as string) ? 'skills' : current;
+      if (current === 'contact') dropped.add(i);
       if (hasHeadings) {
         if (!seenHeading) dropped.add(i);
       } else if (nonEmpty < 2 && (lines[i] as string).trim() !== '') {
@@ -461,10 +558,16 @@ export function extractProfileFromText(text: string, options: CvMatchOptions = {
         entryYears[i] = currentYears;
         continue;
       }
-      const cleaned = stripRanges(line).replace(/^[\s|,;·•–—-]+|[\s|,;·•–—-]+$/gu, '');
+      const cleaned = trimBothChars(stripRanges(line), SEPARATORS);
       const isBullet = BULLET_RE.test(line);
       const own = ranges[i] as DateRange[];
-      const nextRanges = i + 1 < n && !dropped.has(i + 1) ? (ranges[i + 1] as DateRange[]) : [];
+      // The next line's range belongs to this title only when that line is nothing but dates.
+      const nextRanges =
+        i + 1 < n &&
+        !dropped.has(i + 1) &&
+        trimBothChars(stripRanges(lines[i + 1] as string), SEPARATORS) === ''
+          ? (ranges[i + 1] as DateRange[])
+          : [];
       const entryRanges = own.length > 0 ? own : cleaned && !isBullet ? nextRanges : [];
       if (!isBullet && cleaned !== '' && entryRanges.length > 0)
         currentYears = sumYears(entryRanges);
@@ -527,8 +630,10 @@ export function extractProfileFromText(text: string, options: CvMatchOptions = {
         };
         hits.set(id, h);
       }
-      const key = `${i}:${m.term.lower.join(' ')}`;
-      if (m.term.strong) h.strongKeys.add(key);
+      if (isUnguardedMake(m.term.lower, kind[i] as SectionKind, line)) continue;
+      // Distinct terms across the document: the same word on two lines is one weak hit.
+      const key = m.term.lower.join(' ');
+      if (m.term.strong && !m.loose) h.strongKeys.add(key);
       else h.weakKeys.add(key);
       if (kind[i] === 'skills') h.inSkills = true;
       if (kind[i] === 'experience' && !dropped.has(i) && (entryYears[i] as number) >= 2)
@@ -590,14 +695,7 @@ export function extractProfileFromText(text: string, options: CvMatchOptions = {
     if (isHeading(i)) continue;
     const line = lines[i] as string;
     for (const m of matchLine(line, toolIndex)) {
-      if (
-        m.term.lower.length === 1 &&
-        m.term.lower[0] === 'make' &&
-        kind[i] !== 'skills' &&
-        !MAKE_CONTEXT_RE.test(line)
-      ) {
-        continue;
-      }
+      if (isUnguardedMake(m.term.lower, kind[i] as SectionKind, line)) continue;
       const prev = toolHits.get(m.term.owner);
       if (!prev || (prev.evidence === '' && !dropped.has(i))) {
         toolHits.set(m.term.owner, {
