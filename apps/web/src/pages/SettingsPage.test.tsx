@@ -12,6 +12,7 @@ import {
   renderApp,
   SESSION,
 } from '../test/helpers';
+import { planRoutes } from '../test/plan-fixtures';
 
 const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:fake');
 const revokeObjectURL = vi.fn();
@@ -50,12 +51,48 @@ describe('settings page', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
     expect(screen.getByText('dana@example.com')).toBeInTheDocument();
     for (const name of ['Profile', 'Appearance', 'Your data', 'Sign out', 'Delete my account']) {
-      expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 3, name })).toBeInTheDocument();
     }
+    expect(screen.getByRole('heading', { level: 2, name: 'App' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute(
       'href',
       '/privacy',
     );
+  });
+
+  it('has only App and Connections groups, and nothing that belongs to a plan', async () => {
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Settings' });
+    expect(screen.getByRole('heading', { level: 2, name: 'App' })).toBeInTheDocument();
+    for (const name of ['Study time', 'Practice', 'Start date', 'Subjects', 'Manage plans']) {
+      expect(screen.queryByRole('heading', { name })).not.toBeInTheDocument();
+    }
+  });
+
+  it('shows Connections with the calendar only when the calendar feature is on', async () => {
+    open({ 'GET /api/v1/calendar': () => apiError(404, 'not_found', 'off') });
+    await screen.findByRole('heading', { level: 2, name: 'App' });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByRole('heading', { name: 'Connections' })).not.toBeInTheDocument();
+  });
+
+  it.each(['#time-heading', '#practice-heading', '#start-date-heading'])(
+    'sends the old anchor %s to the Plan settings tab',
+    async (hash) => {
+      installApi(planRoutes());
+      renderApp({ auth: fakeAuth(SESSION), path: `/settings${hash}` });
+      expect(await screen.findByRole('tab', { name: 'Plan settings' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      expect(await screen.findByRole('heading', { name: 'Study time' })).toBeInTheDocument();
+    },
+  );
+
+  it('does not redirect a visit to /settings without an old anchor', async () => {
+    open();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
   describe('display name', () => {

@@ -256,7 +256,7 @@ export function WorkAhead({
                 <p>
                   Your study window ({data.weekPattern.windowStart} to {data.weekPattern.windowEnd},
                   without lunch) has no room for more today, so nothing would move. You can widen
-                  the window in Settings.
+                  the window in Plan settings.
                 </p>
               ) : proposal.addedMinutes < requestedMinutes(proposal.override, cap.hours) ? (
                 <p>
@@ -317,8 +317,8 @@ export function WorkAhead({
             {cap.override?.isStudyDay
               ? `a study day${cap.override.capacityHours !== undefined ? ` of ${formatHours(cap.override.capacityHours)}` : ''}`
               : 'a day off'}
-            . It may have been set in Settings. Removing it makes today follow your usual weekly
-            hours again.
+            . It may have been set in Plan settings. Removing it makes today follow your usual
+            weekly hours again.
           </p>
         </ConfirmDialog>
       ) : null}

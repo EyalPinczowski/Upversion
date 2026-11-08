@@ -6,6 +6,7 @@ import type { Me } from '../api/client';
 import type { AuthService, AuthSession } from '../auth/auth-service';
 import type { Env } from '../env';
 import { createQueryClient } from '../lib/query-client';
+import { LocationProbe } from './LocationProbe';
 
 export const ENV: Env = {
   appEnv: 'operational',
@@ -116,9 +117,11 @@ export function renderApp(options: {
   auth: AuthService;
   path?: string | { pathname: string; state?: unknown };
   env?: Env;
+  onLocation?: (url: string) => void;
 }): RenderResult & { auth: AuthService } {
   const result = render(
     <MemoryRouter initialEntries={[options.path ?? '/']}>
+      {options.onLocation ? <LocationProbe onLocation={options.onLocation} /> : null}
       <App env={options.env ?? ENV} queryClient={createQueryClient()} auth={options.auth} />
     </MemoryRouter>,
   );

@@ -18,7 +18,7 @@ afterEach(() => {
 
 function openSettings(extra: Parameters<typeof practiceRoutes>[0] = {}) {
   const api = installApi(practiceRoutes(extra));
-  renderApp({ auth: fakeAuth(SESSION), path: '/settings' });
+  renderApp({ auth: fakeAuth(SESSION), path: '/plan?tab=settings' });
   return api;
 }
 

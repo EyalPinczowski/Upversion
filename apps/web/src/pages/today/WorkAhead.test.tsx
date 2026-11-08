@@ -261,7 +261,7 @@ describe('Work ahead on Today', () => {
     await user.click(screen.getByRole('button', { name: 'Back to normal' }));
     const dialog = await screen.findByRole('alertdialog');
     expect(dialog).toHaveTextContent(/study day of 9 h/);
-    expect(dialog).toHaveTextContent(/may have been set in Settings/);
+    expect(dialog).toHaveTextContent(/may have been set in Plan settings/);
     expect(api.count(`DELETE ${BASE}/day-overrides/${TODAY}`)).toBe(0);
     await user.click(within(dialog).getByRole('button', { name: 'Keep it' }));
     expect(api.count(`DELETE ${BASE}/day-overrides/${TODAY}`)).toBe(0);

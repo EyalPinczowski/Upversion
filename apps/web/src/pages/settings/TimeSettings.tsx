@@ -7,7 +7,7 @@ import { QueryView } from '../../components/QueryView';
 import { Button, ErrorText, TextField } from '../../components/ui';
 import { formatDate, formatHours } from '../../lib/format';
 import { describeError } from '../../lib/messages';
-import { PlanGate, PlanSwitcher } from '../../plan/PlanGate';
+import { PlanGate } from '../../plan/PlanGate';
 import { StartDate } from './StartDate';
 import {
   diffTimeSettings,
@@ -431,8 +431,9 @@ export function TimeSettings() {
       className="space-y-3 rounded-md border border-border bg-surface p-4"
     >
       <h2 id="time-heading">Study time</h2>
-      <PlanSwitcher />
-      <PlanGate empty={<p className="text-muted">Import a plan to set when you study.</p>}>
+      <PlanGate
+        empty={<p className="text-muted">Import a plan from Today to set when you study.</p>}
+      >
         {(plan) => <Editor key={plan.id} planId={plan.id} />}
       </PlanGate>
     </section>
