@@ -46,6 +46,8 @@ Some features use third-party AI models with free tiers: the day overview, plan 
 - Some free AI services may use the data they receive to improve their models (this applies to Google's Gemini free tier). Please **don't write personal or sensitive information** in free-text answers or practice chats.
 - You can always use the app without the AI features: plans can be built by the rule-based builder, and practices can be run in your own Claude account instead.
 
+**Tailoring your CV to a job (optional, only when you press "Send to AI").** [OWNER REVIEW NEEDED – draft text, not legal advice.] This is the one case where the text of your CV is sent to an AI model. It never happens automatically: reading your CV when you set up your profile stays on your device. For tailoring, you paste a job post, and the app first removes the contact block at the top of your CV, email addresses, phone numbers, links and the name on your account. You then see, and can edit, exactly the text that will be sent, and you press "Send to AI". We send that text (the cleaned CV, the job post, and, if you pick one, a target role from our catalog) to Cloudflare Workers AI, and, only if Cloudflare cannot answer, to Groq. The screen tells you which provider received it; if the connection fails and we cannot tell, it says your text may have reached them. The app **cannot recognise names or addresses**, so you must remove your name, home address and other people's names yourself before sending. We do not store your CV text, the job post or the answer on our servers or in our logs; we keep only a daily count of how many tailoring runs you used. The text is kept in your browser's memory (never on disk) only if you tick a box to keep it for this tab, and is cleared when you sign out or close the tab. According to Cloudflare's data-usage page, content sent to Workers AI is not used to train models and is not retained beyond processing, and that applies only while Cloudflare's AI Gateway logging is off (we do not use it) [needs check: free-plan terms for personal documents, commercial use, age and region]. We use Groq only with its Zero Data Retention setting on [needs check: the owner has not yet confirmed it is on]; if it were off, Groq would keep logs for up to 30 days for reliability and abuse. Whether Groq uses free-tier prompts for training is [needs check]. Providers' own policies apply to what they receive. Without AI you still get a keyword comparison, and a "Copy prompt" button that shows the cleaned prompt so you can paste it into your own assistant (nothing is sent by us). [PROVIDER NOTICE LINKS]
+
 ## 4. Who we share data with
 We use these service providers to run Upversion. They process data on our behalf:
 
@@ -56,7 +58,7 @@ We use these service providers to run Upversion. They process data on our behalf
 | Render | Hosting the backend |
 | Cloudflare Turnstile | Bot protection on sign-in and request-access forms |
 | Google | "Continue with Google" sign-in, and Calendar if you connect it |
-| GitHub Models, Groq, Google Gemini | AI features (see section 3) |
+| GitHub Models, Groq, Google Gemini, Cloudflare Workers AI | AI features (see section 3). Cloudflare Workers AI and Groq process the optional CV tailoring text and, where enabled, practice and other AI features [needs check: which providers are live, per `docs/setup/ai-providers.md`] |
 | GitHub | Encrypted daily backups |
 
 We don't sell or rent your data, and we don't share it with anyone else unless the law requires it.

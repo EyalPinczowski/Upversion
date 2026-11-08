@@ -254,6 +254,8 @@ When I start a study day, a briefing screen opens:
 - **Privacy:** never send personally identifying details (name, phone, email) to the model. Job descriptions and STAR stories are fine.
 - **Don't invent limits:** check each provider's official docs during the build, and tell me if anything has changed or requires a credit card.
 
+**Exception – CV tailoring (owner-approved, ADR 016).** Outside practices, the AI layer is used for one more thing only: on the user's explicit request, it rewrites the user's CV text for a job post they paste. The CV is cleaned on the device (contact block dropped; emails, phones, links and the name on the user's account removed), the user sees and edits exactly what will be sent and presses "Send to AI", and the server rejects the request (422) instead of calling the model if it still finds personal details. Names and addresses cannot be detected automatically, so the screen tells the user to remove them. Nothing is stored. The text goes to Cloudflare Workers AI first and, only if that fails, to Groq (used only with Zero Data Retention on); the screen names the provider(s) that received it. The model may only re-word and re-order what the CV says; the result is checked for new numbers, skills and terms and marked "check every line". A rule-based keyword list (no AI) comes first and works with AI off; with AI off a "Copy prompt" button shows the cleaned prompt for the user to copy into their own assistant (nothing is sent). Limits: CV up to 6,000 characters, job post up to 3,000, 3 runs per user per day and 20 per day app-wide. Behind `FEATURE_CV_TAILOR`.
+
 **Alternative: claude.ai (copy-paste).** Every practice also has an "Open in Claude" button: it copies the same prompt and opens claude.ai, for practices where I want Claude's quality. The prompt instructs Claude to end with a **feedback block in a fixed format**:
 ```
 ===FEEDBACK===
@@ -756,7 +758,7 @@ The balance: **prepare the seams, not the features.** That means interfaces with
 | **Gamification** (points, badges, streaks) | The goal is honest tracking; engagement mechanics can push toward faking completions. | Plain progress numbers. |
 | **Social features** (comments, profiles, feeds) | Needs moderation and safety work; not the core value. | – |
 | **Job-search tracking** (applications, contacts) | Separate concern; may become its own module. | – |
-| **General AI assistant** (beyond the practice window) | Keeps the AI layer small and the free quota for practice. | AI only inside practices. |
+| **General AI assistant** (beyond the practice window) | Keeps the AI layer small and the free quota for practice. | AI only inside practices, plus the owner-approved CV tailoring exception (3.3, ADR 016), which has its own caps. |
 | **Paid AI providers** (e.g. Claude API) | The $0 constraint. | Free-tier providers only. |
 | **Profile import from LinkedIn** – read the user's LinkedIn data export and pre-fill the profile | Needs export-format handling and its own review. (CV import moved into v1 setup, ADR 015.) | CV import in setup, or the manual answers. |
 | **LinkedIn progress posts** – optionally connect the user's LinkedIn account and publish updates on their improvement (a finished course, a certificate earned, a milestone) | Needs a LinkedIn developer app and OAuth, and LinkedIn's API access terms and rate limits have not been checked (needs check). Posting is outward-facing, so it needs its own consent and review flow. | Manual: the app shows a ready-to-copy update text the user can paste into LinkedIn themselves. |
@@ -787,9 +789,9 @@ Each seam below costs little in v1.0 and makes a deferred item a contained addit
 - `ProgressSource` – manual implementation only. → Coursera/Kaggle/etc. importers later.
 - `Exporter` – CSV implementation (optional in v1.0). → other formats later.
 - `ProfileSource` – `manual` (setup answers) and `cv-browser` implementations (ADR 015). → LinkedIn import later fills the same structure.
-  - **CV (v1):** PDF/DOCX text is extracted in the browser only and matched to `skills.json`/`roles.json` by keyword rules, no AI. The file and its text never leave the device; only the fields the user confirms on a review screen are sent.
+  - **CV (v1):** PDF/DOCX text is extracted in the browser only and matched to `skills.json`/`roles.json` by keyword rules, no AI. The file and its text never leave the device; only the fields the user confirms on a review screen are sent. The CV can be replaced later from Settings the same way. The one exception is CV tailoring (3.3, ADR 016): a cleaned copy the user reviewed is sent to the AI gateway when they press "Send to AI", and is not stored.
   - **LinkedIn (later):** the user's own data export (CSV) or a "Save to PDF" of the profile, read the same way – never scraping.
-  - **Privacy:** contact details are dropped on the device; free-text role titles are never sent to a model.
+  - **Privacy:** contact details are dropped on the device; free-text role titles are never sent to a model, except inside the user-reviewed text of CV tailoring.
 
 **Structure and API**
 - **Domain modules in the backend** (`modules/plans`, `modules/scheduling`, `modules/practice`, `modules/calendar`, `modules/recommendations`), each with its own routes, service and tests, talking to others through services – not through each other's tables. → a future `modules/job-search` or `modules/social` drops in beside them.
