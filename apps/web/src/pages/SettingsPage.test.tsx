@@ -12,6 +12,7 @@ import {
   renderApp,
   SESSION,
 } from '../test/helpers';
+import { planRoutes } from '../test/plan-fixtures';
 
 const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:fake');
 const revokeObjectURL = vi.fn();
@@ -23,11 +24,16 @@ beforeEach(() => {
   document.documentElement.removeAttribute('data-theme');
 });
 
+let scrollSpy: ReturnType<typeof vi.spyOn> | undefined;
+
 afterEach(() => {
   createObjectURL.mockClear();
   revokeObjectURL.mockClear();
   clickSpy.mockClear();
   vi.unstubAllGlobals();
+  scrollSpy?.mockRestore();
+  scrollSpy = undefined;
+  delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
 });
 
 function open(
@@ -50,12 +56,77 @@ describe('settings page', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
     expect(screen.getByText('dana@example.com')).toBeInTheDocument();
     for (const name of ['Profile', 'Appearance', 'Your data', 'Sign out', 'Delete my account']) {
-      expect(screen.getByRole('heading', { level: 2, name })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 3, name })).toBeInTheDocument();
     }
+    expect(screen.getByRole('heading', { level: 2, name: 'App' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute(
       'href',
       '/privacy',
     );
+  });
+
+  it('has only App and Connections groups, and nothing that belongs to a plan', async () => {
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Settings' });
+    expect(screen.getByRole('heading', { level: 2, name: 'App' })).toBeInTheDocument();
+    for (const name of ['Study time', 'Practice', 'Start date', 'Subjects', 'Manage plans']) {
+      expect(screen.queryByRole('heading', { name })).not.toBeInTheDocument();
+    }
+  });
+
+  it('shows Connections with the calendar when the calendar feature is on', async () => {
+    open({
+      'GET /api/v1/calendar': () =>
+        json({ status: 'disconnected', lastSyncedAt: null, lastErrorCode: null, sources: [] }),
+    });
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Connections' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Calendar' })).toBeInTheDocument();
+  });
+
+  it('hides Connections when the calendar feature is off', async () => {
+    open({ 'GET /api/v1/calendar': () => apiError(404, 'not_found', 'off') });
+    await screen.findByRole('heading', { level: 2, name: 'App' });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByRole('heading', { name: 'Connections' })).not.toBeInTheDocument();
+  });
+
+  it.each(['#time-heading', '#practice-heading', '#start-date-heading'])(
+    'sends the old anchor %s to the Plan settings tab',
+    async (hash) => {
+      // jsdom has no scrollIntoView; define it so it can be spied on (removed in afterEach).
+      Element.prototype.scrollIntoView = () => {};
+      const scroll = vi.spyOn(Element.prototype, 'scrollIntoView');
+      scrollSpy = scroll;
+      installApi(planRoutes());
+      const urls: string[] = [];
+      renderApp({
+        auth: fakeAuth(SESSION),
+        path: `/settings${hash}`,
+        onLocation: (url) => urls.push(url),
+      });
+      expect(await screen.findByRole('tab', { name: 'Plan settings' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      expect(await screen.findByRole('heading', { name: 'Study time' })).toBeInTheDocument();
+      // The hash stays, and the page scrolls to the section once it has rendered.
+      expect(urls[urls.length - 1]).toBe(`/plan?tab=settings${hash}`);
+      const target = await waitFor(() => {
+        const el = document.getElementById(hash.slice(1));
+        expect(el).toHaveFocus();
+        return el;
+      });
+      expect(scroll).toHaveBeenCalled();
+      expect(scroll.mock.contexts[0]).toBe(target);
+    },
+  );
+
+  it('does not redirect a visit to /settings without an old anchor', async () => {
+    open();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
   describe('display name', () => {

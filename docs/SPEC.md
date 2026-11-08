@@ -301,7 +301,7 @@ Recommendation cards on the home screen and in the briefing, based on progress:
 - Every reschedule shows a **change summary** before saving ("3 tasks moved, plan finish pushed back by one day").
 
 ### 3.7 Time settings
-All of these are editable in Settings, and every change triggers a reschedule (with a change summary).
+All of these are edited on the Plan page, in the 'Plan settings' tab, and every change triggers a reschedule (with a change summary).
 
 **Weekly pattern:**
 - **Days per week:** pick which weekdays are study days (pre-filled from the intake; the default suggestion follows the user's locale – Sunday–Thursday in Israel, Monday–Friday elsewhere). The screen shows the resulting count ("5 days per week").
@@ -573,11 +573,11 @@ The shape of the reference plan – what the scheduling engine and the tests mus
 3. **Day briefing** – when starting a study day (3.2), including the practice window (3.3).
 4. **Day review** – end-of-day window and adjustment suggestions (3.4).
 5. **Calendar** – week/month, scheduled tasks alongside external events (read-only).
-6. **Plan** – all tasks of the active plan, edit and drag (3.10).
+6. **Plan** – all tasks of the active plan, edit and drag (3.10). Two tabs: 'Curriculum' (tasks grouped by type, with hours, progress and certificates earned) and 'Plan settings' (study hours and days, job description for prompts).
 7. **Certificates** – library and "For my CV" (3.9).
 8. **Catalog** – browse, add and edit learning resources; broken-link flags (3.0).
 9. **Recommendations and content** – recommendation cards and further-learning list (3.5).
-10. **Settings** – hours, study days, calendar connection, job description of the user's next interview (for prompts), account (export, delete, "Allow support access", access log).
+10. **Settings** – calendar connection, account (export, delete, "Allow support access", access log).
 11. **Admin console** (admin only) – users table, user detail, access requests, aggregate dashboards, catalog and question-bank editing, audit log (3.B).
 12. **Public pages** – sign-in, request access, privacy, terms, and the demo link (3.A, 3.C).
 

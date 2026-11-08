@@ -7,7 +7,7 @@ import { QueryView } from '../../components/QueryView';
 import { Button, ErrorText, TextField } from '../../components/ui';
 import { formatDate, formatHours } from '../../lib/format';
 import { describeError } from '../../lib/messages';
-import { PlanGate, PlanSwitcher } from '../../plan/PlanGate';
+import { PlanGate } from '../../plan/PlanGate';
 import { StartDate } from './StartDate';
 import {
   diffTimeSettings,
@@ -301,7 +301,7 @@ function Form({
       ) : null}
 
       <div className="space-y-3">
-        <h3 className="font-bold">Exceptions for single days</h3>
+        <h4 className="font-bold">Exceptions for single days</h4>
         {draftOverrides.length === 0 ? (
           <p className="text-muted">None. Every day follows the weekly pattern.</p>
         ) : (
@@ -344,7 +344,7 @@ function Form({
       <div aria-live="polite">
         {proposal ? (
           <div className="space-y-3 border-l-4 border-accent bg-accent-soft p-4 text-accent-soft-text">
-            <h3 className="font-bold">What this would change</h3>
+            <h4 className="font-bold">What this would change</h4>
             <p role="status">{proposal.text}</p>
             <p>Nothing is saved until you approve.</p>
             {save.isError ? (
@@ -430,9 +430,10 @@ export function TimeSettings() {
       aria-labelledby="time-heading"
       className="space-y-3 rounded-md border border-border bg-surface p-4"
     >
-      <h2 id="time-heading">Study time</h2>
-      <PlanSwitcher />
-      <PlanGate empty={<p className="text-muted">Import a plan to set when you study.</p>}>
+      <h3 id="time-heading">Study time</h3>
+      <PlanGate
+        empty={<p className="text-muted">Import a plan from Today to set when you study.</p>}
+      >
         {(plan) => <Editor key={plan.id} planId={plan.id} />}
       </PlanGate>
     </section>

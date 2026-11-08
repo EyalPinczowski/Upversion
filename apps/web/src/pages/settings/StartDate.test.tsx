@@ -19,7 +19,7 @@ const BASE = `/api/v1/plans/${PLAN_ID}`;
 
 function open(extra: Parameters<typeof planRoutes>[0] = {}) {
   const api = installApi(planRoutes(extra));
-  renderApp({ auth: fakeAuth(SESSION), path: '/settings' });
+  renderApp({ auth: fakeAuth(SESSION), path: '/plan?tab=settings' });
   return api;
 }
 

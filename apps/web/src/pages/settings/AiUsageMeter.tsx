@@ -21,7 +21,7 @@ export function AiUsageMeter() {
       aria-labelledby="ai-usage-heading"
       className="space-y-3 rounded-md border border-border bg-surface p-4"
     >
-      <h2 id="ai-usage-heading">AI use today</h2>
+      <h3 id="ai-usage-heading">AI use today</h3>
       <p className="font-bold tabular-nums">
         {model.used} of {model.cap} AI calls today
       </p>
