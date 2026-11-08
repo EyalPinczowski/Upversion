@@ -1,3 +1,4 @@
+import { cvTextSession } from '../cv/cv-text-session';
 import { clearStoredSessions } from '../pages/practice/session-store';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -45,6 +46,7 @@ export function AuthProvider({ service, children }: { service: AuthService; chil
       if (lastUserId.current !== null && lastUserId.current !== (session?.userId ?? null)) {
         queryClient.clear();
         clearStoredSessions();
+        cvTextSession.clear();
       }
       lastUserId.current = session?.userId ?? null;
       if (session) setNotice(null);
@@ -63,6 +65,7 @@ export function AuthProvider({ service, children }: { service: AuthService; chil
       await service.signOut(scope);
       queryClient.clear();
       clearStoredSessions();
+      cvTextSession.clear();
       setNotice(next ?? null);
       lastUserId.current = null;
       setState({ status: 'signedOut' });

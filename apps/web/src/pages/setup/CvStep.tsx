@@ -10,10 +10,13 @@ import { CV_ERROR_TEXT, CvCancelled, CvReadError, extractCvText } from './cv-ext
 export function CvStep({
   onText,
   onSkip,
+  skipLabel = 'Skip this step',
 }: {
   /** Receives the extracted or pasted text. The caller matches it and lets go of it. */
   onText: (text: string) => void;
   onSkip: () => void;
+  /** The wizard skips the step; "Change my CV" calls the same button Cancel. */
+  skipLabel?: string;
 }) {
   const ids = useId();
   const [busy, setBusy] = useState(false);
@@ -152,7 +155,7 @@ export function CvStep({
 
       <div>
         <Button variant="secondary" onClick={onSkip}>
-          Skip this step
+          {skipLabel}
         </Button>
       </div>
     </div>

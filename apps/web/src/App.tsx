@@ -30,6 +30,10 @@ const SetupPage = lazy(() =>
   import('./pages/setup/SetupPage').then((m) => ({ default: m.SetupPage })),
 );
 
+const ChangeCvPage = lazy(() =>
+  import('./pages/settings/ChangeCvPage').then((m) => ({ default: m.ChangeCvPage })),
+);
+
 /**
  * The whole app. The router is supplied from outside (BrowserRouter in production, MemoryRouter in
  * tests), and so are the query client and the auth service.
@@ -89,6 +93,14 @@ export function App({
                   />
                   <Route path="calendar/callback" element={<CalendarCallbackPage />} />
                   <Route path="settings" element={<SettingsPage appEnv={env.appEnv} />} />
+                  <Route
+                    path="settings/cv"
+                    element={
+                      <Suspense fallback={<Loading label="Loading…" />}>
+                        <ChangeCvPage />
+                      </Suspense>
+                    }
+                  />
                 </Route>
               </Route>
             </Route>
