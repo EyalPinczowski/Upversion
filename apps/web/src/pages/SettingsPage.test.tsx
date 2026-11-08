@@ -90,6 +90,8 @@ describe('settings page', () => {
   it.each(['#time-heading', '#practice-heading', '#start-date-heading'])(
     'sends the old anchor %s to the Plan settings tab',
     async (hash) => {
+      const scroll = vi.fn();
+      Element.prototype.scrollIntoView = scroll;
       installApi(planRoutes());
       const urls: string[] = [];
       renderApp({
@@ -102,8 +104,12 @@ describe('settings page', () => {
         'true',
       );
       expect(await screen.findByRole('heading', { name: 'Study time' })).toBeInTheDocument();
-      // The hash stays, so the browser can scroll to the section.
+      // The hash stays, and the page scrolls to the section once it has rendered.
       expect(urls[urls.length - 1]).toBe(`/plan?tab=settings${hash}`);
+      const target = document.getElementById(hash.slice(1));
+      await waitFor(() => expect(scroll).toHaveBeenCalled());
+      expect(scroll.mock.contexts[0]).toBe(target);
+      expect(target).toHaveFocus();
     },
   );
 

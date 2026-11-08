@@ -30,6 +30,27 @@ export function PlanPage() {
   // Curriculum is the default and keeps a clean URL; the other tab is `?tab=settings`.
   const changeTab = (id: string) =>
     setParams(id === 'settings' ? { tab: 'settings' } : {}, { replace: true });
+  // Old links such as `/settings#time-heading` arrive with a hash. The sections render after the
+  // plan loads, so wait for the target heading, then scroll to it and move focus there.
+  const { hash } = location;
+  useEffect(() => {
+    if (tab !== 'settings' || hash.length < 2) return;
+    const id = decodeURIComponent(hash.slice(1));
+    const reveal = () => {
+      const target = document.getElementById(id);
+      if (!target) return false;
+      target.tabIndex = -1;
+      target.scrollIntoView();
+      target.focus({ preventScroll: true });
+      return true;
+    };
+    if (reveal()) return;
+    const observer = new MutationObserver(() => {
+      if (reveal()) observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [tab, hash]);
   // The deleted plan's or task's button is gone: focus moves to the page heading, which stays.
   useEffect(() => {
     // After the shell's own focus move to the page content on a route change (same commit).

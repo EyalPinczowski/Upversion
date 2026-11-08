@@ -12,7 +12,8 @@ const panelId = (id: string) => `plan-panel-${id}`;
 
 /**
  * An accessible tab list (WAI-ARIA tabs, automatic activation): one tab stop, arrow keys, Home and
- * End. Both panels stay mounted (the inactive one is `hidden`), so `aria-controls` always resolves and unsaved edits survive a tab switch.
+ * End. Both panels stay mounted (the inactive one is `hidden`), so `aria-controls` always
+ * resolves and unsaved edits survive a tab switch.
  */
 export function PlanTabs({
   tabs,
