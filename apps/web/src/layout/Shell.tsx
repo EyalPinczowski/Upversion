@@ -5,6 +5,7 @@ import { CalendarWatcher } from '../components/CalendarWatcher';
 import { EnvironmentBadge } from '../components/EnvironmentBadge';
 import { PlanIcon, SettingsIcon, TodayIcon, WeekIcon } from '../components/icons';
 import { Logo } from '../components/Logo';
+import { WelcomeGuide } from '../components/welcome/WelcomeGuide';
 import type { AppEnv } from '../env';
 
 /** Moves focus to the page content after a route change, so keyboard and screen reader users start there. */
@@ -106,6 +107,7 @@ export function AppShell({ appEnv }: { appEnv: AppEnv }) {
         >
           <div className={wide ? 'max-w-3xl lg:max-w-none' : 'max-w-3xl'}>
             <CalendarWatcher />
+            <WelcomeGuide />
             <Outlet />
           </div>
         </main>

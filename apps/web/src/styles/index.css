@@ -41,6 +41,12 @@
     outline: none;
   }
 
+  /* The element the guided tour card is pointing at. */
+  [data-tour-active] {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
