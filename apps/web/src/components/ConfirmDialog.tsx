@@ -12,6 +12,7 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel,
   busy = false,
+  role = 'alertdialog',
   onConfirm,
   onCancel,
 }: {
@@ -21,6 +22,8 @@ export function ConfirmDialog({
   cancelLabel: string;
   /** True while the confirmed action runs: both answers are disabled. */
   busy?: boolean;
+  /** "dialog" for information with a choice; "alertdialog" (default) for a question that needs an answer. */
+  role?: 'dialog' | 'alertdialog';
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -64,7 +67,7 @@ export function ConfirmDialog({
       onKeyDown={onKeyDown}
     >
       <div
-        role="alertdialog"
+        role={role}
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={bodyId}

@@ -10,6 +10,7 @@ import { DELETE_PHRASE, EXPORT_FILENAME } from '../lib/account';
 import { downloadJson } from '../lib/download';
 import { LEGAL_PAGES } from '../lib/legal';
 import { AiUsageMeter } from './settings/AiUsageMeter';
+import { HelpSection } from './settings/HelpSection';
 import { CalendarSettings } from './settings/CalendarSettings';
 import { useTheme, type ThemePreference } from '../lib/theme';
 
@@ -285,6 +286,7 @@ export function SettingsPage({ appEnv = 'operational' }: { appEnv?: AppEnv }) {
         <ProfileSection />
         <AppearanceSection />
         <AiUsageMeter />
+        <HelpSection />
         <DataSection />
         <SignOutSection />
         <DeleteSection appEnv={appEnv} />
@@ -302,7 +304,6 @@ export function SettingsPage({ appEnv = 'operational' }: { appEnv?: AppEnv }) {
           <CalendarSettings />
         </section>
       ) : null}
-      {/* Help section goes here (feature/web-welcome-guide). */}
     </div>
   );
 }

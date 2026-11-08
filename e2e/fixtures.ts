@@ -105,10 +105,15 @@ export { expect };
  * still checks the token's signature, issuer and expiry.
  */
 export async function signIn(page: Page, user: TestUser): Promise<void> {
-  await page.addInitScript(([key, token]) => window.localStorage.setItem(key, token), [
-    TOKEN_KEY,
-    user.token,
-  ] as const);
+  // The first-visit welcome is marked as seen so it does not cover the screens under test. The key
+  // must match keyFor in apps/web/src/lib/welcome.ts.
+  await page.addInitScript(
+    ([key, token, seenKey]) => {
+      window.localStorage.setItem(key, token);
+      window.localStorage.setItem(seenKey, '1');
+    },
+    [TOKEN_KEY, user.token, `upversion.welcome-seen.${user.id}`] as const,
+  );
 }
 
 /** WCAG 2.x A and AA rules of axe-core on the current screen; any violation fails the test. */
