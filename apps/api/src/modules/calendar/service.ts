@@ -1,4 +1,4 @@
-import { APP_CALENDAR_NAME } from '@upversion/shared';
+import { APP_CALENDAR_NAME, splitByDay } from '@upversion/shared';
 import { CalendarCryptoError, type CalendarTokenCrypto } from '../../calendar-crypto';
 import type { GoogleCalendarConfig } from '../../config';
 import type { Database } from '../../db/database';
@@ -28,6 +28,7 @@ import {
 } from './google-provider';
 import type { CalendarProvider } from './provider';
 import { calendarRepo, type ConnectionRow, type SourceRow } from './repo';
+import { syncRepo } from './sync-repo';
 import { createWriteGuard } from './write-guard';
 
 export interface CalendarServiceOptions {
@@ -45,6 +46,15 @@ export interface CalendarView {
   lastSyncedAt: string | null;
   lastErrorCode: string | null;
   sources: { calendarId: string; name: string; blocksTime: boolean }[];
+}
+
+export interface BusyItem {
+  date: string;
+  startMinute: number;
+  endMinute: number;
+  allDay: boolean;
+  kind: 'busy' | 'tentative' | 'non_blocking';
+  title: string;
 }
 
 /** Codes are stored and shown to the client, so keep them short and plain. */
@@ -197,6 +207,56 @@ export function createCalendarService(options: CalendarServiceOptions) {
     providerFor,
 
     getCalendar: view,
+
+    /**
+     * What the calendar view shows from the owner's other calendars for [from, to] (inclusive
+     * local dates), plus the slots of blocks the owner deleted in Google for one plan: `planId`,
+     * or the newest active plan (as the sync does). Those slots are split in the plan's time zone.
+     * Read only; for display to the owner alone.
+     */
+    async getBusy(userId: string, from: string, to: string, planId?: string): Promise<BusyItem[]> {
+      return db.withUser(userId, async (ctx) => {
+        const items: BusyItem[] = (await calendarRepo.listBusy(ctx, userId, from, to)).map((r) => ({
+          date: r.date,
+          startMinute: r.start_minute,
+          endMinute: r.end_minute,
+          allDay: r.all_day,
+          kind: r.kind,
+          title: r.title,
+        }));
+        // Two zones are at work here, on purpose (docs/decisions/014): the calendar rows above were
+        // split into local dates and minutes by the sync in the NEWEST active plan's time zone, and
+        // are returned as they are. Deleted-block slots below are split in the zone of the plan
+        // being shown. For a user whose two active plans have different zones the two sources can
+        // therefore be in different zones in one grid; changing that must be a deliberate decision.
+        let plan: { id: string; timezone: string } | null = null;
+        if (planId) {
+          // 404 only for a plan that is not the user's; one without a week pattern uses UTC.
+          const zone = await calendarRepo.planZone(ctx, userId, planId);
+          if (zone === null) throw new HttpError(404, 'not_found', 'Resource not found.');
+          plan = { id: planId, timezone: zone.timezone ?? 'UTC' };
+        } else {
+          const newest = (await syncRepo.activePlans(ctx, userId, 1))[0];
+          if (newest) plan = { id: newest.id, timezone: newest.timezone };
+        }
+        if (plan) {
+          for (const l of await calendarRepo.listDeletedLocks(ctx, userId, plan.id, from, to)) {
+            for (const i of splitByDay(l.starts_at.getTime(), l.ends_at.getTime(), plan.timezone)) {
+              if (i.date < from || i.date > to || i.endMinute <= i.startMinute) continue;
+              items.push({
+                date: i.date,
+                startMinute: i.startMinute,
+                endMinute: i.endMinute,
+                allDay: false,
+                kind: 'busy',
+                title: '',
+              });
+            }
+          }
+        }
+        return items.sort((a, b) => a.date.localeCompare(b.date) || a.startMinute - b.startMinute);
+      });
+    },
 
     async startConnect(userId: string): Promise<{ authorizationUrl: string }> {
       const state = createStateNonce();
