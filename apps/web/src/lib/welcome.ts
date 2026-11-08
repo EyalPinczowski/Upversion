@@ -40,11 +40,22 @@ export function requestWelcome(): void {
 /** Routes where the welcome never opens, even though they sit inside the signed-in shell. */
 export const WELCOME_EXCLUDED_PATHS = ['/calendar/callback'];
 
+/** `/calendar/callback/` and `/calendar/callback` are the same page. */
+export function normalizePath(pathname: string): string {
+  return pathname.replace(/\/+$/, '') || '/';
+}
+
+export function isWelcomeExcluded(pathname: string): boolean {
+  return WELCOME_EXCLUDED_PATHS.includes(normalizePath(pathname));
+}
+
 export interface TourStep {
   id: string;
   title: string;
   body: string;
-  /** CSS selectors, first match wins. A step with no match on the screen is skipped. */
+  /** The page the target lives on. The tour goes there when the step is reached. */
+  route: string;
+  /** CSS selectors, first match wins. A step whose target never shows up is skipped. */
   targets: string[];
 }
 
@@ -55,44 +66,50 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'today',
     title: 'Today',
     body: 'Your tasks for today. Start here each day.',
+    route: '/',
     targets: [nav('/')],
   },
   {
     id: 'week',
     title: 'Week',
     body: 'The week at a glance, so you can see what is coming.',
+    route: '/week',
     targets: [nav('/week')],
   },
   {
     id: 'plan',
     title: 'Plan',
     body: 'Your study plan. Changes to it are suggestions until you approve them.',
+    route: '/plan',
     targets: [nav('/plan')],
   },
   {
     id: 'plan-curriculum',
     title: 'Curriculum',
     body: 'What your plan covers, topic by topic.',
+    route: '/plan',
     targets: ['[data-tour="plan-curriculum"]'],
   },
   {
     id: 'plan-settings',
     title: 'Plan settings',
-    body: 'How much time you give the plan and when it runs.',
+    body: 'Your study time (which days and how many hours) and the plan itself.',
+    route: '/plan',
     targets: ['[data-tour="plan-settings"]'],
   },
   {
     id: 'settings',
     title: 'Settings',
-    body: 'Your time, appearance and data. AI and calendar are optional extras.',
+    body: 'Appearance, AI use, privacy and data, your account and connections. AI is optional.',
+    route: '/settings',
     targets: [nav('/settings')],
   },
 ];
 
-/** The steps that have something to point at right now. */
-export function resolveTourSteps(
-  steps: TourStep[] = TOUR_STEPS,
-  root: ParentNode = document,
-): TourStep[] {
-  return steps.filter((step) => step.targets.some((selector) => root.querySelector(selector)));
+export function findTourTarget(step: TourStep, root: ParentNode = document): Element | null {
+  for (const selector of step.targets) {
+    const el = root.querySelector(selector);
+    if (el) return el;
+  }
+  return null;
 }

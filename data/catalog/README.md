@@ -68,7 +68,10 @@ Learn-before-practice ordering for the same skill is a planner rule; this data o
 - the prerequisites contain a cycle (the exact cycle is printed, e.g. `a -> b -> c -> a`; required and recommended edges both count);
 - a role's `suggested_path.core` holds an item whose required prerequisite is missing from `core` or comes after the item;
 - an item has `url_verified: true` but no `https://` url;
-- `prerequisite_kinds`, `last_verified_at`, `subscription_group` or `skill_depth` are malformed.
+- `prerequisite_kinds`, `last_verified_at`, `subscription_group` or `skill_depth` are malformed;
+- the `setup` flag on questions breaks the ADR 015 rules (see below).
+
+`questions.json` entries may carry `setup: {order, ignore_show_if?, choices_only?, optional?}`: the 8 first-time setup questions (ADR 015), checked by `lint.check_setup_questions`. Exactly 8, orders 1..8, type from `single, multi, weekdays, number, yes_no, multi_role, multi_skill`, no `show_if` without `ignore_show_if`, no `allow_other` without `choices_only`, no `privacy`.
 
 ## Main sources
 

@@ -7,6 +7,7 @@ import type { AuthService, AuthSession } from '../auth/auth-service';
 import type { Env } from '../env';
 import { createQueryClient } from '../lib/query-client';
 import { markWelcomeSeen, resetWelcomeMemory } from '../lib/welcome';
+import { LocationProbe } from './LocationProbe';
 
 export const ENV: Env = {
   appEnv: 'operational',
@@ -119,11 +120,13 @@ export function renderApp(options: {
   env?: Env;
   /** Default 'seen': the first-visit welcome is pre-marked so tests of other screens are not interrupted. */
   welcome?: 'seen' | 'first-visit';
+  onLocation?: (url: string) => void;
 }): RenderResult & { auth: AuthService } {
   if ((options.welcome ?? 'seen') === 'seen') markWelcomeSeen(SESSION.userId, { persist: false });
   else resetWelcomeMemory();
   const result = render(
     <MemoryRouter initialEntries={[options.path ?? '/']}>
+      {options.onLocation ? <LocationProbe onLocation={options.onLocation} /> : null}
       <App env={options.env ?? ENV} queryClient={createQueryClient()} auth={options.auth} />
     </MemoryRouter>,
   );

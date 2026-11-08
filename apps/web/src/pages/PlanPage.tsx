@@ -1,60 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
-import type { Task } from '../api/client';
-import { useDeletePlan, useTasks } from '../api/hooks';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { useDeletePlan } from '../api/hooks';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { DeleteTask } from '../components/DeleteTask';
-import { QueryView } from '../components/QueryView';
-import { TaskStatusLabel, TaskTypeChip } from '../components/TaskChips';
 import { Button, ErrorText, linkClass } from '../components/ui';
 import { isConnectionProblem } from '../lib/messages';
-import { formatHours } from '../lib/format';
-import { anchorText, dependencyText } from '../lib/task-text';
-import { TASK_TYPE_META } from '../lib/task-types';
+import { Curriculum } from '../plan/Curriculum';
 import { ImportPlan } from '../plan/ImportPlan';
+import { PlanTabs } from '../plan/PlanTabs';
+import { SubjectsList } from '../plan/SubjectsList';
+import { PracticeSettings } from './settings/PracticeSettings';
+import { TimeSettings } from './settings/TimeSettings';
 import { useActivePlan } from '../plan/context';
 import { PlanGate, PlanSwitcher } from '../plan/PlanGate';
 
-function TaskRow({
-  planId,
-  task,
-  titleOf,
-  onDeleted,
-}: {
-  planId: string;
-  task: Task;
-  titleOf: (id: string) => string;
-  onDeleted: () => void;
-}) {
-  const deps = dependencyText(task, titleOf);
-  const anchor = anchorText(task);
-  return (
-    <li
-      className={`space-y-2 rounded-md border border-l-4 border-border bg-surface p-4 ${TASK_TYPE_META[task.type].strip}`}
-    >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <TaskTypeChip type={task.type} />
-        <TaskStatusLabel status={task.status} />
-        <span className="ml-auto text-muted tabular-nums">
-          {formatHours(task.doneHours)} of {formatHours(task.estHours)}
-        </span>
-      </div>
-      <h3 className="text-lg font-bold">
-        <Link
-          to={`/plan/${encodeURIComponent(task.id)}`}
-          className={`${linkClass} inline-block min-h-11 py-2`}
-        >
-          {task.title}
-        </Link>
-      </h3>
-      {anchor ? <p className="font-bold">{anchor}</p> : null}
-      {deps ? <p className="text-muted">{deps}</p> : null}
-      <DeleteTask planId={planId} task={task} onDeleted={onDeleted} />
-    </li>
-  );
-}
-
-/** Every task of the plan, in plan order. */
+/** The plan: its curriculum, and the settings that belong to it. */
 export function PlanPage() {
   // Confirming a delete resets the notice and the hook callback sets it after the delete, so each
   // delete announces and focuses again.
@@ -66,6 +25,35 @@ export function PlanPage() {
   const arrivedAfterDelete = (location.state as { taskDeleted?: boolean } | null)?.taskDeleted;
   const [tasksDeleted, setTasksDeleted] = useState(arrivedAfterDelete ? 1 : 0);
   const heading = useRef<HTMLHeadingElement>(null);
+  const [params, setParams] = useSearchParams();
+  const tab = params.get('tab') === 'settings' ? 'settings' : 'curriculum';
+  // Curriculum is the default and keeps a clean URL; the other tab is `?tab=settings`.
+  const changeTab = (id: string) =>
+    setParams(id === 'settings' ? { tab: 'settings' } : {}, { replace: true });
+  // Old links such as `/settings#time-heading` arrive with a hash. The sections render after the
+  // plan loads, so wait for the target heading, then scroll to it and move focus there.
+  const { hash } = location;
+  useEffect(() => {
+    if (tab !== 'settings' || hash.length < 2) return;
+    const id = decodeURIComponent(hash.slice(1));
+    const reveal = () => {
+      const target = document.getElementById(id);
+      if (!target) return false;
+      target.tabIndex = -1;
+      // After the shell's own focus move to the page content on a route change (same commit).
+      queueMicrotask(() => {
+        target.scrollIntoView();
+        target.focus({ preventScroll: true });
+      });
+      return true;
+    };
+    if (reveal()) return;
+    const observer = new MutationObserver(() => {
+      if (reveal()) observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [tab, hash]);
   // The deleted plan's or task's button is gone: focus moves to the page heading, which stays.
   useEffect(() => {
     // After the shell's own focus move to the page content on a route change (same commit).
@@ -106,61 +94,44 @@ export function PlanPage() {
       >
         {(plan) => (
           <>
-            <TaskList
-              planId={plan.id}
-              name={plan.name}
-              onTaskDeleted={() => {
-                setDeleted(false);
-                setTasksDeleted((n) => n + 1);
-              }}
-            />
-            <ManagePlans
-              key={plan.id}
-              planId={plan.id}
-              name={plan.name}
-              remove={remove}
-              onDeleteStart={() => setDeleted(false)}
-            />
+            <h2>{plan.name}</h2>
+            <PlanTabs
+              tabs={[
+                { id: 'curriculum', label: 'Curriculum', tour: 'plan-curriculum' },
+                { id: 'settings', label: 'Plan settings', tour: 'plan-settings' },
+              ]}
+              active={tab}
+              onChange={changeTab}
+            >
+              {(id) =>
+                id === 'curriculum' ? (
+                  <Curriculum
+                    planId={plan.id}
+                    onTaskDeleted={() => {
+                      setDeleted(false);
+                      setTasksDeleted((n) => n + 1);
+                    }}
+                  />
+                ) : (
+                  <>
+                    <TimeSettings />
+                    <PracticeSettings />
+                    <SubjectsList planId={plan.id} />
+                    <ManagePlans
+                      key={plan.id}
+                      planId={plan.id}
+                      name={plan.name}
+                      remove={remove}
+                      onDeleteStart={() => setDeleted(false)}
+                    />
+                  </>
+                )
+              }
+            </PlanTabs>
           </>
         )}
       </PlanGate>
     </div>
-  );
-}
-
-function TaskList({
-  planId,
-  name,
-  onTaskDeleted,
-}: {
-  planId: string;
-  name: string;
-  onTaskDeleted: () => void;
-}) {
-  const tasks = useTasks(planId);
-  return (
-    <QueryView query={tasks} label="Loading your tasks…">
-      {({ tasks: list }) => {
-        const titleOf = (id: string) => list.find((t) => t.id === id)?.title ?? id;
-        return (
-          <section aria-labelledby="tasks-heading" className="space-y-3">
-            <h2 id="tasks-heading">{name}</h2>
-            <p className="text-muted">{list.length} tasks</p>
-            <ul className="space-y-3">
-              {list.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  planId={planId}
-                  task={task}
-                  titleOf={titleOf}
-                  onDeleted={onTaskDeleted}
-                />
-              ))}
-            </ul>
-          </section>
-        );
-      }}
-    </QueryView>
   );
 }
 
@@ -178,7 +149,7 @@ function ManagePlans({
   const [confirming, setConfirming] = useState(false);
   return (
     <section aria-labelledby="manage-heading" className="space-y-4 border-t border-border pt-6">
-      <h2 id="manage-heading">Manage plans</h2>
+      <h3 id="manage-heading">Manage plans</h3>
       <div className="space-y-2">
         <Button variant="danger" onClick={() => setConfirming(true)}>
           Delete this plan

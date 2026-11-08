@@ -1,16 +1,44 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router';
 import { useAuth } from '../../auth/AuthProvider';
 import {
   hasSeenWelcome,
+  isWelcomeExcluded,
   markWelcomeSeen,
-  resolveTourSteps,
-  WELCOME_EXCLUDED_PATHS,
+  TOUR_STEPS,
   WELCOME_REOPEN_EVENT,
-  type TourStep,
 } from '../../lib/welcome';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { GuideTour } from './GuideTour';
+import { useModalIsolation } from './useModalIsolation';
+
+/** The welcome dialog with the page behind it made inert, and Tab and Escape handled on the whole document. */
+function WelcomeDialog({
+  children,
+  onConfirm,
+  onCancel,
+}: {
+  children: ReactNode;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const host = useRef<HTMLDivElement>(null);
+  useModalIsolation(host, onCancel);
+  return (
+    <div ref={host}>
+      <ConfirmDialog
+        role="dialog"
+        title="Welcome to Upversion"
+        confirmLabel="Take the guide"
+        cancelLabel="Skip for now"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      >
+        {children}
+      </ConfirmDialog>
+    </div>
+  );
+}
 
 /**
  * The first-visit welcome dialog and the guided tour it can start. Mounted once in the signed-in
@@ -21,7 +49,7 @@ function Welcome({ userId }: { userId: string }) {
   const { pathname } = useLocation();
   const [seen, setSeen] = useState(() => hasSeenWelcome(userId));
   const [reopened, setReopened] = useState(false);
-  const [tour, setTour] = useState<TourStep[] | null>(null);
+  const [touring, setTouring] = useState(false);
 
   useEffect(() => {
     const open = () => setReopened(true);
@@ -29,8 +57,8 @@ function Welcome({ userId }: { userId: string }) {
     return () => window.removeEventListener(WELCOME_REOPEN_EVENT, open);
   }, []);
 
-  const excluded = WELCOME_EXCLUDED_PATHS.includes(pathname);
-  const showDialog = tour === null && (reopened || (!seen && !excluded));
+  const excluded = isWelcomeExcluded(pathname);
+  const showDialog = !touring && (reopened || (!seen && !excluded));
 
   function dismiss() {
     markWelcomeSeen(userId);
@@ -39,22 +67,16 @@ function Welcome({ userId }: { userId: string }) {
   }
 
   function startTour() {
-    const steps = resolveTourSteps();
     dismiss();
-    if (steps.length > 0) setTour(steps);
+    setTouring(true);
   }
 
-  if (tour) return <GuideTour steps={tour} onClose={() => setTour(null)} />;
+  const closeTour = useCallback(() => setTouring(false), []);
+
+  if (touring) return <GuideTour steps={TOUR_STEPS} onClose={closeTour} />;
   if (!showDialog) return null;
   return (
-    <ConfirmDialog
-      role="dialog"
-      title="Welcome to Upversion"
-      confirmLabel="Take the guide"
-      cancelLabel="Skip for now"
-      onConfirm={startTour}
-      onCancel={dismiss}
-    >
+    <WelcomeDialog onConfirm={startTour} onCancel={dismiss}>
       <p>Here is how it works.</p>
       <ol className="list-decimal space-y-1 pl-5">
         <li>
@@ -62,14 +84,15 @@ function Welcome({ userId }: { userId: string }) {
           coming.
         </li>
         <li>
-          <strong>Plan</strong> is your whole study plan. <strong>Settings</strong> holds your time,
-          appearance and data.
+          <strong>Plan</strong> is your whole study plan, and <strong>Plan settings</strong> is
+          where you set your study time. <strong>Settings</strong> holds appearance, AI use, privacy
+          and data, your account and connections.
         </li>
         <li>Plans are suggestions until you approve them.</li>
         <li>The app never marks a task done for you. You do.</li>
         <li>AI is optional. Upversion works with it off.</li>
       </ol>
-    </ConfirmDialog>
+    </WelcomeDialog>
   );
 }
 

@@ -20,7 +20,7 @@ function open(extra: Parameters<typeof planRoutes>[0] = {}) {
   const api = installApi(
     planRoutes({ [`POST ${BASE}/schedule/preview`]: () => json(previewResult(SUMMARY)), ...extra }),
   );
-  renderApp({ auth: fakeAuth(SESSION), path: '/settings' });
+  renderApp({ auth: fakeAuth(SESSION), path: '/plan?tab=settings' });
   return api;
 }
 
@@ -326,9 +326,10 @@ describe('time settings', () => {
     expect(api.count(`PUT ${BASE}/week-pattern`)).toBe(2);
   });
 
-  it('asks to import a plan first when there is none', async () => {
+  it('shows no study time without a plan', async () => {
     installApi(planRoutes({ 'GET /api/v1/plans': () => json({ plans: [] }) }));
-    renderApp({ auth: fakeAuth(SESSION), path: '/settings' });
-    expect(await screen.findByText('Import a plan to set when you study.')).toBeInTheDocument();
+    renderApp({ auth: fakeAuth(SESSION), path: '/plan?tab=settings' });
+    expect(await screen.findByText(/No plan yet/)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Study time' })).not.toBeInTheDocument();
   });
 });

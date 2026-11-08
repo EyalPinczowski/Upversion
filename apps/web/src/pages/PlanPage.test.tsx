@@ -25,21 +25,21 @@ function open(path: string, extra: Parameters<typeof planRoutes>[0] = {}) {
 describe('Plan page', () => {
   it('lists every task with status, type chip, hours, dependencies and fixed time', async () => {
     open('/plan');
-    const list = await screen.findByRole('list');
-    const rows = within(list).getAllByRole('listitem');
+    await screen.findByRole('heading', { name: 'Courses' });
+    const rows = screen.getAllByRole('listitem');
     expect(rows).toHaveLength(3);
 
-    const setup = within(rows[0]!);
+    const setup = within(rows[2]!);
     expect(setup.getByText('Admin')).toBeInTheDocument();
     expect(setup.getByText('Done')).toBeInTheDocument();
     expect(setup.getByText('0.5 h of 0.5 h')).toBeInTheDocument();
 
-    const sql = within(rows[1]!);
+    const sql = within(rows[0]!);
     expect(sql.getByText('Course')).toBeInTheDocument();
     expect(sql.getByText('In progress')).toBeInTheDocument();
     expect(sql.getByText('After: Set up accounts')).toBeInTheDocument();
 
-    const exam = within(rows[2]!);
+    const exam = within(rows[1]!);
     expect(exam.getByText('Exam')).toBeInTheDocument();
     expect(exam.getByText('Not started')).toBeInTheDocument();
     expect(exam.getByText('Fixed: Thu, Nov 19, 10:00')).toBeInTheDocument();
@@ -205,7 +205,7 @@ describe('Manage plans', () => {
         },
       }),
     );
-    renderApp({ auth: fakeAuth(SESSION), path: '/plan' });
+    renderApp({ auth: fakeAuth(SESSION), path: '/plan?tab=settings' });
     return api;
   }
 
@@ -236,7 +236,9 @@ describe('Manage plans', () => {
   });
 
   it('shows an error and keeps the plan when the delete fails', async () => {
-    open('/plan', { [`DELETE ${BASE}`]: () => apiError(500, 'internal_error', 'boom') });
+    open('/plan?tab=settings', {
+      [`DELETE ${BASE}`]: () => apiError(500, 'internal_error', 'boom'),
+    });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Delete this plan' }));
     await user.click(await screen.findByRole('button', { name: 'Delete plan' }));
@@ -256,6 +258,10 @@ describe('Manage plans', () => {
               : [planSummary(), planSummary({ id: OTHER_ID, name: 'Other plan' })],
           }),
         [`GET /api/v1/plans/${OTHER_ID}/tasks`]: () => json({ tasks: [] }),
+        [`GET /api/v1/plans/${OTHER_ID}`]: () =>
+          json(planDetail({ id: OTHER_ID, name: 'Other plan' })),
+        [`GET /api/v1/plans/${OTHER_ID}/practice/context`]: () =>
+          json({ jobDescription: '', updatedAt: null }),
         [`DELETE ${BASE}`]: () => {
           deleted = true;
           return new Response(null, { status: 204 });
@@ -263,7 +269,7 @@ describe('Manage plans', () => {
         ...extra,
       }),
     );
-    renderApp({ auth: fakeAuth(SESSION), path: '/plan' });
+    renderApp({ auth: fakeAuth(SESSION), path: '/plan?tab=settings' });
     return api;
   }
 
@@ -281,7 +287,7 @@ describe('Manage plans', () => {
         },
       }),
     );
-    renderApp({ auth: fakeAuth(SESSION), path: '/plan' });
+    renderApp({ auth: fakeAuth(SESSION), path: '/plan?tab=settings' });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Delete this plan' }));
     await user.click(await screen.findByRole('button', { name: 'Delete plan' }));
@@ -317,7 +323,7 @@ describe('Manage plans', () => {
         },
       }),
     );
-    renderApp({ auth: fakeAuth(SESSION), path: '/plan' });
+    renderApp({ auth: fakeAuth(SESSION), path: '/plan?tab=settings' });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Delete this plan' }));
     await user.click(await screen.findByRole('button', { name: 'Delete plan' }));
@@ -346,7 +352,9 @@ describe('Manage plans', () => {
   });
 
   it('says a lost connection may or may not have deleted the plan', async () => {
-    open('/plan', { [`DELETE ${BASE}`]: () => Promise.reject(new TypeError('Failed to fetch')) });
+    open('/plan?tab=settings', {
+      [`DELETE ${BASE}`]: () => Promise.reject(new TypeError('Failed to fetch')),
+    });
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Delete this plan' }));
     await user.click(await screen.findByRole('button', { name: 'Delete plan' }));
@@ -360,7 +368,7 @@ describe('Manage plans', () => {
     await user.click(await screen.findByRole('button', { name: 'Delete plan' }));
     expect(await screen.findByRole('heading', { name: 'Other plan' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Demo plan' })).not.toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('Plan deleted.');
+    expect(screen.getAllByRole('status')[0]).toHaveTextContent('Plan deleted.');
   });
 
   it('a delete error does not carry over to another plan', async () => {
@@ -393,7 +401,7 @@ describe('Manage plans', () => {
         [`GET /api/v1/plans/${NEW_ID}/tasks`]: () => json({ tasks: [] }),
       }),
     );
-    renderApp({ auth: fakeAuth(SESSION), path: '/plan' });
+    renderApp({ auth: fakeAuth(SESSION), path: '/plan?tab=settings' });
     const user = userEvent.setup();
     const summary = await screen.findByText('Import another plan');
     expect(screen.getByRole('textbox', { name: /paste the plan json/i })).not.toBeVisible();

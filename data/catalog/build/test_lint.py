@@ -142,6 +142,85 @@ class RolePathUrls(unittest.TestCase):
         self.assertEqual(lint.check_role_paths([nourl, ok], [{"id": "r", "suggested_path": path}]), [])
 
 
+class SetupQuestions(unittest.TestCase):
+    """ADR 015 setup-question rules (lint.check_setup_questions)."""
+
+    @staticmethod
+    def qs():
+        from questions import Q
+        return copy.deepcopy(Q)
+
+    @staticmethod
+    def by_id(qs, qid):
+        return next(q for q in qs if q["id"] == qid)
+
+    def test_real_questions_pass(self):
+        self.assertEqual(lint.check_setup_questions(self.qs()), [])
+
+    def test_the_eight_ids_in_order(self):
+        flagged = sorted((q for q in self.qs() if "setup" in q), key=lambda q: q["setup"]["order"])
+        self.assertEqual([q["id"] for q in flagged], [
+            "current_status", "education", "tools_known", "days_per_week",
+            "hours_per_day", "time_of_day", "target_role", "target_skills"])
+        self.assertEqual([q["setup"]["order"] for q in flagged], list(range(1, 9)))
+
+    def test_show_if_without_ignore_show_if_fails(self):
+        qs = self.qs()
+        del self.by_id(qs, "target_role")["setup"]["ignore_show_if"]
+        self.assertTrue(any("show_if without" in e for e in lint.check_setup_questions(qs)))
+        qs = self.qs()
+        self.by_id(qs, "education")["show_if"] = {"goal_type": ["new_role"]}
+        self.assertTrue(any("education" in e and "show_if" in e for e in lint.check_setup_questions(qs)))
+
+    def test_allow_other_without_choices_only_fails(self):
+        qs = self.qs()
+        del self.by_id(qs, "target_skills")["setup"]["choices_only"]
+        self.assertTrue(any("allow_other without" in e for e in lint.check_setup_questions(qs)))
+
+    def test_privacy_fails(self):
+        qs = self.qs()
+        self.by_id(qs, "education")["privacy"] = "strip_pii"
+        self.assertTrue(any("privacy" in e for e in lint.check_setup_questions(qs)))
+
+    def test_ninth_flagged_question_fails(self):
+        qs = self.qs()
+        self.by_id(qs, "goal_type")["setup"] = {"order": 9}
+        errs = lint.check_setup_questions(qs)
+        self.assertTrue(any("exactly 8" in e for e in errs), errs)
+
+    def test_fewer_than_eight_fails(self):
+        qs = self.qs()
+        del self.by_id(qs, "time_of_day")["setup"]
+        self.assertTrue(any("exactly 8" in e for e in lint.check_setup_questions(qs)))
+
+    def test_duplicate_or_out_of_range_order_fails(self):
+        qs = self.qs()
+        self.by_id(qs, "education")["setup"]["order"] = 1
+        self.assertTrue(any("orders must be" in e for e in lint.check_setup_questions(qs)))
+        qs = self.qs()
+        self.by_id(qs, "target_skills")["setup"]["order"] = 9
+        self.assertTrue(any("orders must be" in e for e in lint.check_setup_questions(qs)))
+
+    def test_type_outside_allowlist_fails(self):
+        for bad in ("text", "text_or_url", "date_list", "budget", "catalog_search", "money", "skill_matrix"):
+            qs = self.qs()
+            self.by_id(qs, "education")["type"] = bad
+            errs = lint.check_setup_questions(qs)
+            self.assertTrue(any("not allowed in setup" in e for e in errs), (bad, errs))
+
+    def test_every_allowed_type_passes_the_type_rule(self):
+        for ok in lint.SETUP_TYPES:
+            qs = self.qs()
+            self.by_id(qs, "education")["type"] = ok
+            self.assertFalse(any("not allowed" in e for e in lint.check_setup_questions(qs)), ok)
+
+    def test_plan_builder_definitions_of_target_questions_unchanged(self):
+        qs = self.qs()
+        for qid in ("target_role", "target_skills"):
+            q = self.by_id(qs, qid)
+            self.assertTrue(q["allow_other"] and q["required"] and q["show_if"], qid)
+
+
 class RealCatalog(unittest.TestCase):
     def test_generated_catalog_passes_the_lint(self):
         from taxonomy import ROLES

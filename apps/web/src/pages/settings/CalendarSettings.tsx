@@ -31,7 +31,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       aria-labelledby={TITLE_ID}
       className="space-y-3 rounded-md border border-border bg-surface p-4"
     >
-      <h2 id={TITLE_ID}>Calendar</h2>
+      <h3 id={TITLE_ID}>Calendar</h3>
       {children}
     </section>
   );

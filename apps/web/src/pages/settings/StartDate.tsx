@@ -46,9 +46,9 @@ export function StartDate({ plan }: { plan: PlanDetail }) {
       aria-labelledby="start-date-heading"
       className="space-y-3 border-t border-border pt-4"
     >
-      <h3 id="start-date-heading" className="font-bold">
+      <h4 id="start-date-heading" className="font-bold">
         Start date
-      </h3>
+      </h4>
       <p className="text-muted">
         Moves the whole schedule: nothing is planned before this day. Earliest allowed:{' '}
         {formatDate(earliest)}

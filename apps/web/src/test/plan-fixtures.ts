@@ -237,6 +237,8 @@ export function planRoutes(
     [`GET /api/v1/plans/${PLAN_ID}/tasks`]: () => json({ tasks: TASKS }),
     [`GET /api/v1/plans/${PLAN_ID}/progress`]: () => json(progress()),
     [`GET /api/v1/plans/${PLAN_ID}/logs`]: () => json({ logs: [] }),
+    [`GET /api/v1/plans/${PLAN_ID}/practice/context`]: () =>
+      json({ jobDescription: '', updatedAt: null }),
     [`GET /api/v1/plans/${PLAN_ID}/open-tasks`]: () => json(openTasks()),
     ...dayRoutes(),
     ...extra,

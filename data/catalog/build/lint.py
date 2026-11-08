@@ -152,5 +152,47 @@ def check_role_paths(items, roles):
     return errs
 
 
+SETUP_TYPES = ("single", "multi", "weekdays", "number", "yes_no", "multi_role", "multi_skill")
+SETUP_COUNT = 8
+SETUP_FLAGS = ("order", "ignore_show_if", "choices_only", "optional")
+
+
+def check_setup_questions(questions):
+    """ADR 015 rules for questions flagged `setup`: exactly 8, orders 1..8 unique, type on the
+    allowlist (so a free-text type cannot slip in), no show_if unless setup.ignore_show_if, no
+    allow_other unless setup.choices_only, no privacy."""
+    errs = []
+    flagged = [q for q in questions if "setup" in q]
+    if len(flagged) != SETUP_COUNT:
+        errs.append(f"setup: expected exactly {SETUP_COUNT} setup questions, found {len(flagged)}")
+    orders = []
+    for q in flagged:
+        qid, flag = q["id"], q["setup"]
+        if not isinstance(flag, dict):
+            errs.append(f"setup question {qid}: setup must be an object")
+            flag = {}
+        order = flag.get("order")
+        if not isinstance(order, int) or isinstance(order, bool):
+            errs.append(f"setup question {qid}: setup.order must be an integer")
+        else:
+            orders.append(order)
+        for k, v in flag.items():
+            if k not in SETUP_FLAGS:
+                errs.append(f"setup question {qid}: unknown setup field {k}")
+            elif k != "order" and v is not True:
+                errs.append(f"setup question {qid}: setup.{k} must be true when present")
+        if q.get("type") not in SETUP_TYPES:
+            errs.append(f"setup question {qid}: type {q.get('type')!r} is not allowed in setup (allowed: {', '.join(SETUP_TYPES)})")
+        if q.get("show_if") and not flag.get("ignore_show_if"):
+            errs.append(f"setup question {qid}: has show_if without setup.ignore_show_if")
+        if q.get("allow_other") and not flag.get("choices_only"):
+            errs.append(f"setup question {qid}: has allow_other without setup.choices_only")
+        if "privacy" in q:
+            errs.append(f"setup question {qid}: has privacy (setup collects no free text)")
+    if sorted(orders) != list(range(1, SETUP_COUNT + 1)):
+        errs.append(f"setup: orders must be exactly 1..{SETUP_COUNT}, each once; got {sorted(orders)}")
+    return errs
+
+
 def lint(items, roles, skill_ids=None):
     return check_items(items, skill_ids) + check_role_paths(items, roles)

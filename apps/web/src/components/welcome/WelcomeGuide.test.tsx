@@ -2,12 +2,8 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeAuth, installApi, json, meBody, renderApp, SESSION } from '../../test/helpers';
-import {
-  hasSeenWelcome,
-  resolveTourSteps,
-  TOUR_STEPS,
-  resetWelcomeMemory,
-} from '../../lib/welcome';
+import { planRoutes } from '../../test/plan-fixtures';
+import { hasSeenWelcome, isWelcomeExcluded, resetWelcomeMemory } from '../../lib/welcome';
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -20,7 +16,7 @@ afterEach(() => {
 });
 
 function open(path = '/') {
-  installApi({ 'GET /api/v1/me': () => json(meBody()) });
+  installApi(planRoutes());
   return renderApp({ auth: fakeAuth(SESSION), path, welcome: 'first-visit' });
 }
 
@@ -83,6 +79,44 @@ describe('first-visit welcome', () => {
     expect(take).toHaveFocus();
   });
 
+  it('says where study time lives: Plan settings, not Settings', async () => {
+    open();
+    const dialog = within(await welcome());
+    expect(dialog.getByText(/Plan settings/)).toBeInTheDocument();
+    expect(dialog.queryByText(/holds your time/i)).not.toBeInTheDocument();
+  });
+
+  it('makes the page behind it inert and hands it back when closed', async () => {
+    open();
+    const dialog = await welcome();
+    const nav = screen.getByRole('navigation', { name: 'Main', hidden: true });
+    const main = document.getElementById('main')!;
+    expect(nav.closest('[inert]')).not.toBeNull();
+    expect(main.closest('[inert]')).toBeNull();
+    expect(dialog.closest('[inert]')).toBeNull();
+    // The page content next to the dialog inside <main> is inert too.
+    expect(Array.from(main.querySelectorAll('[inert]')).length).toBeGreaterThan(0);
+    await userEvent.click(screen.getByRole('button', { name: 'Skip for now' }));
+    expect(document.querySelector('[inert]')).toBeNull();
+  });
+
+  it('keeps Tab in the dialog after a click on the backdrop, and Escape works from the page', async () => {
+    open();
+    const dialog = await welcome();
+    const backdrop = dialog.parentElement!;
+    await userEvent.click(backdrop);
+    expect(dialog.contains(document.activeElement)).toBe(false);
+    await userEvent.tab();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    await userEvent.click(backdrop);
+    await userEvent.tab({ shift: true });
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    await userEvent.click(backdrop);
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(hasSeenWelcome(SESSION.userId)).toBe(true);
+  });
+
   it('still works when storage throws: seen for this visit only', async () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked');
@@ -113,26 +147,43 @@ describe('guided tour', () => {
     expect(screen.getByRole('link', { name: 'Today' })).toHaveAttribute('data-tour-active');
   });
 
-  it('walks Today, Week, Plan, Settings with Next and Back, skipping steps whose target is missing', async () => {
+  it('walks every step with Next and Back, going to each page and highlighting its target', async () => {
     await startTour();
     const status = announcement();
     expect(status).toHaveAttribute('aria-live', 'polite');
-    expect(status).toHaveTextContent('Step 1 of 4: Today');
+    expect(status).toHaveTextContent('Step 1 of 6: Today');
     expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
 
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(status).toHaveTextContent('Step 2 of 4: Week');
+    await screen.findByRole('dialog', { name: 'Week' });
+    expect(status).toHaveTextContent('Step 2 of 6: Week');
     expect(screen.getByRole('link', { name: 'Week' })).toHaveAttribute('data-tour-active');
     expect(screen.getByRole('link', { name: 'Today' })).not.toHaveAttribute('data-tour-active');
 
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(status).toHaveTextContent('Step 3 of 4: Plan');
+    await screen.findByRole('dialog', { name: 'Plan' });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Plan' })).toBeInTheDocument();
+
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    // Curriculum and Plan settings are not on the screen: skipped.
-    expect(status).toHaveTextContent('Step 4 of 4: Settings');
+    await screen.findByRole('dialog', { name: 'Curriculum' });
+    expect(status).toHaveTextContent('Step 4 of 6: Curriculum');
+    expect(screen.getByRole('tab', { name: 'Curriculum' })).toHaveAttribute('data-tour-active');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await screen.findByRole('dialog', { name: 'Plan settings' });
+    expect(screen.getByRole('tab', { name: 'Plan settings' })).toHaveAttribute('data-tour-active');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await screen.findByRole('dialog', { name: 'Settings' });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('data-tour-active');
+    expect(status).toHaveTextContent('Step 6 of 6: Settings');
+
     await userEvent.click(screen.getByRole('button', { name: 'Back' }));
-    expect(status).toHaveTextContent('Step 3 of 4: Plan');
+    await screen.findByRole('dialog', { name: 'Plan settings' });
+    expect(await screen.findByRole('tab', { name: 'Plan settings' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await screen.findByRole('dialog', { name: 'Settings' });
 
     await userEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -145,7 +196,8 @@ describe('guided tour', () => {
     const next = screen.getByRole('button', { name: 'Next' });
     expect(next).toHaveFocus();
     await userEvent.keyboard('{Enter}');
-    expect(announcement()).toHaveTextContent('Step 2 of 4: Week');
+    await screen.findByRole('dialog', { name: 'Week' });
+    expect(announcement()).toHaveTextContent('Step 2 of 6: Week');
     expect(next).toHaveFocus();
   });
 
@@ -168,33 +220,20 @@ describe('guided tour', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'Today' })).toBeInTheDocument();
   });
-
-  it('resolveTourSteps keeps only steps with a target, whatever the data says', () => {
-    document.body.innerHTML = '<a id="here" href="#">x</a>';
-    const steps = [
-      { id: 'a', title: 'A', body: '', targets: ['#missing', '#here'] },
-      { id: 'b', title: 'B', body: '', targets: ['#missing'] },
-    ];
-    expect(resolveTourSteps(steps).map((s) => s.id)).toEqual(['a']);
-    document.body.innerHTML = '';
-    expect(resolveTourSteps(TOUR_STEPS)).toEqual([]);
-  });
-
-  it('includes the plan tabs when they exist on the screen', () => {
-    document.body.innerHTML =
-      '<nav aria-label="Main"><a href="/">T</a></nav><button data-tour="plan-curriculum">C</button><button data-tour="plan-settings">S</button>';
-    expect(resolveTourSteps().map((s) => s.id)).toEqual([
-      'today',
-      'plan-curriculum',
-      'plan-settings',
-    ]);
-    document.body.innerHTML = '';
-  });
 });
 
 describe('where the welcome does not show', () => {
   it('stays away from the calendar callback page', async () => {
     open('/calendar/callback');
+    await screen.findByRole('navigation', { name: 'Main' });
+    expect(screen.queryByRole('dialog', { name: 'Welcome to Upversion' })).not.toBeInTheDocument();
+  });
+
+  it('treats a trailing slash as the same page', async () => {
+    expect(isWelcomeExcluded('/calendar/callback/')).toBe(true);
+    expect(isWelcomeExcluded('/calendar/callback//')).toBe(true);
+    expect(isWelcomeExcluded('/calendar')).toBe(false);
+    open('/calendar/callback/');
     await screen.findByRole('navigation', { name: 'Main' });
     expect(screen.queryByRole('dialog', { name: 'Welcome to Upversion' })).not.toBeInTheDocument();
   });
@@ -212,6 +251,8 @@ describe('show it again from Settings', () => {
     installApi({ 'GET /api/v1/me': () => json(meBody()) });
     renderApp({ auth: fakeAuth(SESSION), path: '/settings', welcome: 'seen' });
     const help = within(await screen.findByRole('region', { name: 'Help' }));
+    // Outline: h1 Settings > h2 App > h3 Help.
+    expect(screen.getByRole('heading', { level: 3, name: 'Help' })).toBeInTheDocument();
     const button = help.getByRole('button', { name: 'Show the welcome guide again' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 

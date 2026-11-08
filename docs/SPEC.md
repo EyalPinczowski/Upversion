@@ -140,6 +140,8 @@ The app must be usable by everyone, including with a keyboard and a screen reade
 ### 3.0 Plan builder – from goal to plan (the entry point)
 The flow a user goes through to create a plan. It can be run any number of times; each run creates a separate `Plan` (section 12.3 already puts `plan_id` on everything).
 
+**Step 0 – First-time setup (once per user, skippable):** before the first plan, the app asks the 8 questions flagged `setup` in `questions.json`, offers an optional CV import (read only in the browser, see 12.3), then offers Google Calendar connect. Answers are saved to the `UserProfile` after every screen and pre-fill the intake; nothing in setup blocks using the app. (ADR 015)
+
 **Step 1 – Guided intake: questions before anything is suggested**
 The app never jumps straight to courses. It first runs a short guided interview (about 5 minutes), so the plan fits the person – not just the keywords they typed.
 
@@ -152,7 +154,7 @@ The app never jumps straight to courses. It first runs a short guided interview 
   5. **Time** – period, study days, hours per day (with realistic hints, e.g. "most people working full-time manage 1–2 hours"), best time of day, fixed dates.
   6. **Budget and certificates** – free only / limit / flexible, max price per item, how much certificates matter.
   7. **Learning style** – formats, languages, whether to include interview prep, courses you already want, and what usually gets in the way.
-- **Adaptive:** questions that don't apply are skipped (`show_if`), and pre-filled answers come from earlier plans when they exist.
+- **Adaptive:** questions that don't apply are skipped (`show_if`), and pre-filled answers come from the profile (setup) and earlier plans when they exist.
 - **Follow-up questions** fire when answers conflict or leave a gap – for example "with this time the core plan won't fit – extend, add time, or keep only the essentials?", "most official certificates are paid – allow a few paid exams?", or "the job posting also mentions Tableau – add it?". These rules are in `questions.json` too.
 - **Job posting matching:** if a posting is pasted, its text is matched against `skills.json` keywords (no AI needed) and the detected skills are shown for confirmation before they're added to the goal.
 - **Two ways to answer:** a structured form (default, works with no AI), or a **conversational mode** where the free LLM asks the same questions in a chat and fills the same fields. Both produce the same structured answers; the chat can never skip a required question.
@@ -186,7 +188,7 @@ The app never jumps straight to courses. It first runs a short guided interview 
 
 **The course catalog:**
 - A curated list of verified learning resources, stored in the database and editable in the app. Each entry: title, provider, URL, skills taught (tags), level, estimated hours, cost, certificate type (`none` / `completion` / `official exam`), how recognized the certificate is (`low` / `medium` / `high`), prerequisites, format, language.
-- **Seed data is provided** in `data/catalog/` (researched separately): 121 items across 19 roles and 41 skills, with `catalog.json`, `roles.json`, `skills.json`, `questions.json` (the guided intake), `documents.jsonl` (ready to embed), `schema.sql` (pgvector + keyword search + `match_catalog()` with budget filters) and `seed.sql`. Read its README first – it marks which URLs and prices are verified. Unverified entries are shown with a "needs check" badge until the link checker confirms them.
+- **Seed data is provided** in `data/catalog/` (researched separately): 121 items across 27 roles and 59 skills, with `catalog.json`, `roles.json`, `skills.json`, `questions.json` (the guided intake), `documents.jsonl` (ready to embed), `schema.sql` (pgvector + keyword search + `match_catalog()` with budget filters) and `seed.sql`. Read its README first – it marks which URLs and prices are verified. Unverified entries are shown with a "needs check" badge until the link checker confirms them.
 - **Retrieval (RAG):** embed `documents.jsonl` with a free open model run locally (384 dimensions, e.g. all-MiniLM-L6-v2 via transformers.js – no paid API), store in `rag_documents`, and retrieve with hybrid search (vector + keyword + exact skill match). The LLM only sees retrieved items.
 - **Link checker:** a scheduled GitHub Action checks catalog URLs weekly and flags broken ones in the app.
 - I can add entries manually at any time, including from the "Unverified" suggestions above.
@@ -299,7 +301,7 @@ Recommendation cards on the home screen and in the briefing, based on progress:
 - Every reschedule shows a **change summary** before saving ("3 tasks moved, plan finish pushed back by one day").
 
 ### 3.7 Time settings
-All of these are editable in Settings, and every change triggers a reschedule (with a change summary).
+All of these are edited on the Plan page, in the 'Plan settings' tab, and every change triggers a reschedule (with a change summary).
 
 **Weekly pattern:**
 - **Days per week:** pick which weekdays are study days (pre-filled from the intake; the default suggestion follows the user's locale – Sunday–Thursday in Israel, Monday–Friday elsewhere). The screen shows the resulting count ("5 days per week").
@@ -392,7 +394,7 @@ Invite           id, email | null (link invite), token_hash, expires_at, used_at
 LegalAcceptance  user_id, document: terms | privacy, version, accepted_at
 AdminAuditLog    id, admin_id, user_id, action (view_detail | view_tier2 | export | disable | delete | edit_cap), at
 IntakeSession    id, user_id, current_stage, answers {question_id: value}, status: in_progress | confirmed, updated_at
-UserProfile      user_id, status, background, education, tools [..], skill_levels {skill: 0-3}, interests, work_style, concerns
+UserProfile      user_id, answers {setup question_id: value}, skills [{skillId, level 0-3, source: cv | setup | manual}], roles_held [{roleId | null, title, years | null}], years_experience, cv_imported_at, setup_status: not_started | in_progress | completed | dismissed, setup_step, setup_completed_at (ADR 015; no CV text is stored)
 Goal             id, plan_id, goal_text, target_skills [{skill, current_level}],
                  background, start_date, end_date | duration_weeks,
                  budget_total, budget_currency, max_item_price, free_only: bool,
@@ -571,11 +573,11 @@ The shape of the reference plan – what the scheduling engine and the tests mus
 3. **Day briefing** – when starting a study day (3.2), including the practice window (3.3).
 4. **Day review** – end-of-day window and adjustment suggestions (3.4).
 5. **Calendar** – week/month, scheduled tasks alongside external events (read-only).
-6. **Plan** – all tasks of the active plan, edit and drag (3.10).
+6. **Plan** – all tasks of the active plan, edit and drag (3.10). Two tabs: 'Curriculum' (tasks grouped by type, with hours, progress and certificates earned) and 'Plan settings' (study hours and days, job description for prompts).
 7. **Certificates** – library and "For my CV" (3.9).
 8. **Catalog** – browse, add and edit learning resources; broken-link flags (3.0).
 9. **Recommendations and content** – recommendation cards and further-learning list (3.5).
-10. **Settings** – hours, study days, calendar connection, job description of the user's next interview (for prompts), account (export, delete, "Allow support access", access log).
+10. **Settings** – calendar connection, account (export, delete, "Allow support access", access log).
 11. **Admin console** (admin only) – users table, user detail, access requests, aggregate dashboards, catalog and question-bank editing, audit log (3.B).
 12. **Public pages** – sign-in, request access, privacy, terms, and the demo link (3.A, 3.C).
 
@@ -756,7 +758,7 @@ The balance: **prepare the seams, not the features.** That means interfaces with
 | **Job-search tracking** (applications, contacts) | Separate concern; may become its own module. | – |
 | **General AI assistant** (beyond the practice window) | Keeps the AI layer small and the free quota for practice. | AI only inside practices. |
 | **Paid AI providers** (e.g. Claude API) | The $0 constraint. | Free-tier providers only. |
-| **Profile import from CV / LinkedIn** – read the user's CV and LinkedIn profile, extract skills, experience and level, and pre-fill the goal wizard with suggested skills, gaps and courses | Needs file parsing, careful PII handling, and a good skill taxonomy first. | Manual "Where are you now?" step in the wizard (3.0). |
+| **Profile import from LinkedIn** – read the user's LinkedIn data export and pre-fill the profile | Needs export-format handling and its own review. (CV import moved into v1 setup, ADR 015.) | CV import in setup, or the manual answers. |
 | **LinkedIn progress posts** – optionally connect the user's LinkedIn account and publish updates on their improvement (a finished course, a certificate earned, a milestone) | Needs a LinkedIn developer app and OAuth, and LinkedIn's API access terms and rate limits have not been checked (needs check). Posting is outward-facing, so it needs its own consent and review flow. | Manual: the app shows a ready-to-copy update text the user can paste into LinkedIn themselves. |
 
 ### 12.2 Permanent guardrails (stay true even when extending)
@@ -784,9 +786,10 @@ Each seam below costs little in v1.0 and makes a deferred item a contained addit
 - `NotificationChannel` – in-app implementation only, subscribed to the event log. → push, email, Telegram later.
 - `ProgressSource` – manual implementation only. → Coursera/Kaggle/etc. importers later.
 - `Exporter` – CSV implementation (optional in v1.0). → other formats later.
-- `ProfileSource` – manual implementation only (the wizard's "Where are you now?" answers, stored as a structured `UserProfile`: skills with levels, roles held, years, education). → CV upload and LinkedIn import later fill the same structure.
-  - **Planned approach for later:** CV as PDF/DOCX parsed in the backend; LinkedIn via the user's own **data export** (LinkedIn "Get a copy of your data" → CSV files such as Profile, Positions, Skills) or a "Save to PDF" of the profile – **never scraping**, which breaks LinkedIn's terms. Skills are matched against `skills.json` keywords first (no AI needed), then optionally refined by the free LLM.
-  - **Privacy:** contact details (name, phone, email, address, links) are stripped before any text reaches a model; the original file is deleted after extraction unless the user chooses to keep it; extracted skills are shown for confirmation before they're used.
+- `ProfileSource` – `manual` (setup answers) and `cv-browser` implementations (ADR 015). → LinkedIn import later fills the same structure.
+  - **CV (v1):** PDF/DOCX text is extracted in the browser only and matched to `skills.json`/`roles.json` by keyword rules, no AI. The file and its text never leave the device; only the fields the user confirms on a review screen are sent.
+  - **LinkedIn (later):** the user's own data export (CSV) or a "Save to PDF" of the profile, read the same way – never scraping.
+  - **Privacy:** contact details are dropped on the device; free-text role titles are never sent to a model.
 
 **Structure and API**
 - **Domain modules in the backend** (`modules/plans`, `modules/scheduling`, `modules/practice`, `modules/calendar`, `modules/recommendations`), each with its own routes, service and tests, talking to others through services – not through each other's tables. → a future `modules/job-search` or `modules/social` drops in beside them.

@@ -18,6 +18,8 @@ export type CalendarStatus = JsonOf<paths['/api/v1/calendar']['get']>;
 export type CalendarSource = CalendarStatus['sources'][number];
 export type CalendarSyncResult = JsonOf<paths['/api/v1/calendar/sync']['post']>;
 
+export type CalendarBusyItem = JsonOf<paths['/api/v1/calendar/busy']['get']>['items'][number];
+
 export const calendarKey = ['calendar'] as const;
 
 const mutationDefaults = { networkMode: 'always' } as const;
@@ -35,6 +37,32 @@ export function useCalendarStatus() {
         throw error;
       }
     },
+    staleTime: 60_000,
+    retry: false,
+  });
+}
+
+/**
+ * Busy time between two local dates (inclusive, at most 14 days apart) for the Week time grid.
+ * It is the owner's own calendar data and is only ever shown to the owner. `enabled` stays false
+ * until the calendar is connected, so nothing is requested otherwise.
+ */
+export function useCalendarBusy(from: string, to: string, planId: string, enabled: boolean) {
+  const api = useApi();
+  return useQuery({
+    queryKey: [...calendarKey, 'busy', planId, from, to] as const,
+    queryFn: async ({ signal }): Promise<CalendarBusyItem[]> => {
+      try {
+        const { items } = await unwrap(
+          api.raw.GET('/api/v1/calendar/busy', { params: { query: { from, to, planId } }, signal }),
+        );
+        return items;
+      } catch (error) {
+        if (isApiError(error) && error.status === 404) return [];
+        throw error;
+      }
+    },
+    enabled,
     staleTime: 60_000,
     retry: false,
   });

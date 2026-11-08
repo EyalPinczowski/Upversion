@@ -28,8 +28,8 @@ const requestedMinutes = (override: DayOverride, currentHours: number) =>
 
 /**
  * "Work ahead": the person adds study hours to today, or makes today a study day. It reuses the
- * day exception (isStudyDay and capacityHours) that Settings edits. The change is previewed and
- * saved only when the person approves; "Back to normal" removes the exception again. Nothing here
+ * day exception (isStudyDay and capacityHours) that the Plan settings tab edits. The change is
+ * previewed and saved only when the person approves; "Back to normal" removes the exception again. Nothing here
  * runs on its own, and no task is ever marked done.
  */
 export function WorkAhead({
@@ -256,7 +256,7 @@ export function WorkAhead({
                 <p>
                   Your study window ({data.weekPattern.windowStart} to {data.weekPattern.windowEnd},
                   without lunch) has no room for more today, so nothing would move. You can widen
-                  the window in Settings.
+                  the window in Plan settings.
                 </p>
               ) : proposal.addedMinutes < requestedMinutes(proposal.override, cap.hours) ? (
                 <p>
@@ -317,8 +317,8 @@ export function WorkAhead({
             {cap.override?.isStudyDay
               ? `a study day${cap.override.capacityHours !== undefined ? ` of ${formatHours(cap.override.capacityHours)}` : ''}`
               : 'a day off'}
-            . It may have been set in Settings. Removing it makes today follow your usual weekly
-            hours again.
+            . It may have been set in Plan settings. Removing it makes today follow your usual
+            weekly hours again.
           </p>
         </ConfirmDialog>
       ) : null}

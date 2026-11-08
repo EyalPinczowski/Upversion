@@ -1,6 +1,7 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { isApiError } from '../api/errors';
+import { useCalendarStatus } from '../api/calendar-hooks';
 import { useDeleteAccount, useExportData, useMe, useUpdateDisplayName } from '../api/hooks';
 import { useAuth } from '../auth/AuthProvider';
 import type { AppEnv } from '../env';
@@ -11,8 +12,6 @@ import { LEGAL_PAGES } from '../lib/legal';
 import { AiUsageMeter } from './settings/AiUsageMeter';
 import { HelpSection } from './settings/HelpSection';
 import { CalendarSettings } from './settings/CalendarSettings';
-import { PracticeSettings } from './settings/PracticeSettings';
-import { TimeSettings } from './settings/TimeSettings';
 import { useTheme, type ThemePreference } from '../lib/theme';
 
 const MAX_NAME_LENGTH = 80;
@@ -29,7 +28,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
       aria-labelledby={id}
       className="space-y-3 rounded-md border border-border bg-surface p-4"
     >
-      <h2 id={id}>{title}</h2>
+      <h3 id={id}>{title}</h3>
       {children}
     </section>
   );
@@ -259,27 +258,52 @@ function DeleteSection({ appEnv }: { appEnv: AppEnv }) {
   );
 }
 
+/** Anchors the per-plan settings had while they lived on this page. */
+const MOVED_TO_PLAN_SETTINGS = new Set([
+  '#time-heading',
+  '#practice-heading',
+  '#start-date-heading',
+]);
+
+/** Two groups: the app itself, and what it connects to. Per-plan settings live on the Plan page. */
 export function SettingsPage({ appEnv = 'operational' }: { appEnv?: AppEnv }) {
+  const { hash } = useLocation();
+  const navigate = useNavigate();
+  // The calendar feature can be off on the server; then there is nothing to connect.
+  const calendar = useCalendarStatus();
+  const showConnections =
+    calendar.isError || (calendar.data !== null && calendar.data !== undefined);
+  // Old links such as `/settings#time-heading` land on the Plan settings tab.
+  useEffect(() => {
+    if (MOVED_TO_PLAN_SETTINGS.has(hash))
+      void navigate(`/plan?tab=settings${hash}`, { replace: true });
+  }, [hash, navigate]);
   return (
     <div className="space-y-6">
       <h1>Settings</h1>
-      <ProfileSection />
-      <TimeSettings />
-      <PracticeSettings />
-      <AiUsageMeter />
-      <CalendarSettings />
-      <AppearanceSection />
-      <HelpSection />
-      <DataSection />
-      <SignOutSection />
-      <DeleteSection appEnv={appEnv} />
-      <nav aria-label="Legal" className="flex flex-wrap gap-x-4 gap-y-1">
-        {Object.values(LEGAL_PAGES).map((page) => (
-          <Link key={page.slug} className={linkClass} to={page.path}>
-            {page.title}
-          </Link>
-        ))}
-      </nav>
+      <section aria-labelledby="app-settings-heading" className="space-y-6">
+        <h2 id="app-settings-heading">App</h2>
+        <ProfileSection />
+        <AppearanceSection />
+        <AiUsageMeter />
+        <HelpSection />
+        <DataSection />
+        <SignOutSection />
+        <DeleteSection appEnv={appEnv} />
+        <nav aria-label="Legal" className="flex flex-wrap gap-x-4 gap-y-1">
+          {Object.values(LEGAL_PAGES).map((page) => (
+            <Link key={page.slug} className={linkClass} to={page.path}>
+              {page.title}
+            </Link>
+          ))}
+        </nav>
+      </section>
+      {showConnections ? (
+        <section aria-labelledby="connections-heading" className="space-y-6">
+          <h2 id="connections-heading">Connections</h2>
+          <CalendarSettings />
+        </section>
+      ) : null}
     </div>
   );
 }

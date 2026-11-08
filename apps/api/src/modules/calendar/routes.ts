@@ -7,6 +7,8 @@ import { installAccountGuard } from '../accounts/guard';
 import { createAccountService } from '../accounts/service';
 import type { TokenVerifier } from '../accounts/token-verifier';
 import {
+  busyQuery,
+  busyView,
   callbackBody,
   calendarView,
   connectView,
@@ -61,6 +63,25 @@ export const calendarRoutes: FastifyPluginAsyncZod<CalendarRoutesOptions> = asyn
       },
     },
     async (request) => service!.getCalendar(user(request)),
+  );
+
+  app.get(
+    '/calendar/busy',
+    {
+      schema: {
+        tags,
+        summary: 'Busy time from the calendars that block study time',
+        description:
+          "Read only. `from` and `to` are local dates (inclusive, at most 14 days). Returns events of the calendars the owner chose to block time, each with a kind (busy, tentative or non_blocking all-day), start and end minutes of the day, an all-day flag and the event title, plus the slots of study blocks the owner deleted in Google for `planId` (default: the newest active plan), in that plan's time zone. This is the owner's own calendar data for display to the owner; it is never sent to an AI model.",
+        security,
+        querystring: busyQuery,
+        response: { 200: busyView, ...errors },
+      },
+    },
+    async (request) => {
+      const { from, to, planId } = request.query;
+      return { items: await service!.getBusy(user(request), from, to, planId) };
+    },
   );
 
   app.post(
