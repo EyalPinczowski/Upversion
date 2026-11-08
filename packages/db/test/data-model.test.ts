@@ -264,6 +264,17 @@ const TABLES: UserTable[] = [
     insert: (u) =>
       `insert into rnd.calendar_sources (user_id, calendar_id, name) values ('${u}', 'cal9', 'Work')`,
   },
+  {
+    name: 'user_profiles',
+    ownerColumn: 'user_id',
+    update: `setup_status = 'dismissed'`,
+    deletable: true,
+    // One profile per user and both seeded users have one: the upsert updates it, which only
+    // works for the signed-in user's own row.
+    insert: (u) =>
+      `insert into rnd.user_profiles (user_id, setup_status) values ('${u}', 'in_progress')
+       on conflict (user_id) do update set setup_status = excluded.setup_status`,
+  },
 ];
 
 /** Tables with a user_id column the app writes; app_settings is global and tested on its own. */
@@ -352,6 +363,8 @@ async function seed(client: pg.Client): Promise<void> {
         ('${USER_B}', '2026-01-05', 'extB', 'cal1', 600, 660, 'tentative');
       insert into rnd.calendar_sources (user_id, calendar_id, name) values
         ('${USER_A}', 'cal1', 'Primary A'), ('${USER_B}', 'cal1', 'Primary B');
+      insert into rnd.user_profiles (user_id, setup_status) values
+        ('${USER_A}', 'in_progress'), ('${USER_B}', 'completed');
       insert into rnd.ai_provider_usage (day, provider_id, requests) values ('2026-01-05', 'fake', 4);
       insert into rnd.app_settings (key, value, is_public) values ('secret.key', '"x"', false);
     `);

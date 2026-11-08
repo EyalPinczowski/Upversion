@@ -29,6 +29,8 @@ Migration 0014 (calendar event colours, additive): `calendar_event_links.last_co
 
 Migration 0015 (calendar event details, additive): `calendar_event_links.last_detail_hash` (SHA-256 hex of the description last written to the event; nullable, the app login may update it). The description itself is not stored. `test/migrate.test.ts` renames its copied migration to a high number (9002) so new real migrations never collide with it.
 
+Migration 0016 (user profiles, ADR 015): `user_profiles`, one row per user (a missing row means setup not started): setup `answers`, CV-confirmed or manual `skills`, `roles_held`, `years_experience`, `cv_imported_at`, `setup_status` and `setup_step`. No column for raw CV text, files or evidence (the CV is read in the browser only); `pg_column_size` caps on the three jsonb columns; the app can add, read, change and delete its own row and update every column except `user_id` and `created_at`; cascade on account delete. Tests: `test/profile-schema.test.ts` (both schemas) and the parametrised cases in `test/data-model.test.ts`.
+
 SQL tokens: `{{schema}} {{owner}} {{app}} {{app_user}} {{backup}}`. Anything else in `{{ }}` is an error.
 
 ## How the roles fit together (per schema `s`)

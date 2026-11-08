@@ -66,6 +66,7 @@ describe.skipIf(!dbAvailable)('table convention: RLS enabled and a backup SELECT
           'schedule_days',
           'schema_migrations',
           'tasks',
+          'user_profiles',
           'week_patterns',
         ]);
         for (const row of rows) {

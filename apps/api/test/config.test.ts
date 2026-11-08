@@ -22,6 +22,7 @@ describe('loadConfig defaults', () => {
         offline: false,
         pushNotifications: false,
         aiOverview: false,
+        profileSetup: false,
       },
       calendar: { enabled: false, tokenKeys: [], google: null },
       ai: {
@@ -36,7 +37,7 @@ describe('loadConfig defaults', () => {
         historyChars: 12000,
       },
     });
-    expect(featureNames).toHaveLength(5);
+    expect(featureNames).toHaveLength(6);
   });
 });
 
@@ -101,6 +102,7 @@ describe('boolean variables', () => {
       offline: false,
       pushNotifications: true,
       aiOverview: false,
+      profileSetup: false,
     });
   });
 
