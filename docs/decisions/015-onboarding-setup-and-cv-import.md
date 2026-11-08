@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 
-Approved by the owner on 2026-11-08 with one change to the question list (`language` and `formats` replaced by `target_role` and `target_skills`). The two new questions break two build rules; see "Check on the new questions" (proposed rule change **needs owner confirmation**).
+Approved by the owner on 2026-11-08 with one change to the question list (`language` and `formats` replaced by `target_role` and `target_skills`). The two new questions break two build rules as first written; the owner also confirmed on 2026-11-08 the rule change that resolves it (see "Check on the new questions").
 
 Background: the owner approved building "Profile import from CV" (spec 12.1) as part of a first-time setup; this record proposes how. LinkedIn import stays deferred. Builds on ADR 002/014 (calendar), 004/012 (AI optional), 010 (`current_user_id()`), 007 (catalog-grounded plans).
 
@@ -27,7 +27,7 @@ Background: the owner approved building "Profile import from CV" (spec 12.1) as 
 
 Left out on purpose: the other goal questions (`goal_type`, `goal_why`, per plan), `language` and `formats` (asked in the plan builder), `skill_levels` (needs a target role), `budget`/`certificates` (per plan), and every free-text question (`background`, `goal_why`, `concerns`, `job_posting`) so setup collects no free text that could hold personal details.
 
-**Flag:** each of the 8 entries in `data/catalog/build/questions.py` gets `"setup": {"order": n}`. `build.py` validates: exactly 8 setup questions, orders 1..8 unique, none has `show_if`, none is a free-text type (`text`, `text_or_url`), none has `privacy`. **Rules 3 and 4 as written are broken by `target_role` and `target_skills`; see the next section.** `questions.json` is regenerated; the catalog-drift CI rule applies. The web reads setup questions with a shared selector (`setupQuestions()`), sorted by `setup.order`. Changing the set is a data change, not a code change.
+**Flag:** each of the 8 entries in `data/catalog/build/questions.py` gets `"setup": {"order": n}`; `target_role` and `target_skills` also carry `ignore_show_if`, `choices_only` and `optional` (see "Check on the new questions"). `build.py` validates: exactly 8 setup questions, orders 1..8 unique, no `show_if` unless the setup flag has `ignore_show_if: true`, no `allow_other` unless `choices_only: true`, no free-text type (`text`, `text_or_url`), no `privacy`. `questions.json` is regenerated; the catalog-drift CI rule applies. The web reads setup questions with a shared selector (`setupQuestions()`), sorted by `setup.order`. Changing the set is a data change, not a code change.
 
 Answers to `goal.*` and `week_pattern.*` questions are stored in the profile as **defaults**; the plan builder copies them into the plan's `Goal`/`WeekPattern` (the question's `maps_to` is unchanged).
 
@@ -111,12 +111,12 @@ Read from `data/catalog/questions.json` and `data/catalog/build/questions.py` (2
 
 Neither question is a `text` or `text_or_url` type, and neither has `privacy`, but both break the `show_if` and free-text rules, and both are `required: true` (which would force an answer in a setup that must be fully skippable). `goal_type` is not a setup question, so a `show_if` on it can never be evaluated in setup: left as is, the screens would be hidden.
 
-**Proposed minimal rule change (needs owner confirmation; not applied):** keep "no free text" and keep the 8-question rule, and change only how the flag overrides the plan-builder definition. The `setup` object gets two optional fields, used only by setup:
+**Rule change, confirmed by the owner on 2026-11-08:** keep "no free text" and keep the 8-question rule, and change only how the flag overrides the plan-builder definition. The `setup` object gets two optional fields, used only by setup:
 - `"setup": {"order": n, "ignore_show_if": true, "choices_only": true, "optional": true}`. In setup, `ignore_show_if` shows the question regardless of `goal_type`; `choices_only` removes the "Other" entry and the typed-value field, so only ids from `roles.json` / `skills.json` can be stored; `optional` means setup never blocks on it (the plan builder still treats it as `required`). The plan-builder definition of both questions (with `show_if`, `allow_other`, `required`) is unchanged.
 - Build rules become: exactly 8 setup questions; orders 1..8 unique; a setup question has no `show_if` **unless** it carries `ignore_show_if: true`; no free-text type (`text`, `text_or_url`) and no `allow_other` unless `choices_only: true`; none has `privacy`. The build fails otherwise, so a future question cannot slip free text into setup.
 - `validateAnswer` gains `multi_role` and `multi_skill` (ids must exist in the taxonomy, count within `max`). The "Other" entry is not a way to store anything in `user_profiles.answers`.
 
-Alternatives for the owner: (a) accept this change; (b) drop the two questions and ask them only in the plan builder, as before; (c) allow `allow_other` in setup with the typed text screened by the same PII check as role titles. Option (c) weakens "setup collects no free text" and is not recommended. Also to confirm: a role or skill picked in setup is a standing default, not a plan goal, so the plan builder shows it pre-filled and editable and does not skip `goal_type`.
+Alternatives considered and not chosen: dropping the two questions (ask them only in the plan builder), and allowing `allow_other` in setup with typed text screened by the PII check (weakens "setup collects no free text"). The owner confirmed the change above: both questions are always shown in setup, choices only (no "Other" or typed text), optional, up to 2 roles and 5 skills; plan-builder definitions are unchanged. A role or skill picked in setup is a standing default, not a plan goal, so the plan builder shows it pre-filled and editable and does not skip `goal_type`.
 
 ## Spec edit (applied to `docs/SPEC.md` in the same change, as approved)
 ```diff
