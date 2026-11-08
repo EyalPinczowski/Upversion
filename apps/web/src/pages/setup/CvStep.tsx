@@ -10,10 +10,16 @@ import { CV_ERROR_TEXT, CvCancelled, CvReadError, extractCvText } from './cv-ext
 export function CvStep({
   onText,
   onSkip,
+  skipLabel = 'Skip this step',
+  intro,
 }: {
   /** Receives the extracted or pasted text. The caller matches it and lets go of it. */
   onText: (text: string) => void;
   onSkip: () => void;
+  /** The wizard skips the step; "Change my CV" calls the same button Cancel. */
+  skipLabel?: string;
+  /** Replaces the privacy paragraph (the wizard keeps its own text). */
+  intro?: string;
 }) {
   const ids = useId();
   const [busy, setBusy] = useState(false);
@@ -77,11 +83,15 @@ export function CvStep({
 
   return (
     <div className="space-y-4">
-      <p>
-        Add your CV and we suggest skills, roles and tools to save to your profile. The file is read
-        on this device only. It is never uploaded or stored, and you confirm every item before
-        anything is saved. Your name and contact details are never used.
-      </p>
+      {intro ? (
+        <p>{intro}</p>
+      ) : (
+        <p>
+          Add your CV and we suggest skills, roles and tools to save to your profile. The file is
+          read on this device only. It is never uploaded or stored, and you confirm every item
+          before anything is saved. Your name and contact details are never used.
+        </p>
+      )}
 
       <div
         onDragOver={(e) => {
@@ -152,7 +162,7 @@ export function CvStep({
 
       <div>
         <Button variant="secondary" onClick={onSkip}>
-          Skip this step
+          {skipLabel}
         </Button>
       </div>
     </div>

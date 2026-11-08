@@ -45,6 +45,74 @@ function Evidence({ text }: { text: string }) {
   );
 }
 
+/** What the profile holds now, for the "This will be replaced" block of "Change my CV". */
+export interface ReplaceInfo {
+  /** Skills saved from an earlier CV (source `cv`). */
+  cvSkillIds: string[];
+  /** Skills the person added themselves (source `manual` or `setup`); an import never touches them. */
+  ownSkillIds: string[];
+  roleCount: number;
+  yearsExperience: number | null;
+}
+
+function WillBeReplaced({
+  info,
+  keptSkillIds,
+  newYears,
+  newRoleCount,
+}: {
+  info: ReplaceInfo;
+  keptSkillIds: string[];
+  newYears: number | null;
+  newRoleCount: number;
+}) {
+  const nameOf = (id: string) => SKILL_NAMES.get(id) ?? id;
+  const removed = info.cvSkillIds.filter((id) => !keptSkillIds.includes(id));
+  const nothing =
+    info.cvSkillIds.length === 0 && info.roleCount === 0 && info.yearsExperience === null;
+  return (
+    <section
+      aria-labelledby="replace-heading"
+      className="space-y-2 rounded-md border border-border p-4"
+    >
+      <h3 id="replace-heading">This will be replaced</h3>
+      {nothing ? (
+        <p>Nothing is saved from a CV yet, so nothing is replaced.</p>
+      ) : (
+        <ul className="list-disc space-y-1 pl-5">
+          {info.cvSkillIds.length > 0 ? (
+            <li>
+              Skills from your earlier CV are replaced by the skills ticked above (a ticked skill
+              you already own keeps your own entry).{' '}
+              {removed.length > 0
+                ? `Not ticked, so removed: ${removed.map(nameOf).join(', ')}.`
+                : 'None of them is removed.'}
+            </li>
+          ) : null}
+          {info.roleCount > 0 ? (
+            <li>
+              Your {info.roleCount} saved {info.roleCount === 1 ? 'role' : 'roles'} held{' '}
+              {info.roleCount === 1 ? 'is' : 'are'} replaced by the {newRoleCount} ticked above.
+            </li>
+          ) : null}
+          {info.yearsExperience !== null ? (
+            <li>
+              Years of experience ({info.yearsExperience}) are replaced
+              {newYears !== null ? ` by ${newYears}` : ' by nothing, so they are cleared'}.
+            </li>
+          ) : null}
+        </ul>
+      )}
+      <p>
+        {info.ownSkillIds.length > 0
+          ? `Skills you added yourself or chose in setup stay as they are: ${info.ownSkillIds.map(nameOf).join(', ')}.`
+          : 'Skills you add yourself or choose in setup always stay as they are.'}
+      </p>
+      <p>Education and tools are added only if your profile has none yet.</p>
+    </section>
+  );
+}
+
 /**
  * Review of what the CV matcher suggested. Nothing is sent until the person presses the save
  * button, and only checked rows go into the payload, which `toImportPayload` builds from an
@@ -56,12 +124,15 @@ export function CvReviewStep({
   error,
   onSave,
   onDiscard,
+  replace,
 }: {
   extraction: CvExtraction;
   busy: boolean;
   error: string | null;
   onSave: (payload: ProfileImport) => void;
   onDiscard: () => void;
+  /** "Change my CV": what is saved now, so the page can say what goes. Setup passes nothing. */
+  replace?: ReplaceInfo;
 }) {
   const ids = useId();
   const [skills, setSkills] = useState(() =>
@@ -344,6 +415,17 @@ export function CvReviewStep({
             </li>
           ))}
         </Group>
+      ) : null}
+
+      {replace ? (
+        <WillBeReplaced
+          info={replace}
+          keptSkillIds={extraction.skills
+            .filter((_, i) => skills[i]!.checked)
+            .map((s) => s.skillId)}
+          newYears={years ? extraction.yearsExperience : null}
+          newRoleCount={roles.filter((r) => r.checked).length}
+        />
       ) : null}
 
       {roleError ? <ErrorText id={`${ids}-role-err`}>{roleError.text}</ErrorText> : null}
