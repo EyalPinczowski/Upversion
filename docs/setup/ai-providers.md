@@ -20,7 +20,7 @@ Never add a payment method to any of these accounts. If a sign-up screen asks fo
 | OpenAI-compatible base `https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1` with `/chat/completions` | Verified | developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/ | 2026-11-01 |
 | JSON mode needs `response_format: json_schema`, lists llama-3.3-70b-instruct-fp8-fast among supported models, and can fail with "JSON Mode couldn't be met" | Verified | developers.cloudflare.com/workers-ai/features/json-mode/ | 2026-11-01 |
 | A card is needed to sign up for the free plan | **Needs check** (pages are silent). Cloudflare therefore stays off until the owner sets `CLOUDFLARE_FREE_PLAN_CONFIRMED=true` | | |
-| HTTP status returned when the daily allocation is exhausted | **Needs check** (pages say "error" only). A non-429 4xx is treated as a request-specific failure with no cooldown, so the per-day budget in Neurons (`AI_BUDGET_CLOUDFLARE_AI_DAILY`) is the real guard | | |
+| HTTP status returned when the daily allocation is exhausted | **Needs check** (pages say "error" only). A non-429 4xx is treated as a request-specific failure with no cooldown, so the per-day budget in calls (`AI_BUDGET_CLOUDFLARE_AI_DAILY`, sized from the Neuron arithmetic below) is the real guard | | |
 | Commercial-use, age and region terms for the free plan | **Needs check** (read cloudflare.com/legal/terms) | | |
 | Whether the chosen models carry a beta or deprecation badge; answer quality | **Needs check** | | |
 | Endpoint path and model ids in `cloudflare-ai.ts` | **Needs check** until the first real call on R&D | | |
