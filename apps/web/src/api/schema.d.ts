@@ -1141,13 +1141,14 @@ export interface paths {
         };
         /**
          * Busy time from the calendars that block study time
-         * @description Read only. `from` and `to` are local dates (inclusive, at most 14 days). Returns only the intervals of calendars the owner chose to block time (and slots of study blocks the owner deleted in Google), with start and end minutes of the day, an all-day flag and the event title. This is the owner's own calendar data for display to the owner; it is never sent to an AI model.
+         * @description Read only. `from` and `to` are local dates (inclusive, at most 14 days). Returns events of the calendars the owner chose to block time, each with a kind (busy, tentative or non_blocking all-day), start and end minutes of the day, an all-day flag and the event title, plus the slots of study blocks the owner deleted in Google for `planId` (default: the newest active plan), in that plan's time zone. This is the owner's own calendar data for display to the owner; it is never sent to an AI model.
          */
         get: {
             parameters: {
                 query: {
                     from: string;
                     to: string;
+                    planId?: string;
                 };
                 header?: never;
                 path?: never;
@@ -1167,6 +1168,8 @@ export interface paths {
                                 startMinute: number;
                                 endMinute: number;
                                 allDay: boolean;
+                                /** @enum {string} */
+                                kind: "busy" | "tentative" | "non_blocking";
                                 title: string;
                             }[];
                         };

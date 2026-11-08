@@ -10,6 +10,8 @@ import { ISSUER, makeTestKeys, type TestKeys } from './tokens';
 const A = '11111111-1111-4111-8111-111111111111';
 const B = '22222222-2222-4222-8222-222222222222';
 const PLAN_A = 'a0000000-0000-4000-8000-000000000001';
+const PLAN_B = 'a0000000-0000-4000-8000-000000000002';
+const PLAN_OF_B = 'b0000000-0000-4000-8000-000000000001';
 const google = {
   clientId: 'cid',
   clientSecret: 'secret',
@@ -105,11 +107,24 @@ describe.skipIf(!dbAvailable)('GET /calendar/busy (real Postgres)', () => {
         [A, B],
       );
       await acceptCurrentLegal(c, [A, B]);
-      await c.query(
-        `insert into rnd.plans (user_id, id, created_from, name, start_date)
-         values ($1, $2, 'builder', 'Plan', '2026-11-01')`,
-        [A, PLAN_A],
-      );
+      // Plan A (Berlin) is older; plan B (New York) is the newest active plan.
+      for (const [user, plan, zone, created] of [
+        [A, PLAN_A, 'Europe/Berlin', '2026-11-01'],
+        [A, PLAN_B, 'America/New_York', '2026-11-02'],
+        [B, PLAN_OF_B, 'Europe/Berlin', '2026-11-01'],
+      ]) {
+        await c.query(
+          `insert into rnd.plans (user_id, id, created_from, name, start_date, status, created_at)
+           values ($1, $2, 'builder', 'Plan', '2026-11-01', 'active', $3)`,
+          [user, plan, created],
+        );
+        await c.query(
+          `insert into rnd.week_patterns (user_id, plan_id, study_weekdays, default_hours,
+             window_start, window_end, lunch_start, lunch_end, break_minutes, timezone)
+           values ($1, $2, '{0,1,2,3,4}', 7, '09:00', '17:00', '13:00', '14:00', 0, $3)`,
+          [user, plan, zone],
+        );
+      }
       for (const u of [A, B]) {
         await c.query(
           `insert into rnd.calendar_sources (user_id, calendar_id, name, blocks_time)
@@ -136,7 +151,7 @@ describe.skipIf(!dbAvailable)('GET /calendar/busy (real Postgres)', () => {
     expect(res.json()).toEqual({ items: [] });
   });
 
-  it('returns start, end, all-day flag and title, ordered, and nothing else', async () => {
+  it('returns start, end, all-day flag, kind and title, ordered, and nothing else', async () => {
     await busy(A, '2026-11-10', 'e2', 840, 900, { title: 'Dentist' });
     await busy(A, '2026-11-09', 'e1', 600, 660, { title: 'Interview' });
     await busy(A, '2026-11-11', 'e3', 0, 1440, { kind: 'all_day', blocksDay: true, title: 'Away' });
@@ -144,9 +159,30 @@ describe.skipIf(!dbAvailable)('GET /calendar/busy (real Postgres)', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({
       items: [
-        { date: '2026-11-09', startMinute: 600, endMinute: 660, allDay: false, title: 'Interview' },
-        { date: '2026-11-10', startMinute: 840, endMinute: 900, allDay: false, title: 'Dentist' },
-        { date: '2026-11-11', startMinute: 0, endMinute: 1440, allDay: true, title: 'Away' },
+        {
+          date: '2026-11-09',
+          startMinute: 600,
+          endMinute: 660,
+          allDay: false,
+          kind: 'busy',
+          title: 'Interview',
+        },
+        {
+          date: '2026-11-10',
+          startMinute: 840,
+          endMinute: 900,
+          allDay: false,
+          kind: 'busy',
+          title: 'Dentist',
+        },
+        {
+          date: '2026-11-11',
+          startMinute: 0,
+          endMinute: 1440,
+          allDay: true,
+          kind: 'busy',
+          title: 'Away',
+        },
       ],
     });
   });
@@ -168,9 +204,49 @@ describe.skipIf(!dbAvailable)('GET /calendar/busy (real Postgres)', () => {
     expect(items.map((i: { startMinute: number }) => i.startMinute)).toEqual([600]);
   });
 
-  it('leaves out tentative events and all-day events that do not block the day', async () => {
-    await busy(A, '2026-11-09', 'tent', 600, 660, { kind: 'tentative' });
-    await busy(A, '2026-11-10', 'bday', 0, 1440, { kind: 'all_day', blocksDay: false });
+  it('returns tentative events as tentative and non-blocking all-day events as non_blocking', async () => {
+    await busy(A, '2026-11-09', 'tent', 600, 660, { kind: 'tentative', title: 'Maybe lunch' });
+    await busy(A, '2026-11-10', 'bday', 0, 1440, {
+      kind: 'all_day',
+      blocksDay: false,
+      title: 'Bday',
+    });
+    await busy(A, '2026-11-11', 'away', 0, 1440, {
+      kind: 'all_day',
+      blocksDay: true,
+      title: 'Away',
+    });
+    expect((await get(RANGE)).json().items).toEqual([
+      {
+        date: '2026-11-09',
+        startMinute: 600,
+        endMinute: 660,
+        allDay: false,
+        kind: 'tentative',
+        title: 'Maybe lunch',
+      },
+      {
+        date: '2026-11-10',
+        startMinute: 0,
+        endMinute: 1440,
+        allDay: true,
+        kind: 'non_blocking',
+        title: 'Bday',
+      },
+      {
+        date: '2026-11-11',
+        startMinute: 0,
+        endMinute: 1440,
+        allDay: true,
+        kind: 'busy',
+        title: 'Away',
+      },
+    ]);
+  });
+
+  it('still limits tentative and non-blocking events to the calendars the owner chose', async () => {
+    await busy(A, '2026-11-09', 'tent', 600, 660, { kind: 'tentative', cal: 'family' });
+    await busy(A, '2026-11-10', 'bday', 0, 1440, { kind: 'all_day', cal: 'family' });
     expect((await get(RANGE)).json().items).toEqual([]);
   });
 
@@ -191,22 +267,99 @@ describe.skipIf(!dbAvailable)('GET /calendar/busy (real Postgres)', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  it('shows slots of blocks deleted in Google as busy, in the sync time zone, and not moved ones', async () => {
-    await sql(
-      `insert into rnd.calendar_connections (user_id, refresh_token_ciphertext, sync_timezone)
-       values ($1, 'ct', 'Europe/Berlin')`,
-      [A],
-    );
-    await sql(
+  const lock = (
+    user: string,
+    plan: string,
+    key: string,
+    start: string,
+    end: string,
+    reason = 'deleted',
+  ) =>
+    sql(
       `insert into rnd.calendar_locked_blocks (user_id, plan_id, block_key, task_id, starts_at, ends_at, reason)
-       values ($1, $2, 'k1', 't1', '2026-11-10 08:00+00', '2026-11-10 09:30+00', 'deleted'),
-              ($1, $2, 'k2', 't2', '2026-11-11 08:00+00', '2026-11-11 09:00+00', 'moved')`,
-      [A, PLAN_A],
+       values ($1, $2, $3, 't', $4, $5, $6)`,
+      [user, plan, key, start, end, reason],
     );
-    const res = await get(RANGE);
-    expect(res.json().items).toEqual([
-      { date: '2026-11-10', startMinute: 540, endMinute: 630, allDay: false, title: '' },
-    ]);
+  const setSyncZone = (zone: string) =>
+    sql(
+      `insert into rnd.calendar_connections (user_id, refresh_token_ciphertext, sync_timezone)
+       values ($1, 'ct', $2)`,
+      [A, zone],
+    );
+
+  describe('slots of blocks deleted in Google', () => {
+    it('are busy, in the plan time zone (not the sync zone), and moved ones are not', async () => {
+      await setSyncZone('Asia/Tokyo');
+      await lock(A, PLAN_A, 'k1', '2026-11-10 08:00+00', '2026-11-10 09:30+00');
+      await lock(A, PLAN_A, 'k2', '2026-11-11 08:00+00', '2026-11-11 09:00+00', 'moved');
+      const res = await get(`${RANGE}&planId=${PLAN_A}`);
+      // Berlin is UTC+1 in November: 09:00 to 10:30.
+      expect(res.json().items).toEqual([
+        {
+          date: '2026-11-10',
+          startMinute: 540,
+          endMinute: 630,
+          allDay: false,
+          kind: 'busy',
+          title: '',
+        },
+      ]);
+    });
+
+    it('are filtered by the plan shown: another plan of the same user is not drawn', async () => {
+      await lock(A, PLAN_A, 'k1', '2026-11-10 08:00+00', '2026-11-10 09:00+00');
+      await lock(A, PLAN_B, 'k1', '2026-11-12 08:00+00', '2026-11-12 09:00+00');
+      const a = (await get(`${RANGE}&planId=${PLAN_A}`)).json().items;
+      const b = (await get(`${RANGE}&planId=${PLAN_B}`)).json().items;
+      expect(a.map((i: { date: string }) => i.date)).toEqual(['2026-11-10']);
+      expect(b.map((i: { date: string }) => i.date)).toEqual(['2026-11-12']);
+    });
+
+    it("default to the user's newest active plan, in that plan's zone", async () => {
+      await lock(A, PLAN_A, 'k1', '2026-11-10 08:00+00', '2026-11-10 09:00+00');
+      await lock(A, PLAN_B, 'k1', '2026-11-12 14:00+00', '2026-11-12 15:00+00');
+      // Plan B is the newest; New York is UTC-5 in November: 09:00 to 10:00.
+      expect((await get(RANGE)).json().items).toEqual([
+        {
+          date: '2026-11-12',
+          startMinute: 540,
+          endMinute: 600,
+          allDay: false,
+          kind: 'busy',
+          title: '',
+        },
+      ]);
+    });
+
+    it("never include another user's deleted locks, with or without a planId", async () => {
+      await lock(B, PLAN_OF_B, 'k1', '2026-11-10 08:00+00', '2026-11-10 09:00+00');
+      expect((await get(RANGE, A)).json().items).toEqual([]);
+      // Asking for another user's plan is not found, and shows nothing about it.
+      const res = await get(`${RANGE}&planId=${PLAN_OF_B}`, A);
+      expect(res.statusCode).toBe(404);
+      expect(JSON.stringify((await get(RANGE, B)).json())).toContain('"startMinute":540');
+    });
+
+    it('split on the plan zone across a daylight-saving change', async () => {
+      await setSyncZone('Asia/Tokyo');
+      // New York springs forward on 2026-03-08 (02:00 to 03:00): 15:00Z is 11:00 EDT, not 10:00 EST.
+      await lock(A, PLAN_B, 'dst', '2026-03-08 15:00+00', '2026-03-08 16:00+00');
+      const res = await get(`?from=2026-03-08&to=2026-03-08&planId=${PLAN_B}`);
+      expect(res.json().items).toEqual([
+        {
+          date: '2026-03-08',
+          startMinute: 660,
+          endMinute: 720,
+          allDay: false,
+          kind: 'busy',
+          title: '',
+        },
+      ]);
+    });
+
+    it('rejects a planId that is not a uuid (400)', async () => {
+      expect((await get(`${RANGE}&planId=nope`)).statusCode).toBe(400);
+    });
   });
 
   describe('range validation', () => {

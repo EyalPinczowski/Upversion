@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { gridRange, hourMarks, layoutOverlaps, verticalPosition } from './time-grid';
+import {
+  ALL_DAY_CHIP_REM,
+  allDayLayout,
+  dayOfMonth,
+  gridRange,
+  hourMarks,
+  layoutOverlaps,
+  verticalPosition,
+} from './time-grid';
 
 const s = (name: string, startMinute: number, endMinute: number) => ({
   name,
@@ -90,5 +98,50 @@ describe('verticalPosition and hourMarks', () => {
   });
   it('lists every hour from the start up to before the end', () => {
     expect(hourMarks({ start: 480, end: 720 })).toEqual([480, 540, 600, 660]);
+  });
+});
+
+describe('allDayLayout', () => {
+  it('has no height when no day has an all-day event', () => {
+    expect(allDayLayout([0, 0, 0, 0, 0, 0, 0])).toEqual({
+      lines: 0,
+      heightRem: 0,
+      perDay: Array.from({ length: 7 }, () => ({ shown: 0, hidden: 0 })),
+    });
+  });
+
+  it('gives every day the same row height, set by the busiest day', () => {
+    const l = allDayLayout([0, 1, 2, 0, 0, 0, 0]);
+    expect(l.lines).toBe(2);
+    expect(l.heightRem).toBe(2 * ALL_DAY_CHIP_REM + 0.25);
+    expect(l.perDay.map((d) => d.shown)).toEqual([0, 1, 2, 0, 0, 0, 0]);
+  });
+
+  it('caps the row and folds the rest into one "+N more" line', () => {
+    const l = allDayLayout([5, 1, 3], 3);
+    expect(l.lines).toBe(3);
+    expect(l.heightRem).toBe(3 * ALL_DAY_CHIP_REM + 0.25);
+    // 5 events: 2 chips + "+3 more" fill exactly the 3 lines.
+    expect(l.perDay).toEqual([
+      { shown: 2, hidden: 3 },
+      { shown: 1, hidden: 0 },
+      { shown: 3, hidden: 0 },
+    ]);
+  });
+
+  it('never needs more lines than the row has', () => {
+    for (const counts of [[0], [1], [4, 9], [2, 2, 2]]) {
+      const l = allDayLayout(counts);
+      for (const d of l.perDay)
+        expect(d.shown + (d.hidden > 0 ? 1 : 0)).toBeLessThanOrEqual(l.lines);
+    }
+  });
+});
+
+describe('dayOfMonth', () => {
+  it('has no leading zero', () => {
+    expect(dayOfMonth('2026-11-08')).toBe('8');
+    expect(dayOfMonth('2026-11-10')).toBe('10');
+    expect(dayOfMonth('2026-12-01')).toBe('1');
   });
 });

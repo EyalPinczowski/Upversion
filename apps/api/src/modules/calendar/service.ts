@@ -28,6 +28,7 @@ import {
 } from './google-provider';
 import type { CalendarProvider } from './provider';
 import { calendarRepo, type ConnectionRow, type SourceRow } from './repo';
+import { syncRepo } from './sync-repo';
 import { createWriteGuard } from './write-guard';
 
 export interface CalendarServiceOptions {
@@ -52,6 +53,7 @@ export interface BusyItem {
   startMinute: number;
   endMinute: number;
   allDay: boolean;
+  kind: 'busy' | 'tentative' | 'non_blocking';
   title: string;
 }
 
@@ -207,32 +209,43 @@ export function createCalendarService(options: CalendarServiceOptions) {
     getCalendar: view,
 
     /**
-     * Busy time of the owner's calendars for [from, to] (both inclusive local dates), plus the
-     * slots of blocks the owner deleted in Google. Read only; for display to the owner alone.
+     * What the calendar view shows from the owner's other calendars for [from, to] (inclusive
+     * local dates), plus the slots of blocks the owner deleted in Google for one plan: `planId`,
+     * or the newest active plan (as the sync does). Those slots are split in the plan's time zone.
+     * Read only; for display to the owner alone.
      */
-    async getBusy(userId: string, from: string, to: string): Promise<BusyItem[]> {
+    async getBusy(userId: string, from: string, to: string, planId?: string): Promise<BusyItem[]> {
       return db.withUser(userId, async (ctx) => {
         const items: BusyItem[] = (await calendarRepo.listBusy(ctx, userId, from, to)).map((r) => ({
           date: r.date,
           startMinute: r.start_minute,
           endMinute: r.end_minute,
           allDay: r.all_day,
+          kind: r.kind,
           title: r.title,
         }));
-        for (const l of await calendarRepo.listDeletedLocks(ctx, userId, from, to)) {
-          for (const i of splitByDay(
-            l.starts_at.getTime(),
-            l.ends_at.getTime(),
-            l.sync_timezone ?? 'UTC',
-          )) {
-            if (i.date < from || i.date > to || i.endMinute <= i.startMinute) continue;
-            items.push({
-              date: i.date,
-              startMinute: i.startMinute,
-              endMinute: i.endMinute,
-              allDay: false,
-              title: '',
-            });
+        let plan: { id: string; timezone: string } | null = null;
+        if (planId) {
+          const timezone = await calendarRepo.planTimezone(ctx, userId, planId);
+          if (timezone === null) throw new HttpError(404, 'not_found', 'Resource not found.');
+          plan = { id: planId, timezone };
+        } else {
+          const newest = (await syncRepo.activePlans(ctx, userId, 1))[0];
+          if (newest) plan = { id: newest.id, timezone: newest.timezone };
+        }
+        if (plan) {
+          for (const l of await calendarRepo.listDeletedLocks(ctx, userId, plan.id, from, to)) {
+            for (const i of splitByDay(l.starts_at.getTime(), l.ends_at.getTime(), plan.timezone)) {
+              if (i.date < from || i.date > to || i.endMinute <= i.startMinute) continue;
+              items.push({
+                date: i.date,
+                startMinute: i.startMinute,
+                endMinute: i.endMinute,
+                allDay: false,
+                kind: 'busy',
+                title: '',
+              });
+            }
           }
         }
         return items.sort((a, b) => a.date.localeCompare(b.date) || a.startMinute - b.startMinute);

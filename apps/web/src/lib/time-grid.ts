@@ -94,3 +94,43 @@ export function hourMarks(range: GridRange): number[] {
   for (let m = range.start; m < range.end; m += HOUR) marks.push(m);
   return marks;
 }
+
+/** Height of the day header (weekday, date and "Today" on three lines), in rem. */
+export const HEADER_REM = 4.5;
+/** Height of one all-day chip, in rem. */
+export const ALL_DAY_CHIP_REM = 1.5;
+/** Most lines the shared all-day row shows per day; the rest is summarised and kept for readers. */
+export const ALL_DAY_MAX_LINES = 3;
+
+export interface AllDayLayout {
+  /** Chip lines in the row, the same for every day column; 0 when no day has an all-day event. */
+  lines: number;
+  /** Height of the shared row, in rem: the same for every column and for the hour-label spacer. */
+  heightRem: number;
+  /** Per day: how many events are drawn as chips, and how many are folded into "+N more". */
+  perDay: { shown: number; hidden: number }[];
+}
+
+/**
+ * One all-day row shared by all day columns, so the hour grid starts at the same height in every
+ * column. Its height depends on the busiest day only (capped at `maxLines`), never on one column
+ * on its own. A day with more events than fit shows `maxLines - 1` chips and one "+N more" line.
+ */
+export function allDayLayout(
+  counts: readonly number[],
+  maxLines = ALL_DAY_MAX_LINES,
+): AllDayLayout {
+  const lines = Math.min(maxLines, Math.max(0, ...counts));
+  return {
+    lines,
+    heightRem: lines * ALL_DAY_CHIP_REM + (lines > 0 ? 0.25 : 0),
+    perDay: counts.map((n) =>
+      n <= lines ? { shown: n, hidden: 0 } : { shown: lines - 1, hidden: n - (lines - 1) },
+    ),
+  };
+}
+
+/** The day of the month without a leading zero, from a `YYYY-MM-DD` date. */
+export function dayOfMonth(date: string): string {
+  return String(Number(date.slice(8, 10)));
+}

@@ -22,6 +22,8 @@ export interface BusyItemRow {
   start_minute: number;
   end_minute: number;
   all_day: boolean;
+  /** busy: counts as busy; tentative: "maybe"; non_blocking: all-day event that does not block. */
+  kind: 'busy' | 'tentative' | 'non_blocking';
   title: string;
 }
 
@@ -162,8 +164,10 @@ export const calendarRepo = {
   },
 
   /**
-   * Busy intervals for the time grid: only calendars the owner chose to block time, only events
-   * that count as busy (not tentative ones, not all-day ones unless marked as blocking).
+   * Everything the calendar view shows from the owner's other calendars, only from calendars the
+   * owner chose to block time (spec 3.8): busy events and blocking all-day events as 'busy',
+   * tentative ones as 'tentative', all-day events that do not block as 'non_blocking'. Free and
+   * declined events are never stored.
    */
   async listBusy(
     ctx: UserContext,
@@ -173,37 +177,45 @@ export const calendarRepo = {
   ): Promise<BusyItemRow[]> {
     const { rows } = await ctx.client.query<BusyItemRow>(
       `select b.date::text as date, b.start_minute, b.end_minute,
-              (b.kind = 'all_day') as all_day, b.title
+              (b.kind = 'all_day') as all_day, b.title,
+              case when b.kind = 'busy' or (b.kind = 'all_day' and b.blocks_day) then 'busy'
+                   when b.kind = 'tentative' then 'tentative'
+                   else 'non_blocking' end as kind
        from ${ctx.schema}.calendar_busy b
        join ${ctx.schema}.calendar_sources s
          on s.user_id = b.user_id and s.calendar_id = b.source_calendar_id and s.blocks_time
        where b.user_id = $1 and b.date between $2::date and $3::date
-         and (b.kind = 'busy' or (b.kind = 'all_day' and b.blocks_day))
        order by b.date, b.start_minute, b.external_event_id`,
       [userId, from, to],
     );
     return rows;
   },
 
-  /** Slots of blocks the user deleted in Google (they stay unavailable), with the sync's zone. */
+  /** The time zone of one plan's week pattern, or null when the user has no such plan. */
+  async planTimezone(ctx: UserContext, userId: string, planId: string): Promise<string | null> {
+    const { rows } = await ctx.client.query<{ timezone: string }>(
+      `select w.timezone from ${ctx.schema}.week_patterns w
+       where w.user_id = $1 and w.plan_id = $2`,
+      [userId, planId],
+    );
+    return rows[0]?.timezone ?? null;
+  },
+
+  /** Slots of one plan's blocks the user deleted in Google (they stay unavailable). */
   async listDeletedLocks(
     ctx: UserContext,
     userId: string,
+    planId: string,
     from: string,
     to: string,
-  ): Promise<{ starts_at: Date; ends_at: Date; sync_timezone: string | null }[]> {
-    const { rows } = await ctx.client.query<{
-      starts_at: Date;
-      ends_at: Date;
-      sync_timezone: string | null;
-    }>(
-      `select l.starts_at, l.ends_at, c.sync_timezone
+  ): Promise<{ starts_at: Date; ends_at: Date }[]> {
+    const { rows } = await ctx.client.query<{ starts_at: Date; ends_at: Date }>(
+      `select l.starts_at, l.ends_at
        from ${ctx.schema}.calendar_locked_blocks l
-       left join ${ctx.schema}.calendar_connections c on c.user_id = l.user_id
-       where l.user_id = $1 and l.reason = 'deleted'
-         and l.ends_at > ($2::date - 1) and l.starts_at < ($3::date + 2)
+       where l.user_id = $1 and l.plan_id = $2 and l.reason = 'deleted'
+         and l.ends_at > ($3::date - 1) and l.starts_at < ($4::date + 2)
        order by l.starts_at, l.block_key`,
-      [userId, from, to],
+      [userId, planId, from, to],
     );
     return rows;
   },

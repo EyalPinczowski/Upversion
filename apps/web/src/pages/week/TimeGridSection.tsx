@@ -3,6 +3,7 @@ import type { PlanSummary, Schedule, Task } from '../../api/client';
 import { useCalendarBusy, useCalendarStatus } from '../../api/calendar-hooks';
 import { usePlan } from '../../api/hooks';
 import { ErrorText, linkClass } from '../../components/ui';
+import { ConnectButton } from '../settings/CalendarSettings';
 import { TimeGrid } from './TimeGrid';
 
 /** Used only until the plan's own study window has loaded, or when the plan has none. */
@@ -29,9 +30,11 @@ export function TimeGridSection({
   const status = useCalendarStatus();
   const detail = usePlan(plan.id);
   const connected = status.data?.status === 'connected';
-  const busy = useCalendarBusy(weekStart, weekEnd, connected);
+  // After a rejected token the busy time already synced is still there to show.
+  const reconnect = status.data?.status === 'needs_reconnect';
+  const busy = useCalendarBusy(weekStart, weekEnd, plan.id, connected || reconnect);
   const pattern = detail.data?.weekPattern;
-  const notConnected = status.isSuccess && !connected;
+  const notConnected = status.isSuccess && !connected && !reconnect;
 
   return (
     <section aria-labelledby="grid-heading" className="min-w-0 space-y-3">
@@ -44,13 +47,21 @@ export function TimeGridSection({
           to see your busy time
         </p>
       ) : null}
+      {reconnect ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-muted">
+            The busy time below is from the last sync. Reconnect Google Calendar to refresh it.
+          </p>
+          <ConnectButton label="Reconnect Google Calendar" />
+        </div>
+      ) : null}
       {busy.isError ? <ErrorText>Could not load your busy time.</ErrorText> : null}
       <TimeGrid
         weekStart={weekStart}
         today={schedule.today}
         blocks={schedule.blocks}
         tasks={tasks}
-        busy={connected ? (busy.data ?? []) : []}
+        busy={connected || reconnect ? (busy.data ?? []) : []}
         window={pattern ? { start: pattern.windowStart, end: pattern.windowEnd } : FALLBACK_WINDOW}
       />
     </section>

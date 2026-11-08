@@ -6,7 +6,11 @@ import type { CalendarBusyItem } from '../../api/calendar-hooks';
 import { monthDay, weekdayShort } from '../../lib/format';
 import { TASK_TYPE_META } from '../../lib/task-types';
 import {
+  allDayLayout,
+  ALL_DAY_CHIP_REM,
+  dayOfMonth,
   gridRange,
+  HEADER_REM,
   hourMarks,
   layoutOverlaps,
   verticalPosition,
@@ -28,6 +32,8 @@ interface PlanItem extends Span {
 }
 interface BusyBlock extends Span {
   kind: 'busy';
+  /** Busy: solid, hatched, "Busy". Tentative: dashed outline, "Maybe busy". */
+  state: 'busy' | 'tentative';
   key: string;
   title: string;
 }
@@ -51,18 +57,91 @@ function PlanBlock({ item, from, to }: { item: PlanItem; from: string; to: strin
 }
 
 function BusyBlockView({ item, from, to }: { item: BusyBlock; from: string; to: string }) {
+  const tentative = item.state === 'tentative';
+  const label = tentative ? 'Maybe busy' : 'Busy';
   return (
     <div
       role="group"
       tabIndex={0}
-      aria-label={`Busy${item.title ? `: ${item.title}` : ''}, ${range(from, to)}`}
-      className="relative h-full min-w-0 overflow-hidden rounded-sm border border-dashed border-muted bg-surface-2 px-1 py-0.5 text-xs leading-tight text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      aria-label={`${label}${item.title ? `: ${item.title}` : ''}, ${range(from, to)}`}
+      className={`relative h-full min-w-0 overflow-hidden rounded-sm border px-1 py-0.5 text-xs leading-tight text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${tentative ? 'border-dashed border-muted bg-surface' : 'border-solid border-muted bg-surface-2'}`}
     >
-      <svg aria-hidden="true" className="absolute inset-0 h-full w-full text-border">
-        <rect width="100%" height="100%" fill={`url(#${HATCH_ID})`} />
-      </svg>
-      <span className="relative block font-bold">Busy</span>
+      {tentative ? null : (
+        <svg aria-hidden="true" className="absolute inset-0 h-full w-full">
+          <rect width="100%" height="100%" fill={`url(#${HATCH_ID})`} />
+        </svg>
+      )}
+      <span className="relative block font-bold">{label}</span>
       {item.title ? <span className="relative block break-words">{item.title}</span> : null}
+    </div>
+  );
+}
+
+const ALL_DAY_LABEL = { busy: 'Busy all day', tentative: 'Maybe busy all day' } as const;
+
+function allDayText(a: CalendarBusyItem): string {
+  const prefix = a.kind === 'non_blocking' ? 'All day' : ALL_DAY_LABEL[a.kind];
+  return `${prefix}${a.title ? `: ${a.title}` : ''}`;
+}
+
+/** One all-day event as a fixed-height, one-line chip; the full text stays in the page and title. */
+function AllDayChip({ item }: { item: CalendarBusyItem }) {
+  const style =
+    item.kind === 'busy'
+      ? 'border border-solid border-muted bg-surface-2 text-muted'
+      : item.kind === 'tentative'
+        ? 'border border-dashed border-muted bg-surface text-muted'
+        : 'border border-transparent text-muted';
+  const text = allDayText(item);
+  return (
+    <p
+      title={text}
+      className={`truncate rounded-sm px-1 text-xs leading-5 ${style}`}
+      style={{ height: `${ALL_DAY_CHIP_REM - 0.125}rem`, marginBottom: '0.125rem' }}
+    >
+      {text}
+    </p>
+  );
+}
+
+/** The shared all-day row of one day: fixed height, clipped, nothing hidden from readers. */
+function AllDayCell({
+  events,
+  shown,
+  hidden,
+  heightRem,
+}: {
+  events: CalendarBusyItem[];
+  shown: number;
+  hidden: number;
+  heightRem: number;
+}) {
+  const folded = events.slice(shown);
+  return (
+    <div
+      className="overflow-hidden border-b border-border px-0.5 pt-0.5"
+      style={{ height: `${heightRem}rem` }}
+    >
+      {events.slice(0, shown).map((a, i) => (
+        <AllDayChip key={i} item={a} />
+      ))}
+      {hidden > 0 ? (
+        <>
+          <p
+            aria-hidden="true"
+            title={folded.map(allDayText).join('; ')}
+            className="truncate px-1 text-xs leading-5 text-muted"
+            style={{ height: `${ALL_DAY_CHIP_REM - 0.125}rem` }}
+          >
+            +{hidden} more
+          </p>
+          <ul className="sr-only">
+            {folded.map((a, i) => (
+              <li key={i}>{allDayText(a)}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
     </div>
   );
 }
@@ -71,6 +150,8 @@ function DayColumn({
   date,
   items,
   allDay,
+  allDayShape,
+  allDayHeightRem,
   rangeOfDay,
   isToday,
   visibleOnPhone,
@@ -78,6 +159,9 @@ function DayColumn({
   date: string;
   items: Item[];
   allDay: CalendarBusyItem[];
+  allDayShape: { shown: number; hidden: number };
+  /** Height of the all-day row, the same for every column. */
+  allDayHeightRem: number;
   rangeOfDay: GridRange;
   isToday: boolean;
   visibleOnPhone: boolean;
@@ -91,22 +175,19 @@ function DayColumn({
       aria-label={`${weekdayShort(date)}, ${monthDay(date)}${isToday ? ', today' : ''}`}
     >
       <div
-        className={`flex h-14 flex-col items-center justify-center border-b border-border text-center ${isToday ? 'bg-accent-soft font-bold text-accent-soft-text' : ''}`}
+        className={`flex flex-col items-center justify-center overflow-hidden border-b border-border text-center leading-6 ${isToday ? 'bg-accent-soft font-bold text-accent-soft-text' : ''}`}
+        style={{ height: `${HEADER_REM}rem` }}
       >
         <span>{weekdayShort(date)}</span>
         <span className="tabular-nums">{monthDay(date)}</span>
-        {isToday ? <span className="text-xs">Today</span> : null}
+        {isToday ? <span className="text-xs leading-4">Today</span> : null}
       </div>
-      <div className="min-h-6 space-y-0.5 border-b border-border p-0.5">
-        {allDay.map((a, i) => (
-          <p
-            key={i}
-            className="min-w-0 break-words rounded-sm border border-dashed border-muted bg-surface-2 px-1 text-xs text-muted"
-          >
-            Busy all day{a.title ? `: ${a.title}` : ''}
-          </p>
-        ))}
-      </div>
+      <AllDayCell
+        events={allDay}
+        shown={allDayShape.shown}
+        hidden={allDayShape.hidden}
+        heightRem={allDayHeightRem}
+      />
       <div
         className={`relative border-l border-border ${isToday ? 'bg-accent-soft/40' : ''}`}
         style={{ height: `${height}rem` }}
@@ -196,12 +277,13 @@ export function TimeGrid({
   });
   busy.forEach((b, i) => {
     if (!dates.includes(b.date)) return;
-    if (b.allDay) {
+    if (b.allDay || b.kind === 'non_blocking') {
       allDayByDate.set(b.date, [...(allDayByDate.get(b.date) ?? []), b]);
       return;
     }
     add(b.date, {
       kind: 'busy',
+      state: b.kind === 'tentative' ? 'tentative' : 'busy',
       key: `busy-${i}`,
       title: b.title,
       startMinute: b.startMinute,
@@ -209,6 +291,7 @@ export function TimeGrid({
     });
   });
 
+  const allDayShape = allDayLayout(dates.map((d) => allDayByDate.get(d)?.length ?? 0));
   const everything = [...byDate.values()].flat();
   const rangeOfWeek = gridRange(
     { startMinute: parseTime(window.start), endMinute: parseTime(window.end) },
@@ -220,22 +303,26 @@ export function TimeGrid({
       <svg width="0" height="0" aria-hidden="true" className="absolute">
         <defs>
           <pattern id={HATCH_ID} width="6" height="6" patternUnits="userSpaceOnUse">
-            <path d="M-1 1 L1 -1 M0 6 L6 0 M5 7 L7 5" stroke="currentColor" strokeWidth="1" />
+            <path
+              d="M-1 1 L1 -1 M0 6 L6 0 M5 7 L7 5"
+              style={{ stroke: 'var(--color-border)' }}
+              strokeWidth="1"
+            />
           </pattern>
         </defs>
       </svg>
 
-      <div role="group" aria-label="Day" className="grid grid-cols-7 gap-1 lg:hidden">
+      <div role="group" aria-label="Day" className="grid grid-cols-7 gap-0.5 lg:hidden">
         {dates.map((d) => (
           <button
             key={d}
             type="button"
             aria-pressed={d === selected}
             onClick={() => setPicked(d)}
-            className={`min-h-11 rounded-md border px-0.5 text-center text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${d === selected ? 'border-accent bg-accent-soft font-bold text-accent-soft-text' : 'border-border bg-surface'}`}
+            className={`min-h-11 min-w-0 overflow-hidden rounded-md border px-0 text-center text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${d === selected ? 'border-accent bg-accent-soft font-bold text-accent-soft-text' : 'border-border bg-surface'}`}
           >
             <span className="block">{weekdayShort(d)}</span>
-            <span className="block tabular-nums">{d.slice(8)}</span>
+            <span className="block tabular-nums">{dayOfMonth(d)}</span>
             {d === today ? <span className="block text-xs">Today</span> : null}
           </button>
         ))}
@@ -243,8 +330,11 @@ export function TimeGrid({
 
       <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] lg:grid-cols-[2.5rem_repeat(7,minmax(0,1fr))]">
         <div aria-hidden="true">
-          <div className="h-14" />
-          <div className="min-h-6 border-b border-transparent p-0.5" />
+          <div style={{ height: `${HEADER_REM}rem` }} className="border-b border-transparent" />
+          <div
+            style={{ height: `${allDayShape.heightRem}rem` }}
+            className="border-b border-transparent"
+          />
           <div
             className="relative"
             style={{ height: `${((rangeOfWeek.end - rangeOfWeek.start) / 60) * HOUR_REM}rem` }}
@@ -262,12 +352,14 @@ export function TimeGrid({
             ))}
           </div>
         </div>
-        {dates.map((d) => (
+        {dates.map((d, i) => (
           <DayColumn
             key={d}
             date={d}
             items={byDate.get(d) ?? []}
             allDay={allDayByDate.get(d) ?? []}
+            allDayShape={allDayShape.perDay[i]!}
+            allDayHeightRem={allDayShape.heightRem}
             rangeOfDay={rangeOfWeek}
             isToday={d === today}
             visibleOnPhone={d === selected}

@@ -47,14 +47,14 @@ export function useCalendarStatus() {
  * It is the owner's own calendar data and is only ever shown to the owner. `enabled` stays false
  * until the calendar is connected, so nothing is requested otherwise.
  */
-export function useCalendarBusy(from: string, to: string, enabled: boolean) {
+export function useCalendarBusy(from: string, to: string, planId: string, enabled: boolean) {
   const api = useApi();
   return useQuery({
-    queryKey: [...calendarKey, 'busy', from, to] as const,
+    queryKey: [...calendarKey, 'busy', planId, from, to] as const,
     queryFn: async ({ signal }): Promise<CalendarBusyItem[]> => {
       try {
         const { items } = await unwrap(
-          api.raw.GET('/api/v1/calendar/busy', { params: { query: { from, to } }, signal }),
+          api.raw.GET('/api/v1/calendar/busy', { params: { query: { from, to, planId } }, signal }),
         );
         return items;
       } catch (error) {

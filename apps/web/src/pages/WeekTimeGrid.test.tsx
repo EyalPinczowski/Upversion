@@ -29,9 +29,39 @@ const connected = {
   sources: [{ calendarId: 'work', name: 'Work', blocksTime: true }],
 };
 const busyItems = [
-  { date: '2026-11-10', startMinute: 840, endMinute: 900, allDay: false, title: 'Dentist' },
-  { date: '2026-11-11', startMinute: 0, endMinute: 1440, allDay: true, title: 'Conference' },
+  {
+    date: '2026-11-10',
+    startMinute: 840,
+    endMinute: 900,
+    allDay: false,
+    kind: 'busy' as const,
+    title: 'Dentist',
+  },
+  {
+    date: '2026-11-11',
+    startMinute: 0,
+    endMinute: 1440,
+    allDay: true,
+    kind: 'busy' as const,
+    title: 'Conference',
+  },
 ];
+const maybe = {
+  date: '2026-11-12',
+  startMinute: 600,
+  endMinute: 660,
+  allDay: false,
+  kind: 'tentative' as const,
+  title: 'Lunch?',
+};
+const birthday = {
+  date: '2026-11-12',
+  startMinute: 0,
+  endMinute: 1440,
+  allDay: true,
+  kind: 'non_blocking' as const,
+  title: 'Birthday',
+};
 
 function open(extra: Parameters<typeof planRoutes>[0] = {}, path = '/week?view=grid') {
   const api = installApi(
@@ -46,7 +76,16 @@ function open(extra: Parameters<typeof planRoutes>[0] = {}, path = '/week?view=g
   return api;
 }
 
-const withCalendar = (items = busyItems) => ({
+const withCalendar = (
+  items: {
+    date: string;
+    startMinute: number;
+    endMinute: number;
+    allDay: boolean;
+    kind: 'busy' | 'tentative' | 'non_blocking';
+    title: string;
+  }[] = busyItems,
+) => ({
   'GET /api/v1/calendar': () => json(connected),
   'GET /api/v1/calendar/busy': () => json({ items }),
 });
@@ -88,6 +127,70 @@ describe('Week time grid', () => {
     );
   });
 
+  it('draws busy, maybe-busy and non-blocking events in three different, text-labelled styles', async () => {
+    open(withCalendar([...busyItems, maybe, birthday]));
+    const solid = await screen.findByRole('group', { name: 'Busy: Dentist, 14:00 to 15:00' });
+    const dashed = screen.getByRole('group', { name: 'Maybe busy: Lunch?, 10:00 to 11:00' });
+    expect(solid).toHaveTextContent('Busy');
+    expect(dashed).toHaveTextContent('Maybe busy');
+    // Busy: solid outline and hatch; tentative: dashed outline and no hatch.
+    expect(solid.className).toMatch(/border-solid/);
+    expect(solid.className).not.toMatch(/border-dashed/);
+    expect(solid.querySelector('rect[fill^="url(#"]')).not.toBeNull();
+    expect(dashed.className).toMatch(/border-dashed/);
+    expect(dashed.querySelector('rect')).toBeNull();
+    // Non-blocking all-day: a light text-only chip, no border or fill, never called busy.
+    const chip = screen.getByText('All day: Birthday');
+    expect(chip.className).toMatch(/border-transparent/);
+    expect(chip.className).not.toMatch(/bg-surface-2|border-dashed|border-solid/);
+    expect(screen.getByText('Busy all day: Conference').className).toMatch(/border-solid/);
+  });
+
+  it('hatches with a fixed token colour on the path, not an inherited currentColor', async () => {
+    open(withCalendar());
+    await screen.findByRole('group', { name: /Busy: Dentist/ });
+    const path = document.querySelector('pattern path') as SVGPathElement;
+    expect(path.getAttribute('stroke')).not.toBe('currentColor');
+    expect(path.style.stroke).toBe('var(--color-border)');
+  });
+
+  it('keeps every column and the hour labels on the same height: one all-day row, fixed header', async () => {
+    open(withCalendar([...busyItems, birthday, { ...birthday, title: 'Other' }]));
+    await screen.findByRole('group', { name: /Busy: Dentist/ });
+    const cells = [
+      ...document.querySelectorAll<HTMLElement>('div.overflow-hidden.border-b'),
+    ].filter((el) => el.style.height && !el.className.includes('flex'));
+    // Seven all-day cells plus the (transparent) spacer share one height; so do the headers.
+    const rowHeights = new Set(cells.map((c) => c.style.height));
+    expect(rowHeights.size).toBe(1);
+    // Thursday (Nov 12) has two all-day events; the row is two lines tall for every day.
+    expect([...rowHeights][0]).toBe('3.25rem');
+    const headers = [...document.querySelectorAll<HTMLElement>('div.flex-col.items-center')];
+    expect(new Set(headers.map((h) => h.style.height))).toEqual(new Set(['4.5rem']));
+    const spacers = [
+      ...document.querySelectorAll<HTMLElement>('[aria-hidden="true"] > .border-transparent'),
+    ];
+    expect(spacers.map((s) => s.style.height)).toEqual(['4.5rem', '3.25rem']);
+  });
+
+  it('keeps the full text of folded all-day events for screen readers', async () => {
+    const many = ['A', 'B', 'C', 'D'].map((t) => ({ ...birthday, title: t }));
+    open(withCalendar(many));
+    await screen.findByText('+2 more');
+    expect(screen.getByText('All day: C')).toBeInTheDocument();
+    expect(screen.getByText('All day: D')).toBeInTheDocument();
+  });
+
+  it('shows the day buttons without leading zeros', async () => {
+    open(withCalendar());
+    const days = await screen.findByRole('group', { name: 'Day' });
+    expect(within(days).getByRole('button', { name: /Sun\s*8/ })).toBeInTheDocument();
+    expect(within(days).queryByText('08')).not.toBeInTheDocument();
+    // Seven equal columns with 2px gaps: ~39px each at 320px wide, enough for "Today" at 12px.
+    expect(days.className).toMatch(/grid-cols-7/);
+    expect(days.className).toMatch(/gap-0\.5/);
+  });
+
   it('puts overlapping blocks side by side', async () => {
     open(withCalendar());
     const first = await screen.findByRole('link', { name: /Intro to SQL, 09:00 to 10:00/ });
@@ -125,12 +228,13 @@ describe('Week time grid', () => {
     expect(column('Tue, Nov 10, today').className).toMatch(/(^| )hidden( |$)/);
   });
 
-  it('asks for the busy time of the shown week only, and only once connected', async () => {
+  it('asks for the busy time of the shown plan and week only, and only once connected', async () => {
     const api = open(withCalendar());
     await screen.findByRole('group', { name: /Busy: Dentist/ });
     const call = api.calls.find((c) => new URL(c.url).pathname === '/api/v1/calendar/busy')!;
     expect(new URL(call.url).searchParams.get('from')).toBe('2026-11-08');
     expect(new URL(call.url).searchParams.get('to')).toBe('2026-11-14');
+    expect(new URL(call.url).searchParams.get('planId')).toBe(PLAN_ID);
   });
 
   it('has no accessibility violations', async () => {
@@ -165,6 +269,20 @@ describe('Week time grid without a calendar', () => {
     open(withCalendar([]));
     await screen.findByRole('heading', { name: 'Time grid' });
     await screen.findByRole('link', { name: /Course: Intro to SQL, 09:00/ });
+    expect(screen.queryByText(/to see your busy time/)).not.toBeInTheDocument();
+  });
+});
+
+describe('Week time grid when Google needs a reconnect', () => {
+  it('asks to reconnect and still shows the busy time already synced', async () => {
+    const api = open({
+      'GET /api/v1/calendar': () => json({ ...connected, status: 'needs_reconnect' }),
+      'GET /api/v1/calendar/busy': () => json({ items: busyItems }),
+    });
+    expect(await screen.findByRole('button', { name: 'Reconnect Google Calendar' })).toBeVisible();
+    expect(screen.getByText(/busy time below is from the last sync/)).toBeVisible();
+    expect(await screen.findByRole('group', { name: /Busy: Dentist/ })).toBeVisible();
+    expect(api.count('GET /api/v1/calendar/busy')).toBe(1);
     expect(screen.queryByText(/to see your busy time/)).not.toBeInTheDocument();
   });
 });

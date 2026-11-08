@@ -69,7 +69,7 @@ const valid = (q: { from: unknown; to: unknown }) =>
 
 /** Strict: a `userId` or any other unknown key is rejected, never ignored. */
 export const busyQuery = z
-  .strictObject({ from: LocalDateSchema, to: LocalDateSchema })
+  .strictObject({ from: LocalDateSchema, to: LocalDateSchema, planId: z.uuid().optional() })
   // Refinements can run when a field already failed, so they accept anything and never throw.
   .refine((q) => !valid(q) || q.from <= q.to, { message: 'from must not be after to' })
   .refine((q) => !valid(q) || diffDays(q.from, q.to) < BUSY_MAX_DAYS, {
@@ -85,6 +85,11 @@ export const busyItem = z.object({
   startMinute: z.number().int().min(0).max(1440),
   endMinute: z.number().int().min(0).max(1440),
   allDay: z.boolean(),
+  /**
+   * `busy` counts as busy time, `tentative` is a "maybe", `non_blocking` is an all-day event that
+   * does not block the day. The grid draws each differently and labels it in text.
+   */
+  kind: z.enum(['busy', 'tentative', 'non_blocking']),
   /** The event's title as the owner's calendar has it (empty when there is none). */
   title: z.string(),
 });
