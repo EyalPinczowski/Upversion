@@ -2810,6 +2810,199 @@ export interface paths {
         };
         trace?: never;
     };
+    "/api/v1/me/cv/tailor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rewrite the CV text for one job post with a free-tier AI model
+         * @description The texts must already be clean: the server checks them as received and answers 422 `pii_blocked` instead of repairing them (nothing is sent to a model then and nothing is counted). Names and street addresses are NOT detected. Only Cloudflare Workers AI, then Groq as a backup, may receive the text; `providers` lists every one that did. 429 `rate_limited` (3 per minute), `ai_user_cap` (3 per day), `ai_feature_cap` (20 per day for everyone). 503 `ai_unavailable` carries no provider information. Nothing is stored or logged: the answer is returned once.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        cvText: string;
+                        jobText: string;
+                        roleId?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            text: string;
+                            notes: {
+                                /** @enum {string} */
+                                kind: "missing_keyword" | "matched_keyword" | "model_note" | "check_number" | "check_skill" | "check_term" | "output_redacted";
+                                text: string;
+                            }[];
+                            flags: {
+                                /** @enum {string} */
+                                kind: "number" | "skill" | "certificate" | "degree" | "term" | "placeholder";
+                                text: string;
+                            }[];
+                            providers: {
+                                id: string;
+                                label: string;
+                            }[];
+                            usage: {
+                                used: number;
+                                cap: number;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/plans/import": {
         parameters: {
             query?: never;
@@ -12728,6 +12921,13 @@ export interface paths {
                                     used: number;
                                     cap: number;
                                 };
+                                cvTailor: {
+                                    used: number;
+                                    cap: number;
+                                };
+                            };
+                            features: {
+                                cvTailor: boolean;
                             };
                             avoidedToday: number;
                             providers: {

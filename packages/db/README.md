@@ -31,6 +31,8 @@ Migration 0015 (calendar event details, additive): `calendar_event_links.last_de
 
 Migration 0016 (user profiles, ADR 015): `user_profiles`, one row per user (a missing row means setup not started): setup `answers`, CV-confirmed or manual `skills`, `roles_held`, `years_experience`, `cv_imported_at`, `setup_status` and `setup_step`. No column for raw CV text, files or evidence (the CV is read in the browser only); `pg_column_size` caps on the three jsonb columns; the app can add, read, change and delete its own row and update every column except `user_id` and `created_at`; cascade on account delete. Tests: `test/profile-schema.test.ts` (both schemas) and the parametrised cases in `test/data-model.test.ts`.
 
+Migration 0017 (CV tailoring, ADR 016): additive. `ai_usage_daily.purpose` also accepts `cv_tailor` (the check `ai_usage_daily_purpose_check` is dropped and re-added; `ai_cache` is deliberately unchanged, so a `cv_tailor` cache row stays impossible) and `ai_feature_usage_today(p_purpose)`, a SECURITY DEFINER function that returns today's (UTC) request sum for one purpose over all users, the one number the app-wide cap needs (no rows, signed-in users only). Tests: `test/cv-tailor-schema.test.ts` (both schemas) and `test/convention.test.ts`.
+
 SQL tokens: `{{schema}} {{owner}} {{app}} {{app_user}} {{backup}}`. Anything else in `{{ }}` is an error.
 
 ## How the roles fit together (per schema `s`)

@@ -79,6 +79,12 @@ function memoryUsage(log: string[] = []) {
       log.push(`reserve:${providerId}`);
       return true;
     },
+    async providerUsage() {
+      return Object.fromEntries(providers);
+    },
+    async featureTotalToday(_userId, purpose) {
+      return [...users].reduce((n, [key, v]) => (key.endsWith(`:${purpose}`) ? n + v : n), 0);
+    },
     async snapshot() {
       throw new Error('not used');
     },
@@ -135,7 +141,7 @@ function setup(
   const config: GatewayConfig = {
     providerOrder: providers.map((p) => p.id),
     budgets: Object.fromEntries(providers.map((p) => [p.id, 100])),
-    userCaps: { practice_message: 5, practice_feedback: 2, day_overview: 1 },
+    userCaps: { practice_message: 5, practice_feedback: 2, day_overview: 1, cv_tailor: 3 },
     timeoutMs: 1000,
     turnTimeoutMs: 5000,
     historyChars: 12000,
@@ -477,7 +483,7 @@ describe('budgets and caps', () => {
   it('stops a user at the cap (429) while another user still succeeds', async () => {
     const calls: string[] = [];
     const { gateway } = setup([provider('one', ok(), calls)], {
-      userCaps: { practice_message: 2, practice_feedback: 2, day_overview: 1 },
+      userCaps: { practice_message: 2, practice_feedback: 2, day_overview: 1, cv_tailor: 3 },
     });
     await gateway.generate({ userId: USER_A, request: request() });
     await gateway.generate({ userId: USER_A, request: request() });
@@ -502,7 +508,7 @@ describe('budgets and caps', () => {
 
   it('treats a cap of 0 as no calls allowed', async () => {
     const { gateway } = setup([provider('one', ok())], {
-      userCaps: { practice_message: 0, practice_feedback: 0, day_overview: 0 },
+      userCaps: { practice_message: 0, practice_feedback: 0, day_overview: 0, cv_tailor: 3 },
     });
     await expect(gateway.generate({ userId: USER_A, request: request() })).rejects.toBeInstanceOf(
       AIUserCapError,
@@ -649,7 +655,7 @@ describe('the paid and fake providers', () => {
       config: {
         providerOrder: ['paid'],
         budgets: { paid: 10 },
-        userCaps: { practice_message: 5, practice_feedback: 5, day_overview: 5 },
+        userCaps: { practice_message: 5, practice_feedback: 5, day_overview: 5, cv_tailor: 3 },
         timeoutMs: 100,
         turnTimeoutMs: 200,
         historyChars: 1000,
@@ -759,5 +765,137 @@ describe('provider error text stays out of responses and logs', () => {
     expect(res.json().error.code).toBe('pii_blocked');
     expect(res.body).not.toMatch(/email/);
     await app.close();
+  });
+});
+
+describe('providers option and the budget check before the user’s reservation (ADR 016)', () => {
+  const cv = () =>
+    request({ purpose: 'cv_tailor', messages: [{ role: 'user', content: 'Tailor this CV.' }] });
+
+  it('only consults the listed providers, in that order, and never another', async () => {
+    const calls: string[] = [];
+    const { gateway } = setup([
+      provider('first', ok('from first'), calls),
+      provider('second', ok('from second'), calls),
+      provider('third', ok('from third'), calls),
+    ]);
+    const res = await gateway.generate({
+      userId: USER_A,
+      request: cv(),
+      providers: ['third', 'second'],
+    });
+    expect(res.providerId).toBe('third');
+    expect(res.sentTo).toEqual(['third']);
+    expect(calls).toEqual(['third']);
+  });
+
+  it('lists every provider that received the text, the failed one first', async () => {
+    const calls: string[] = [];
+    const { gateway } = setup([
+      provider('one', async () => Promise.reject(new ProviderUnavailableError()), calls),
+      provider('two', ok('from two'), calls),
+      provider('other', ok('from other'), calls),
+    ]);
+    const res = await gateway.generate({
+      userId: USER_A,
+      request: cv(),
+      providers: ['one', 'two'],
+    });
+    expect(res.sentTo).toEqual(['one', 'two']);
+    expect(res.switched).toMatchObject({ from: 'one', to: 'two' });
+    expect(calls).toEqual(['one', 'two']);
+  });
+
+  it('ends in 503 without reaching an unlisted provider when the listed ones fail', async () => {
+    const calls: string[] = [];
+    const { gateway, usage } = setup([
+      provider('one', async () => Promise.reject(new ProviderUnavailableError()), calls),
+      provider('other', ok('from other'), calls),
+    ]);
+    await expect(
+      gateway.generate({ userId: USER_A, request: cv(), providers: ['one'] }),
+    ).rejects.toBeInstanceOf(AIUnavailableError);
+    expect(calls).toEqual(['one']);
+    // A provider was attempted, so the user's call stays reserved.
+    expect(usage.users.get(`${USER_A}:cv_tailor`)).toBe(1);
+  });
+
+  it('judges "usable" on the listed providers only', async () => {
+    const calls: string[] = [];
+    const { gateway, usage } = setup([
+      provider('one', ok('x'), calls),
+      provider('two', ok('y'), calls),
+    ]);
+    await expect(
+      gateway.generate({ userId: USER_A, request: cv(), providers: ['missing'] }),
+    ).rejects.toBeInstanceOf(AIUnavailableError);
+    expect(calls).toEqual([]);
+    expect(usage.users.size).toBe(0);
+  });
+
+  it('does not reserve the user’s call when every budget is already used up', async () => {
+    const calls: string[] = [];
+    const { gateway, usage } = setup(
+      [provider('one', ok('x'), calls), provider('two', ok('y'), calls)],
+      { budgets: { one: 1, two: 1 } },
+    );
+    usage.providers.set('one', 1);
+    usage.providers.set('two', 1);
+    await expect(gateway.generate({ userId: USER_A, request: cv() })).rejects.toMatchObject({
+      reason: 'exhausted',
+    });
+    expect(calls).toEqual([]);
+    expect(usage.users.size).toBe(0);
+  });
+
+  it('checks the budget of the listed providers only', async () => {
+    const calls: string[] = [];
+    const { gateway, usage } = setup(
+      [provider('one', ok('x'), calls), provider('two', ok('y'), calls)],
+      { budgets: { one: 1, two: 5 } },
+    );
+    usage.providers.set('one', 1);
+    await expect(
+      gateway.generate({ userId: USER_A, request: cv(), providers: ['one'] }),
+    ).rejects.toBeInstanceOf(AIUnavailableError);
+    expect(usage.users.size).toBe(0);
+    const res = await gateway.generate({ userId: USER_A, request: cv(), providers: ['two'] });
+    expect(res.providerId).toBe('two');
+  });
+
+  it('skips the check when the budget read fails (the user’s call is then reserved as before)', async () => {
+    const { gateway, usage } = setup([provider('one', ok('x'))]);
+    usage.store.providerUsage = async () => {
+      throw new Error('read failed');
+    };
+    const res = await gateway.generate({ userId: USER_A, request: cv() });
+    expect(res.text).toBe('x');
+    expect(usage.users.get(`${USER_A}:cv_tailor`)).toBe(1);
+  });
+});
+
+describe('buildSafeRequest with the tool-name allowance', () => {
+  const parts = {
+    purpose: 'cv_tailor' as const,
+    system: 'Edit the CV.',
+    messages: [{ role: 'user' as const, content: 'Built ASP.NET dashboards for monday.com.' }],
+    maxOutputTokens: 100,
+    json: false,
+  };
+
+  it('keeps catalog tool names as written, where the plain rules would change them', () => {
+    const plain = buildSafeRequest(parts, []);
+    expect(plain.messages[0]!.content).not.toContain('ASP.NET');
+    const allowed = buildSafeRequest(parts, [], { allowToolNames: true });
+    expect(allowed.messages[0]!.content).toBe('Built ASP.NET dashboards for monday.com.');
+  });
+
+  it('still removes an email or a URL that contains such a name', () => {
+    for (const content of ['Write to me@monday.com now.', 'See https://monday.com/me please.']) {
+      const out = buildSafeRequest({ ...parts, messages: [{ role: 'user', content }] }, [], {
+        allowToolNames: true,
+      });
+      expect(out.messages[0]!.content).not.toMatch(/me@monday|https:/);
+    }
   });
 });

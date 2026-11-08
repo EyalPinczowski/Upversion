@@ -41,6 +41,14 @@ export interface AIUsageStore {
   /** Reserves one call against the provider's environment budget. False when it is used up. */
   reserveProvider(userId: string, providerId: string, budget: number): Promise<boolean>;
   snapshot(userId: string): Promise<UsageSnapshot>;
+  /** Today's reserved calls per provider id, environment-wide (no user data). */
+  providerUsage(userId: string): Promise<Record<string, number>>;
+  /**
+   * Today's (UTC) reserved calls for one purpose summed over ALL users: the one number an
+   * app-wide cap needs. Read through a SECURITY DEFINER function (migration 0017) because RLS
+   * gives the app role only its own rows.
+   */
+  featureTotalToday(userId: string, purpose: AIPurpose): Promise<number>;
 }
 
 /**
@@ -106,6 +114,25 @@ export function createAIUsageStore(db: Database, now: () => Date = () => new Dat
       return db.withUser(userId, (ctx) => reserveProviderBudget(ctx, providerId, budget));
     },
 
+    providerUsage(userId) {
+      return db.withUser(userId, async (ctx) => {
+        const env = await ctx.client.query<{ provider_id: string; requests: number }>(
+          `select provider_id, requests from ${ctx.schema}.ai_provider_usage_today()`,
+        );
+        return Object.fromEntries(env.rows.map((r) => [r.provider_id, r.requests]));
+      });
+    },
+
+    featureTotalToday(userId, purpose) {
+      return db.withUser(userId, async (ctx) => {
+        const { rows } = await ctx.client.query<{ n: string }>(
+          `select ${ctx.schema}.ai_feature_usage_today($1::text) as n`,
+          [purpose],
+        );
+        return Number(rows[0]?.n ?? 0);
+      });
+    },
+
     async snapshot(userId) {
       const at = now();
       const day = utcDay(at);
@@ -126,6 +153,7 @@ export function createAIUsageStore(db: Database, now: () => Date = () => new Dat
           practice_message: { used: 0, avoided: 0 },
           practice_feedback: { used: 0, avoided: 0 },
           day_overview: { used: 0, avoided: 0 },
+          cv_tailor: { used: 0, avoided: 0 },
         };
         for (const row of own.rows) {
           user[row.purpose] = { used: row.requests, avoided: row.avoided };

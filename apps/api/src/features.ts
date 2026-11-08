@@ -8,6 +8,7 @@ export const featureNames = [
   'pushNotifications',
   'aiOverview',
   'profileSetup',
+  'cvTailor',
 ] as const;
 
 export type FeatureName = (typeof featureNames)[number];
@@ -29,6 +30,8 @@ export const featureEnvShape = {
   FEATURE_AI_OVERVIEW: booleanString('false'),
   /** First-time setup and the user profile (ADR 015). Off: the profile routes do not exist (404). */
   FEATURE_PROFILE_SETUP: booleanString('false'),
+  /** Tailor my CV to a job with the free-tier AI gateway (ADR 016). Off: the route does not exist (404). */
+  FEATURE_CV_TAILOR: booleanString('false'),
 };
 
 export function toFeatures(e: z.infer<z.ZodObject<typeof featureEnvShape>>): Features {
@@ -39,5 +42,6 @@ export function toFeatures(e: z.infer<z.ZodObject<typeof featureEnvShape>>): Fea
     pushNotifications: e.FEATURE_PUSH_NOTIFICATIONS,
     aiOverview: e.FEATURE_AI_OVERVIEW,
     profileSetup: e.FEATURE_PROFILE_SETUP,
+    cvTailor: e.FEATURE_CV_TAILOR,
   };
 }

@@ -18,6 +18,8 @@ export interface AIRoutesOptions {
   usage: AIUsageStore;
   /** The per-user daily caps (from config). */
   userCaps: Readonly<Record<AIPurpose, number>>;
+  /** Feature flags the web reads here instead of probing a route. */
+  features: { cvTailor: boolean };
 }
 
 const meter = z.object({ used: z.number().int(), cap: z.number().int() });
@@ -27,7 +29,14 @@ const usageSchema = z.object({
   resetsAt: z.string(),
   /** True when at least one provider is configured. False means AI is off and nothing errors. */
   configured: z.boolean(),
-  user: z.object({ practiceMessages: meter, practiceFeedback: meter, dayOverview: meter }),
+  user: z.object({
+    practiceMessages: meter,
+    practiceFeedback: meter,
+    dayOverview: meter,
+    cvTailor: meter,
+  }),
+  /** The flags only: `cvTailor` says nothing about whether a provider is available. */
+  features: z.object({ cvTailor: z.boolean() }),
   avoidedToday: z.number().int(),
   providers: z.array(
     z.object({
@@ -51,7 +60,7 @@ const errors = {
 
 export const aiRoutes: FastifyPluginAsyncZod<AIRoutesOptions> = async (
   app,
-  { verifier, db, gateway, usage, userCaps },
+  { verifier, db, gateway, usage, userCaps, features },
 ) => {
   installAccountGuard(app, verifier, db ? createAccountService(db) : null);
   const user = (request: FastifyRequest) => request.accountId!;
@@ -95,7 +104,9 @@ export const aiRoutes: FastifyPluginAsyncZod<AIRoutesOptions> = async (
           practiceMessages: entry('practice_message'),
           practiceFeedback: entry('practice_feedback'),
           dayOverview: entry('day_overview'),
+          cvTailor: entry('cv_tailor'),
         },
+        features: { cvTailor: features.cvTailor },
         avoidedToday: Object.values(snap.user).reduce((n, u) => n + u.avoided, 0),
         providers,
       };
