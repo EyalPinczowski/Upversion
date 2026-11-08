@@ -22,6 +22,8 @@ for r in ROLES:
         if s not in sid: errs.append(f"role {r['id']}: unknown skill {s}")
 if len(iid)!=len(ITEMS): errs.append("duplicate item ids")
 errs += lint.check_items(ITEMS)
+from questions import Q, FOLLOW_UPS
+errs += lint.check_setup_questions(Q)
 if errs: print("\n".join(errs)); sys.exit(1)
 
 REC={"high":3,"medium":2,"low":1}
@@ -129,7 +131,6 @@ open(f"{OUT}/seed.sql","w").write("\n".join(L)+"\n")
 print("seed.sql lines:",len(L))
 
 # ---------- questions.json ----------
-from questions import Q, FOLLOW_UPS
 qids=[q["id"] for q in Q]
 assert len(qids)==len(set(qids)), "duplicate question ids"
 for q in Q:

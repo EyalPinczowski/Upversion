@@ -61,7 +61,13 @@
         ]
       },
       "maps_to": "goal.target_roles",
-      "required": true
+      "required": true,
+      "setup": {
+        "order": 7,
+        "ignore_show_if": true,
+        "choices_only": true,
+        "optional": true
+      }
     },
     {
       "id": "target_skills",
@@ -78,7 +84,13 @@
         ]
       },
       "maps_to": "goal.target_skills",
-      "required": true
+      "required": true,
+      "setup": {
+        "order": 8,
+        "ignore_show_if": true,
+        "choices_only": true,
+        "optional": true
+      }
     },
     {
       "id": "target_certificate",
@@ -273,7 +285,10 @@
         }
       ],
       "maps_to": "profile.status",
-      "required": true
+      "required": true,
+      "setup": {
+        "order": 1
+      }
     },
     {
       "id": "background",
@@ -311,7 +326,10 @@
         }
       ],
       "maps_to": "profile.education",
-      "required": false
+      "required": false,
+      "setup": {
+        "order": 2
+      }
     },
     {
       "id": "tools_known",
@@ -337,7 +355,10 @@
         "Git"
       ],
       "maps_to": "profile.tools",
-      "required": false
+      "required": false,
+      "setup": {
+        "order": 3
+      }
     },
     {
       "id": "skill_levels",
@@ -400,7 +421,10 @@
         4
       ],
       "maps_to": "week_pattern.study_weekdays",
-      "required": true
+      "required": true,
+      "setup": {
+        "order": 4
+      }
     },
     {
       "id": "hours_per_day",
@@ -418,6 +442,9 @@
         "current_status": {
           "employed": "Most people working full-time manage 1–2 hours on weekdays."
         }
+      },
+      "setup": {
+        "order": 5
       }
     },
     {
@@ -445,7 +472,10 @@
         }
       ],
       "maps_to": "week_pattern.preferred_window",
-      "required": false
+      "required": false,
+      "setup": {
+        "order": 6
+      }
     },
     {
       "id": "fixed_dates",

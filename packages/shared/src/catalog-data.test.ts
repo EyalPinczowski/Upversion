@@ -490,3 +490,83 @@ describe('catalog expansion (batch 3)', () => {
     );
   });
 });
+
+interface Question {
+  id: string;
+  type: string;
+  show_if?: unknown;
+  allow_other?: boolean;
+  privacy?: string;
+  required?: boolean;
+  setup?: {
+    order: number;
+    ignore_show_if?: boolean;
+    choices_only?: boolean;
+    optional?: boolean;
+  };
+}
+
+const questions = (
+  JSON.parse(
+    readFileSync(
+      fileURLToPath(new URL('../../../data/catalog/questions.json', import.meta.url)),
+      'utf8',
+    ),
+  ) as { questions: Question[] }
+).questions;
+
+const setupQuestions = questions
+  .filter((q) => q.setup)
+  .sort((a, b) => (a.setup?.order ?? 0) - (b.setup?.order ?? 0));
+
+describe('setup questions (ADR 015)', () => {
+  it('flags exactly the 8 setup questions, in order 1..8', () => {
+    expect(setupQuestions.map((q) => q.id)).toEqual([
+      'current_status',
+      'education',
+      'tools_known',
+      'days_per_week',
+      'hours_per_day',
+      'time_of_day',
+      'target_role',
+      'target_skills',
+    ]);
+    expect(setupQuestions.map((q) => q.setup?.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('only uses allowlisted types and no privacy flag', () => {
+    const allowed = [
+      'single',
+      'multi',
+      'weekdays',
+      'number',
+      'yes_no',
+      'multi_role',
+      'multi_skill',
+    ];
+    expect(setupQuestions.filter((q) => !allowed.includes(q.type)).map((q) => q.id)).toEqual([]);
+    expect(setupQuestions.filter((q) => q.privacy !== undefined).map((q) => q.id)).toEqual([]);
+  });
+
+  it('has show_if only with ignore_show_if, and allow_other only with choices_only', () => {
+    expect(
+      setupQuestions.filter((q) => q.show_if && !q.setup?.ignore_show_if).map((q) => q.id),
+    ).toEqual([]);
+    expect(
+      setupQuestions.filter((q) => q.allow_other && !q.setup?.choices_only).map((q) => q.id),
+    ).toEqual([]);
+  });
+
+  it('marks target_role and target_skills choices-only, always shown and optional', () => {
+    for (const id of ['target_role', 'target_skills']) {
+      const q = setupQuestions.find((x) => x.id === id);
+      expect(q?.setup).toMatchObject({ ignore_show_if: true, choices_only: true, optional: true });
+      // plan-builder definition is unchanged
+      expect(q?.required).toBe(true);
+      expect(q?.allow_other).toBe(true);
+      expect(q?.show_if).toBeTruthy();
+    }
+    const others = setupQuestions.filter((q) => !['target_role', 'target_skills'].includes(q.id));
+    expect(others.filter((q) => q.setup && Object.keys(q.setup).length !== 1)).toEqual([]);
+  });
+});
