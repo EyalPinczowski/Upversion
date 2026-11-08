@@ -357,6 +357,50 @@ describe.skipIf(!dbAvailable)('GET /calendar/busy (real Postgres)', () => {
       ]);
     });
 
+    it('uses UTC for a plan of the user without a week pattern, and still returns events', async () => {
+      const NO_PATTERN = 'a0000000-0000-4000-8000-000000000003';
+      await sql(
+        `insert into rnd.plans (user_id, id, created_from, name, start_date, status)
+         values ($1, $2, 'builder', 'Bare', '2026-11-01', 'draft')`,
+        [A, NO_PATTERN],
+      );
+      await busy(A, '2026-11-09', 'e1', 600, 660, { title: 'Interview' });
+      await lock(A, NO_PATTERN, 'k1', '2026-11-10 08:00+00', '2026-11-10 09:00+00');
+      const res = await get(`${RANGE}&planId=${NO_PATTERN}`);
+      expect(res.statusCode).toBe(200);
+      expect(res.json().items).toEqual([
+        {
+          date: '2026-11-09',
+          startMinute: 600,
+          endMinute: 660,
+          allDay: false,
+          kind: 'busy',
+          title: 'Interview',
+        },
+        {
+          date: '2026-11-10',
+          startMinute: 480,
+          endMinute: 540,
+          allDay: false,
+          kind: 'busy',
+          title: '',
+        },
+      ]);
+    });
+
+    it('pins the zones: calendar rows as stored, deleted slots in the shown plan zone', async () => {
+      // Plan A is Berlin and plan B (newest) is New York. The same instant gives different minutes.
+      await busy(A, '2026-11-10', 'e1', 600, 660, { title: 'As synced' });
+      await lock(A, PLAN_A, 'k1', '2026-11-10 14:00+00', '2026-11-10 15:00+00');
+      await lock(A, PLAN_B, 'k1', '2026-11-10 14:00+00', '2026-11-10 15:00+00');
+      const minutes = async (plan: string) =>
+        (await get(`${RANGE}&planId=${plan}`))
+          .json()
+          .items.map((i: { startMinute: number }) => i.startMinute);
+      expect(await minutes(PLAN_A)).toEqual([600, 900]); // stored 600; Berlin 15:00
+      expect(await minutes(PLAN_B)).toEqual([540, 600]); // New York 09:00; stored 600
+    });
+
     it('rejects a planId that is not a uuid (400)', async () => {
       expect((await get(`${RANGE}&planId=nope`)).statusCode).toBe(400);
     });

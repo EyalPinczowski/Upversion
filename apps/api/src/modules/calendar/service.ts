@@ -224,11 +224,17 @@ export function createCalendarService(options: CalendarServiceOptions) {
           kind: r.kind,
           title: r.title,
         }));
+        // Two zones are at work here, on purpose (docs/decisions/014): the calendar rows above were
+        // split into local dates and minutes by the sync in the NEWEST active plan's time zone, and
+        // are returned as they are. Deleted-block slots below are split in the zone of the plan
+        // being shown. For a user whose two active plans have different zones the two sources can
+        // therefore be in different zones in one grid; changing that must be a deliberate decision.
         let plan: { id: string; timezone: string } | null = null;
         if (planId) {
-          const timezone = await calendarRepo.planTimezone(ctx, userId, planId);
-          if (timezone === null) throw new HttpError(404, 'not_found', 'Resource not found.');
-          plan = { id: planId, timezone };
+          // 404 only for a plan that is not the user's; one without a week pattern uses UTC.
+          const zone = await calendarRepo.planZone(ctx, userId, planId);
+          if (zone === null) throw new HttpError(404, 'not_found', 'Resource not found.');
+          plan = { id: planId, timezone: zone.timezone ?? 'UTC' };
         } else {
           const newest = (await syncRepo.activePlans(ctx, userId, 1))[0];
           if (newest) plan = { id: newest.id, timezone: newest.timezone };

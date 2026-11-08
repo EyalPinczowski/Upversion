@@ -191,14 +191,22 @@ export const calendarRepo = {
     return rows;
   },
 
-  /** The time zone of one plan's week pattern, or null when the user has no such plan. */
-  async planTimezone(ctx: UserContext, userId: string, planId: string): Promise<string | null> {
-    const { rows } = await ctx.client.query<{ timezone: string }>(
-      `select w.timezone from ${ctx.schema}.week_patterns w
-       where w.user_id = $1 and w.plan_id = $2`,
+  /**
+   * One of the user's plans with the time zone of its week pattern: null when the plan is not the
+   * user's, `{ timezone: null }` when it has no week pattern yet.
+   */
+  async planZone(
+    ctx: UserContext,
+    userId: string,
+    planId: string,
+  ): Promise<{ timezone: string | null } | null> {
+    const { rows } = await ctx.client.query<{ timezone: string | null }>(
+      `select w.timezone from ${ctx.schema}.plans p
+       left join ${ctx.schema}.week_patterns w on w.user_id = p.user_id and w.plan_id = p.id
+       where p.user_id = $1 and p.id = $2`,
       [userId, planId],
     );
-    return rows[0]?.timezone ?? null;
+    return rows[0] ? { timezone: rows[0].timezone } : null;
   },
 
   /** Slots of one plan's blocks the user deleted in Google (they stay unavailable). */
