@@ -7,6 +7,7 @@ export const featureNames = [
   'offline',
   'pushNotifications',
   'aiOverview',
+  'profileSetup',
 ] as const;
 
 export type FeatureName = (typeof featureNames)[number];
@@ -26,6 +27,8 @@ export const featureEnvShape = {
   FEATURE_PUSH_NOTIFICATIONS: booleanString('false'),
   /** Model-written day overview (v0.3). In v0.2 the overview is always the template. */
   FEATURE_AI_OVERVIEW: booleanString('false'),
+  /** First-time setup and the user profile (ADR 015). Off: the profile routes do not exist (404). */
+  FEATURE_PROFILE_SETUP: booleanString('false'),
 };
 
 export function toFeatures(e: z.infer<z.ZodObject<typeof featureEnvShape>>): Features {
@@ -35,5 +38,6 @@ export function toFeatures(e: z.infer<z.ZodObject<typeof featureEnvShape>>): Fea
     offline: e.FEATURE_OFFLINE,
     pushNotifications: e.FEATURE_PUSH_NOTIFICATIONS,
     aiOverview: e.FEATURE_AI_OVERVIEW,
+    profileSetup: e.FEATURE_PROFILE_SETUP,
   };
 }

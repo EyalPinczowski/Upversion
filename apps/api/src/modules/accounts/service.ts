@@ -69,6 +69,8 @@ export const EXPORT_SECTIONS = {
   practiceFeedback: { table: 'practice_feedback', order: 'created_at, session_id' },
   aiUsageDaily: { table: 'ai_usage_daily', order: 'day, purpose' },
   aiCache: { table: 'ai_cache', order: 'created_at, key' },
+  // Person-level setup answers, skills and roles (ADR 015); the user's own data, exported whole.
+  userProfiles: { table: 'user_profiles', order: 'created_at' },
   // The refresh token is never exported, not even as ciphertext: the column list leaves it out.
   calendarConnections: {
     table: 'calendar_connections',

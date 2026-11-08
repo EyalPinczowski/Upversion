@@ -207,6 +207,11 @@ describe.skipIf(!dbAvailable)('accounts (real Postgres, locally signed tokens)',
       await c.query(`insert into rnd.calendar_sources (user_id, calendar_id) values ($1, 'cal')`, [
         userId,
       ]);
+      await c.query(
+        `insert into rnd.user_profiles (user_id, answers, setup_status) values ($1, '{"days_per_week":[1]}', 'in_progress')
+         on conflict (user_id) do nothing`,
+        [userId],
+      );
     });
   }
 
