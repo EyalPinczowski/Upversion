@@ -49,8 +49,8 @@ function TaskRow({
   );
 }
 
-function certificateText(count: number): string {
-  return `${count} ${count === 1 ? 'certificate' : 'certificates'}`;
+function certificateText(earned: number, total: number): string {
+  return `${earned} of ${total} ${total === 1 ? 'certificate' : 'certificates'} earned`;
 }
 
 function GroupSection({
@@ -85,7 +85,7 @@ function GroupSection({
             {formatHours(group.doneHours)} of {formatHours(group.plannedHours)} done (
             {group.percent}%)
           </span>
-          <span>{certificateText(group.certificates)}</span>
+          <span>{certificateText(group.certificatesEarned, group.certificatesTotal)}</span>
         </p>
       </div>
       <ul className="space-y-3">

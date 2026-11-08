@@ -28,7 +28,7 @@ const requestedMinutes = (override: DayOverride, currentHours: number) =>
 
 /**
  * "Work ahead": the person adds study hours to today, or makes today a study day. It reuses the
- * day exception (isStudyDay and capacityHours) that Settings edits. The change is previewed and
+ * day exception (isStudyDay and capacityHours) that the Plan settings tab edits. The change is previewed and
  * saved only when the person approves; "Back to normal" removes the exception again. Nothing here
  * runs on its own, and no task is ever marked done.
  */

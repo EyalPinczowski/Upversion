@@ -3,6 +3,8 @@ import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 export interface PlanTab {
   id: string;
   label: string;
+  /** `data-tour` hook for the welcome guide. */
+  tour?: string;
 }
 
 const tabId = (id: string) => `plan-tab-${id}`;
@@ -10,7 +12,7 @@ const panelId = (id: string) => `plan-panel-${id}`;
 
 /**
  * An accessible tab list (WAI-ARIA tabs, automatic activation): one tab stop, arrow keys, Home and
- * End. Both panels exist so `aria-controls` always resolves; only the active one has content.
+ * End. Both panels stay mounted (the inactive one is `hidden`), so `aria-controls` always resolves and unsaved edits survive a tab switch.
  */
 export function PlanTabs({
   tabs,
@@ -52,6 +54,7 @@ export function PlanTabs({
               }}
               type="button"
               role="tab"
+              data-tour={tab.tour}
               id={tabId(tab.id)}
               aria-selected={selected}
               aria-controls={panelId(tab.id)}
@@ -76,7 +79,7 @@ export function PlanTabs({
           hidden={tab.id !== active}
           className="space-y-6"
         >
-          {tab.id === active ? children(tab.id) : null}
+          {children(tab.id)}
         </div>
       ))}
     </div>

@@ -299,7 +299,7 @@ Recommendation cards on the home screen and in the briefing, based on progress:
 - Every reschedule shows a **change summary** before saving ("3 tasks moved, plan finish pushed back by one day").
 
 ### 3.7 Time settings
-All of these are editable in Settings, and every change triggers a reschedule (with a change summary).
+All of these are edited on the Plan page, in the 'Plan settings' tab, and every change triggers a reschedule (with a change summary). The Plan page has a second tab, 'Curriculum': the plan's tasks grouped by type, with hours, progress and certificates earned (skipped tasks do not count towards planned hours or certificate totals). Settings keeps only 'App' and 'Connections'.
 
 **Weekly pattern:**
 - **Days per week:** pick which weekdays are study days (pre-filled from the intake; the default suggestion follows the user's locale – Sunday–Thursday in Israel, Monday–Friday elsewhere). The screen shows the resulting count ("5 days per week").

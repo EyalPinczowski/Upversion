@@ -11,7 +11,7 @@ export function SubjectsList({ planId }: { planId: string }) {
       aria-labelledby="subjects-heading"
       className="space-y-3 rounded-md border border-border bg-surface p-4"
     >
-      <h2 id="subjects-heading">Subjects</h2>
+      <h3 id="subjects-heading">Subjects</h3>
       <QueryView query={tasks} label="Loading your subjects…">
         {({ tasks: list }) => (
           <ul className="space-y-1">

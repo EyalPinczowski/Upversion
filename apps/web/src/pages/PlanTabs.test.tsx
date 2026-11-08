@@ -70,6 +70,29 @@ describe('plan tabs', () => {
     expect(settings).toHaveFocus();
   });
 
+  it('puts the welcome-guide hooks on both tab triggers', async () => {
+    open('/plan');
+    expect(await tab('Curriculum')).toHaveAttribute('data-tour', 'plan-curriculum');
+    expect(screen.getByRole('tab', { name: 'Plan settings' })).toHaveAttribute(
+      'data-tour',
+      'plan-settings',
+    );
+  });
+
+  it('keeps an unsaved edit when switching tabs and back', async () => {
+    open('/plan?tab=settings');
+    const user = userEvent.setup();
+    const field = await screen.findByRole('textbox', { name: /Job description/ });
+    await user.type(field, 'Data analyst at Acme');
+    await user.click(screen.getByRole('tab', { name: 'Curriculum' }));
+    expect(field.closest('[role="tabpanel"]')).toHaveAttribute('hidden');
+    expect(screen.queryByRole('textbox', { name: /Job description/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Plan settings' }));
+    expect(screen.getByRole('textbox', { name: /Job description/ })).toHaveValue(
+      'Data analyst at Acme',
+    );
+  });
+
   it('has no accessibility violations on either tab', async () => {
     open('/plan');
     await screen.findByRole('heading', { name: 'Courses' });
@@ -87,7 +110,7 @@ describe('curriculum tab', () => {
       (await screen.findByRole('heading', { name: 'Courses' })).closest('section')!,
     );
     expect(courses.getByText('1 h of 3 h done (33%)')).toBeInTheDocument();
-    expect(courses.getByText('1 certificate')).toBeInTheDocument();
+    expect(courses.getByText('0 of 1 certificate earned')).toBeInTheDocument();
     expect(courses.getByRole('progressbar', { name: 'Courses progress' })).toHaveAttribute(
       'aria-valuenow',
       '33',
@@ -97,7 +120,7 @@ describe('curriculum tab', () => {
 
     const admin = within(screen.getByRole('heading', { name: 'Admin' }).closest('section')!);
     expect(admin.getByText('0.5 h of 0.5 h done (100%)')).toBeInTheDocument();
-    expect(admin.getByText('0 certificates')).toBeInTheDocument();
+    expect(admin.getByText('0 of 0 certificates earned')).toBeInTheDocument();
 
     expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
       'Courses',
@@ -129,7 +152,7 @@ describe('plan settings tab', () => {
   it('holds study time, start date, practice, subjects and manage plans', async () => {
     open('/plan?tab=settings');
     for (const name of ['Study time', 'Practice', 'Subjects', 'Manage plans']) {
-      expect(await screen.findByRole('heading', { level: 2, name })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 3, name })).toBeInTheDocument();
     }
     expect(await screen.findByRole('heading', { name: 'Start date' })).toBeInTheDocument();
     const subjects = within(screen.getByRole('heading', { name: 'Subjects' }).closest('section')!);

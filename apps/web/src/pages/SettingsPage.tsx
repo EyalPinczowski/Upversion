@@ -274,7 +274,8 @@ export function SettingsPage({ appEnv = 'operational' }: { appEnv?: AppEnv }) {
     calendar.isError || (calendar.data !== null && calendar.data !== undefined);
   // Old links such as `/settings#time-heading` land on the Plan settings tab.
   useEffect(() => {
-    if (MOVED_TO_PLAN_SETTINGS.has(hash)) void navigate('/plan?tab=settings', { replace: true });
+    if (MOVED_TO_PLAN_SETTINGS.has(hash))
+      void navigate(`/plan?tab=settings${hash}`, { replace: true });
   }, [hash, navigate]);
   return (
     <div className="space-y-6">

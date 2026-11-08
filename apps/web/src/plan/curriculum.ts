@@ -19,7 +19,10 @@ export interface CurriculumGroup {
   doneHours: number;
   plannedHours: number;
   percent: number;
-  certificates: number;
+  /** Certificate tasks that are done. */
+  certificatesEarned: number;
+  /** Certificate tasks still in the plan (skipped ones do not count). */
+  certificatesTotal: number;
 }
 
 /**
@@ -46,7 +49,9 @@ export function buildCurriculum(tasks: Task[]): CurriculumGroup[] {
       }
     }
     const doneHours = ordered.reduce((sum, t) => sum + t.doneHours, 0);
-    const plannedHours = ordered.reduce((sum, t) => sum + t.estHours, 0);
+    // Skipped tasks leave the plan: same rule as the progress totals in the API.
+    const active = ordered.filter((t) => t.status !== 'skipped');
+    const plannedHours = active.reduce((sum, t) => sum + t.estHours, 0);
     return [
       {
         type,
@@ -55,7 +60,8 @@ export function buildCurriculum(tasks: Task[]): CurriculumGroup[] {
         doneHours,
         plannedHours,
         percent: percent(doneHours, plannedHours),
-        certificates: ordered.filter((t) => t.isCertificate).length,
+        certificatesEarned: ordered.filter((t) => t.isCertificate && t.status === 'done').length,
+        certificatesTotal: active.filter((t) => t.isCertificate).length,
       },
     ];
   });

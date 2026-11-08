@@ -73,8 +73,8 @@ export function PlanPage() {
             <h2>{plan.name}</h2>
             <PlanTabs
               tabs={[
-                { id: 'curriculum', label: 'Curriculum' },
-                { id: 'settings', label: 'Plan settings' },
+                { id: 'curriculum', label: 'Curriculum', tour: 'plan-curriculum' },
+                { id: 'settings', label: 'Plan settings', tour: 'plan-settings' },
               ]}
               active={tab}
               onChange={changeTab}
@@ -125,7 +125,7 @@ function ManagePlans({
   const [confirming, setConfirming] = useState(false);
   return (
     <section aria-labelledby="manage-heading" className="space-y-4 border-t border-border pt-6">
-      <h2 id="manage-heading">Manage plans</h2>
+      <h3 id="manage-heading">Manage plans</h3>
       <div className="space-y-2">
         <Button variant="danger" onClick={() => setConfirming(true)}>
           Delete this plan

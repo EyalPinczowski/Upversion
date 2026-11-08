@@ -69,7 +69,18 @@ describe('settings page', () => {
     }
   });
 
-  it('shows Connections with the calendar only when the calendar feature is on', async () => {
+  it('shows Connections with the calendar when the calendar feature is on', async () => {
+    open({
+      'GET /api/v1/calendar': () =>
+        json({ status: 'disconnected', lastSyncedAt: null, lastErrorCode: null, sources: [] }),
+    });
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Connections' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Calendar' })).toBeInTheDocument();
+  });
+
+  it('hides Connections when the calendar feature is off', async () => {
     open({ 'GET /api/v1/calendar': () => apiError(404, 'not_found', 'off') });
     await screen.findByRole('heading', { level: 2, name: 'App' });
     await new Promise((r) => setTimeout(r, 50));
@@ -80,12 +91,19 @@ describe('settings page', () => {
     'sends the old anchor %s to the Plan settings tab',
     async (hash) => {
       installApi(planRoutes());
-      renderApp({ auth: fakeAuth(SESSION), path: `/settings${hash}` });
+      const urls: string[] = [];
+      renderApp({
+        auth: fakeAuth(SESSION),
+        path: `/settings${hash}`,
+        onLocation: (url) => urls.push(url),
+      });
       expect(await screen.findByRole('tab', { name: 'Plan settings' })).toHaveAttribute(
         'aria-selected',
         'true',
       );
       expect(await screen.findByRole('heading', { name: 'Study time' })).toBeInTheDocument();
+      // The hash stays, so the browser can scroll to the section.
+      expect(urls[urls.length - 1]).toBe(`/plan?tab=settings${hash}`);
     },
   );
 
