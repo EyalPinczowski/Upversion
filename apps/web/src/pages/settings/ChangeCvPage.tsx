@@ -5,7 +5,7 @@ import type { ProfileView } from '../../api/client';
 import { useImportProfile, useProfile } from '../../api/profile-hooks';
 import { cvTextSession } from '../../cv/cv-text-session';
 import { Loading, ServerProblem } from '../../components/status';
-import { Button, ErrorText, linkClass } from '../../components/ui';
+import { Button, linkClass } from '../../components/ui';
 import { CvReviewStep, type ReplaceInfo } from '../setup/CvReviewStep';
 import { CvStep } from '../setup/CvStep';
 
@@ -36,6 +36,7 @@ function Changer({ profile }: { profile: ProfileView }) {
     keepRef.current = keep;
   }, [keep]);
   const [kept, setKept] = useState(false);
+  const [removed, setRemoved] = useState(false);
   const keepId = useId();
   // The "before" picture is taken once: after saving, the profile query holds the new data.
   const [replace] = useState(() => replaceInfo(profile));
@@ -64,8 +65,8 @@ function Changer({ profile }: { profile: ProfileView }) {
     const result = extractProfileFromText(text);
     if (keep) {
       cvTextSession.set(text);
-      setKept(cvTextSession.has());
     } else cvTextSession.clear();
+    setKept(cvTextSession.has());
     setExtraction(result);
     setError(null);
     setStep('review');
@@ -82,6 +83,27 @@ function Changer({ profile }: { profile: ProfileView }) {
     setExtraction(null);
     setStep('saved');
   }
+
+  function forget() {
+    cvTextSession.clear();
+    setKept(false);
+    setKeep(false);
+    setRemoved(true);
+    // The button that was pressed is gone; the heading is the next sensible place.
+    headingRef.current?.focus();
+  }
+
+  const keptNotice = (
+    <div className="space-y-2">
+      {kept ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-muted">Your CV text is still kept in this tab’s memory.</p>
+          <Button onClick={forget}>Forget it now</Button>
+        </div>
+      ) : null}
+      {removed ? <p role="status">CV text removed from this tab</p> : null}
+    </div>
+  );
 
   const cancel = () => void navigate('/settings');
   const heading =
@@ -103,8 +125,8 @@ function Changer({ profile }: { profile: ProfileView }) {
           <>
             <p>
               This replaces the skills, roles and years of experience that came from your earlier
-              CV. Skills you added yourself stay. Only the items you confirm on the next screen are
-              saved.
+              CV. Skills you added yourself or chose in setup stay. Only the items you confirm on
+              the next screen are saved.
             </p>
             <div className="space-y-1">
               <label htmlFor={keepId} className="flex min-h-11 items-center gap-3 font-bold">
@@ -116,39 +138,32 @@ function Changer({ profile }: { profile: ProfileView }) {
                   aria-describedby={`${keepId}-hint`}
                   onChange={(e) => {
                     setKeep(e.target.checked);
-                    if (!e.target.checked) cvTextSession.clear();
+                    if (!e.target.checked) {
+                      cvTextSession.clear();
+                      setKept(false);
+                    }
                   }}
                 />
-                Keep my CV text in this tab until I close it
+                Keep my CV text in this tab so I can tailor it to a job
               </label>
               <p id={`${keepId}-hint`} className="pl-8 text-muted">
-                Off by default. Only in this tab’s memory, so you can tailor it to a job later. It
-                is never saved on this device or sent to our server, and signing out, reloading or
-                closing the tab removes it.
+                Off by default. If you tick it, the text stays only in this tab’s memory so you can
+                tailor it to a job later. It is never written to this device’s storage or sent to
+                our server. Unticking the box, signing out, reloading or closing the tab removes it.
               </p>
             </div>
-            <CvStep onText={readText} onSkip={cancel} skipLabel="Cancel" />
+            <CvStep
+              onText={readText}
+              onSkip={cancel}
+              skipLabel="Cancel"
+              intro="The file is read on this device only and is never uploaded. Its text is not saved anywhere, unless you tick the box above, and then only in this tab’s memory until you close the tab or sign out. You confirm every item before anything is saved. Your name and contact details are never used."
+            />
           </>
         ) : null}
 
         {step === 'review' && extraction ? (
           <>
-            {kept ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="text-muted">
-                  Your CV text is kept in this tab’s memory until you close it.
-                </p>
-                <Button
-                  onClick={() => {
-                    cvTextSession.clear();
-                    setKept(false);
-                    setKeep(false);
-                  }}
-                >
-                  Forget it now
-                </Button>
-              </div>
-            ) : null}
+            {keptNotice}
             <CvReviewStep
               extraction={extraction}
               busy={importProfile.isPending}
@@ -175,13 +190,12 @@ function Changer({ profile }: { profile: ProfileView }) {
             <p role="status">
               Your profile now matches your new CV. Skills you added yourself were not changed.
             </p>
+            {keptNotice}
             <Link to="/settings" className={linkClass}>
               Back to Settings
             </Link>
           </div>
         ) : null}
-
-        {error && step !== 'review' ? <ErrorText>{error}</ErrorText> : null}
       </section>
     </div>
   );

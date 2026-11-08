@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 const click = (name: string | RegExp) => userEvent.click(screen.getByRole('button', { name }));
-const KEEP = /Keep my CV text in this tab until I close it/;
+const KEEP = /Keep my CV text in this tab so I can tailor it to a job/;
 
 /** A profile that already came from an earlier CV, plus one skill the person added. */
 const existing = () =>
@@ -77,7 +77,12 @@ describe('Change my CV: the flow', () => {
     expect(block).toHaveTextContent('Your 1 saved role held is replaced by the 1 ticked above.');
     expect(block).toHaveTextContent('Years of experience (6) are replaced by 4');
     // Skills the person added themselves stay, and the page says so.
-    expect(block).toHaveTextContent('Skills you added yourself stay as they are: Git & GitHub.');
+    expect(block).toHaveTextContent(
+      'Skills you added yourself or chose in setup stay as they are: Git & GitHub.',
+    );
+    expect(block).toHaveTextContent(
+      'Education and tools are added only if your profile has none yet.',
+    );
     // The list follows the ticks: unticking Excel puts it on the list too.
     await userEvent.click(screen.getByRole('checkbox', { name: 'Excel & spreadsheets' }));
     expect(block).toHaveTextContent(/removed: Python basics, Excel & spreadsheets\./);
@@ -280,6 +285,44 @@ describe('Change my CV: keeping the text in this tab', () => {
     expect(cvTextSession.has()).toBe(false);
   });
 
+  it('does not claim the text is kept after the box was unticked and a CV read again', async () => {
+    await open();
+    await userEvent.click(screen.getByRole('checkbox', { name: KEEP }));
+    await paste(CV_TEXT);
+    await screen.findByRole('heading', { name: 'Review what we found' });
+    expect(screen.getByRole('button', { name: 'Forget it now' })).toBeVisible();
+    await click('Back');
+    await userEvent.click(screen.getByRole('checkbox', { name: KEEP }));
+    await paste(CV_TEXT);
+    await screen.findByRole('heading', { name: 'Review what we found' });
+    expect(screen.queryByRole('button', { name: 'Forget it now' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/still kept in this tab/)).not.toBeInTheDocument();
+    expect(cvTextSession.has()).toBe(false);
+  });
+
+  it('announces the removal, moves focus, and offers Forget on the saved step too', async () => {
+    await open();
+    await userEvent.click(screen.getByRole('checkbox', { name: KEEP }));
+    await paste(CV_TEXT);
+    await screen.findByRole('heading', { name: 'Review what we found' });
+    await click('Save these to my profile');
+    await screen.findByRole('heading', { name: 'CV saved' });
+    expect(screen.getByText(/still kept in this tab/)).toBeVisible();
+    await click('Forget it now');
+    expect(await screen.findByText('CV text removed from this tab')).toHaveAttribute(
+      'role',
+      'status',
+    );
+    expect(screen.getByRole('heading', { name: 'CV saved' })).toHaveFocus();
+    expect(cvTextSession.has()).toBe(false);
+  });
+
+  it('uses the privacy wording that mentions the box', async () => {
+    await open();
+    expect(screen.getByText(/unless you tick the box above/)).toBeVisible();
+    expect(screen.getByText(/never written to this device’s storage/)).toBeVisible();
+  });
+
   it('leaving the page with the box unticked clears the holder', async () => {
     cvTextSession.set('stale text');
     const view = await open();
@@ -303,6 +346,21 @@ describe('Change my CV: keeping the text in this tab', () => {
     expect(cvTextSession.has()).toBe(true);
     await act(async () => {
       auth.emit(null);
+    });
+    expect(cvTextSession.has()).toBe(false);
+  });
+
+  it('is cleared when a different account signs in', async () => {
+    const auth = fakeAuth(SESSION);
+    installSetupApi({ profile: existing(), calendar: 404 });
+    renderApp({ auth, path: '/settings/cv' });
+    await screen.findByRole('heading', { name: 'Choose your new CV' });
+    await userEvent.click(screen.getByRole('checkbox', { name: KEEP }));
+    await paste(CV_TEXT);
+    await screen.findByRole('heading', { name: 'Review what we found' });
+    expect(cvTextSession.has()).toBe(true);
+    await act(async () => {
+      auth.emit({ userId: '22222222-2222-4222-8222-222222222222', email: 'other@example.com' });
     });
     expect(cvTextSession.has()).toBe(false);
   });

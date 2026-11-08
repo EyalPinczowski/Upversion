@@ -82,7 +82,8 @@ function WillBeReplaced({
         <ul className="list-disc space-y-1 pl-5">
           {info.cvSkillIds.length > 0 ? (
             <li>
-              Skills from your earlier CV are replaced by the skills ticked above.{' '}
+              Skills from your earlier CV are replaced by the skills ticked above (a ticked skill
+              you already own keeps your own entry).{' '}
               {removed.length > 0
                 ? `Not ticked, so removed: ${removed.map(nameOf).join(', ')}.`
                 : 'None of them is removed.'}
@@ -104,9 +105,10 @@ function WillBeReplaced({
       )}
       <p>
         {info.ownSkillIds.length > 0
-          ? `Skills you added yourself stay as they are: ${info.ownSkillIds.map(nameOf).join(', ')}.`
-          : 'Skills you add yourself always stay as they are.'}
+          ? `Skills you added yourself or chose in setup stay as they are: ${info.ownSkillIds.map(nameOf).join(', ')}.`
+          : 'Skills you add yourself or choose in setup always stay as they are.'}
       </p>
+      <p>Education and tools are added only if your profile has none yet.</p>
     </section>
   );
 }
