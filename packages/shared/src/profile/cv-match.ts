@@ -30,6 +30,7 @@ import type {
  *   payload never carries evidence.
  * - `skills.json` keywords are English: Hebrew words (apart from a few section headings) are not
  *   matched. Hebrew letters stuck to a Latin term (`בSQL`) are split off so the term is found.
+ * - A range inside one year ("2014 - 2014") counts 0 years: months are not guessed.
  * - Two-column layouts can pair a title with the wrong date; years are suggestions.
  */
 
@@ -80,21 +81,17 @@ const HEADINGS = new Map<string, SectionKind>([
   ...['כישורים', 'מיומנויות'].map((h): [string, SectionKind] => [h, 'skills']),
   ...[
     'contact',
+    'contact info',
     'contact details',
     'contact information',
+    'personal',
+    'personal info',
     'personal details',
     'personal information',
+    'get in touch',
     'פרטים אישיים',
     'פרטי קשר',
-  ].map((h): [string, SectionKind] => [h, 'contact']),
-  ...[
-    'contact',
-    'contact details',
-    'contact information',
-    'personal details',
-    'personal information',
-    'פרטים אישיים',
-    'פרטי קשר',
+    'יצירת קשר',
   ].map((h): [string, SectionKind] => [h, 'contact']),
   ...[
     'summary',
@@ -302,9 +299,9 @@ function taxonomyIndexes(taxonomy: MatchTaxonomy): TaxonomyIndexes {
 // ---------------------------------------------------------------- dates
 
 const MONTHS = 'jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec';
-const DATE = `(?:(?:${MONTHS})[a-z]{0,6}\\.?\\s+\\d{4}|\\d{1,2}[./]\\d{4}|\\d{4}-\\d{2}(?!\\d)|\\d{4})`;
+const DATE = `(?:(?:${MONTHS})[a-z]{0,6}\\.?\\s+\\d{4}|\\d{1,2}[./]\\d{4}|\\d{4}-\\d{2}(?:-\\d{2})?(?!\\d)|\\d{4})`;
 const RANGE_SOURCE =
-  `(?<![\\d/.])(${DATE})\\s*(?:-|–|—|to)\\s*` +
+  `(?<![\\d/.\\p{L}])(${DATE})\\s*(?:-|–|—|to)\\s*` +
   `(${DATE}|present|current|now|today|ongoing)(?![\\d/])`;
 
 interface DateRange {
@@ -319,7 +316,7 @@ function parseDate(s: string, now: Date): number | null {
   let y: number;
   let m = 0;
   const slash = /^(\d{1,2})[./](\d{4})$/.exec(t);
-  const iso = /^(\d{4})-(\d{2})$/.exec(t);
+  const iso = /^(\d{4})-(\d{2})(?:-\d{2})?$/.exec(t);
   const named = new RegExp(`^(${MONTHS})[a-z]{0,6}\\.?\\s+(\\d{4})$`).exec(t);
   if (slash) {
     const mm = Number(slash[1]);
@@ -359,7 +356,14 @@ function findRanges(line: string, now: Date): DateRange[] {
 }
 
 function stripRanges(line: string): string {
-  return line.replace(new RegExp(RANGE_SOURCE, 'giu'), ' ');
+  // Empty brackets left by a removed range, as in "Coordinator (2020 - 2021)", go too.
+  return line.replace(new RegExp(RANGE_SOURCE, 'giu'), ' ').replace(/[([]\s*[)\]]/gu, ' ');
+}
+
+const STARTS_WITH_RANGE_RE = new RegExp(`^[\\s(\\[|,;·•–—-]*${RANGE_SOURCE}`, 'iu');
+/** A line that opens with a date range ("Jan 2021 - Present, Tel Aviv"). */
+function startsWithRange(line: string): boolean {
+  return STARTS_WITH_RANGE_RE.test(line);
 }
 
 const roundHalf = (n: number): number => Math.round(n * 2) / 2;
@@ -565,7 +569,8 @@ export function extractProfileFromText(text: string, options: CvMatchOptions = {
       const nextRanges =
         i + 1 < n &&
         !dropped.has(i + 1) &&
-        trimBothChars(stripRanges(lines[i + 1] as string), SEPARATORS) === ''
+        (trimBothChars(stripRanges(lines[i + 1] as string), SEPARATORS) === '' ||
+          startsWithRange(lines[i + 1] as string))
           ? (ranges[i + 1] as DateRange[])
           : [];
       const entryRanges = own.length > 0 ? own : cleaned && !isBullet ? nextRanges : [];
@@ -597,7 +602,7 @@ export function extractProfileFromText(text: string, options: CvMatchOptions = {
           checked: true,
           evidence: dropped.has(i) ? '' : snippet(line, cleaned.slice(best.start, best.end)),
         });
-      } else if (entryRanges.length > 0 && segments[0]) {
+      } else if (entryRanges.length > 0 && segments[0] && !startsWithRange(line)) {
         const red = redactPii(segments[0]);
         if (red.count === 0 && /\p{L}/u.test(red.text)) {
           roleCandidates.push({
@@ -615,7 +620,7 @@ export function extractProfileFromText(text: string, options: CvMatchOptions = {
   // Skills.
   const hits = new Map<string, SkillHits>();
   for (let i = 0; i < n; i += 1) {
-    if (isHeading(i)) continue;
+    if (isHeading(i) || dropped.has(i)) continue;
     const line = lines[i] as string;
     for (const m of matchLine(line, skillIndex)) {
       const id = m.term.owner;
@@ -638,8 +643,9 @@ export function extractProfileFromText(text: string, options: CvMatchOptions = {
       if (kind[i] === 'skills') h.inSkills = true;
       if (kind[i] === 'experience' && !dropped.has(i) && (entryYears[i] as number) >= 2)
         h.level = 2;
-      if (!dropped.has(i) && (!h.evidence || (m.term.strong && !h.evidence.strong))) {
-        h.evidence = { line: i, text: line.slice(m.start, m.end), strong: m.term.strong };
+      const strongHit = m.term.strong && !m.loose;
+      if (!h.evidence || (strongHit && !h.evidence.strong)) {
+        h.evidence = { line: i, text: line.slice(m.start, m.end), strong: strongHit };
       }
     }
   }
