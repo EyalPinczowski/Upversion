@@ -38,7 +38,7 @@ export const MAX_EVIDENCE_LENGTH = 80;
 const MAX_LINE_LENGTH = 2000;
 const MAX_TITLE_LINE_LENGTH = 120;
 
-type SectionKind = 'experience' | 'education' | 'skills' | 'contact' | 'other';
+type SectionKind = 'experience' | 'education' | 'skills' | 'contact' | 'references' | 'other';
 
 const HEADINGS = new Map<string, SectionKind>([
   ...[
@@ -93,6 +93,8 @@ const HEADINGS = new Map<string, SectionKind>([
     'פרטי קשר',
     'יצירת קשר',
   ].map((h): [string, SectionKind] => [h, 'contact']),
+  // References hold other people's names and phone numbers: dropped like the contact block.
+  ...['references', 'referees', 'ממליצים'].map((h): [string, SectionKind] => [h, 'references']),
   ...[
     'summary',
     'profile',
@@ -110,7 +112,6 @@ const HEADINGS = new Map<string, SectionKind>([
     'military service',
     'awards',
     'publications',
-    'references',
     'interests',
     'additional information',
   ].map((h): [string, SectionKind] => [h, 'other']),
@@ -489,6 +490,137 @@ function buildToolIndex(labels: readonly string[]): TermIndex<string> {
 
 // ---------------------------------------------------------------- main
 
+/**
+ * Sections. With no heading at all every line counts as experience (best effort) and the first
+ * 2 non-empty lines are the contact block; otherwise everything before the first heading is.
+ * A `Contact` / `Personal details` section and a `References` section are dropped as well.
+ */
+function classifyLines(lines: readonly string[]): {
+  headingAt: (SectionKind | null)[];
+  kind: SectionKind[];
+  dropped: Set<number>;
+} {
+  const n = lines.length;
+  const headingAt = lines.map((l) => headingKind(l));
+  const hasHeadings = headingAt.some((h) => h !== null);
+  const kind: SectionKind[] = new Array<SectionKind>(n);
+  const dropped = new Set<number>();
+  let current: SectionKind = hasHeadings ? 'other' : 'experience';
+  let seenHeading = false;
+  let nonEmpty = 0;
+  for (let i = 0; i < n; i += 1) {
+    const h = headingAt[i] ?? null;
+    if (h) {
+      current = h;
+      seenHeading = true;
+    }
+    kind[i] = !h && INLINE_SKILLS_RE.test(lines[i] as string) ? 'skills' : current;
+    if (current === 'contact' || current === 'references') dropped.add(i);
+    if (hasHeadings) {
+      if (!seenHeading) dropped.add(i);
+    } else if (nonEmpty < 2 && (lines[i] as string).trim() !== '') {
+      dropped.add(i);
+      nonEmpty += 1;
+    }
+  }
+  return { headingAt, kind, dropped };
+}
+
+/**
+ * The matcher's contact-block rule (ADR 015 section 3, ADR 016 section 2.2), shared with the CV
+ * tailoring feature: the indexes of the lines that are NOT read. Lines before the first section
+ * heading (with no heading: the first 2 non-empty lines), a `Contact` / `Personal details`
+ * section and a `References` section.
+ */
+export function dropContactLines(lines: readonly string[]): Set<number> {
+  return classifyLines(lines).dropped;
+}
+
+/** Splits CV text into lines the way the matcher does. */
+export function splitCvLines(text: string): string[] {
+  return text.split(/\r\n|\r|\n|\u2028|\u2029/u);
+}
+
+/** A skill found in free text (a job post), with how often it was named. */
+export interface TextSkillHit {
+  skillId: string;
+  /** Total matches in the text (for sorting). */
+  hits: number;
+}
+
+/**
+ * Skills named in a text that has no CV structure (a job post: its first lines are its title,
+ * it has no contact block). Every line is read. Same threshold as the CV matcher: one strong
+ * (multi-word) term or two different weak terms, with one addition: a single term that is also a
+ * `tools_known` label (`SQL`, `Python`, `Tableau`, `Jira`; `Excel` only in that spelling) counts
+ * on its own, because a requirement line such as "Strong SQL skills" names it once. Sorted by
+ * `hits`, then id. Deterministic, linear.
+ */
+export function matchSkillsInText(
+  text: string,
+  options: Pick<CvMatchOptions, 'taxonomy' | 'tools'> = {},
+): TextSkillHit[] {
+  const taxonomy = options.taxonomy ?? CATALOG_TAXONOMY;
+  const { skills: skillIndex } = taxonomyIndexes(taxonomy);
+  const toolIndex = buildToolIndex(options.tools ?? catalogToolLabels());
+  const agg = new Map<string, { strong: Set<string>; weak: Set<string>; hits: number }>();
+  for (const raw of splitCvLines(text.normalize('NFKC'))) {
+    const line = capLine(raw);
+    const toolKeys = new Set(matchLine(line, toolIndex).map((m) => m.term.lower.join(' ')));
+    for (const m of matchLine(line, skillIndex)) {
+      if (isUnguardedMake(m.term.lower, 'other', line)) continue;
+      const id = m.term.owner;
+      let a = agg.get(id);
+      if (!a) {
+        a = { strong: new Set(), weak: new Set(), hits: 0 };
+        agg.set(id, a);
+      }
+      const key = m.term.lower.join(' ');
+      if ((m.term.strong && !m.loose) || toolKeys.has(key)) a.strong.add(key);
+      else a.weak.add(key);
+      a.hits += 1;
+    }
+  }
+  return [...agg]
+    .filter(([, a]) => a.strong.size >= 1 || a.weak.size >= 2)
+    .map(([skillId, a]) => ({ skillId, hits: a.hits }))
+    .sort((a, b) => b.hits - a.hits || a.skillId.localeCompare(b.skillId));
+}
+
+/** Catalog skills and tools a text mentions, with no threshold (used to check AI output). */
+export interface CatalogMentions {
+  /** Skill ids with at least one matching term, in any strength. */
+  skills: string[];
+  /** `tools_known` labels with a match. */
+  tools: string[];
+}
+
+/**
+ * Every catalog skill id and tool label named anywhere in `text`, even by one weak term. Unlike
+ * `matchSkillsInText` there is no threshold: it answers "is this name in the text at all", for
+ * comparing an AI answer with the CV it came from. Deterministic, linear.
+ */
+export function findCatalogMentions(
+  text: string,
+  options: Pick<CvMatchOptions, 'taxonomy' | 'tools'> = {},
+): CatalogMentions {
+  const taxonomy = options.taxonomy ?? CATALOG_TAXONOMY;
+  const { skills: skillIndex } = taxonomyIndexes(taxonomy);
+  const toolIndex = buildToolIndex(options.tools ?? catalogToolLabels());
+  const skills = new Set<string>();
+  const tools = new Set<string>();
+  for (const raw of splitCvLines(text.normalize('NFKC'))) {
+    const line = capLine(raw);
+    for (const m of matchLine(line, skillIndex)) {
+      if (!isUnguardedMake(m.term.lower, 'other', line)) skills.add(m.term.owner);
+    }
+    for (const m of matchLine(line, toolIndex)) {
+      if (!isUnguardedMake(m.term.lower, 'other', line)) tools.add(m.term.owner);
+    }
+  }
+  return { skills: [...skills].sort(), tools: [...tools].sort() };
+}
+
 interface SkillHits {
   strongKeys: Set<string>;
   weakKeys: Set<string>;
@@ -507,39 +639,11 @@ export function extractProfileFromText(text: string, options: CvMatchOptions = {
   const now = options.now ?? new Date();
   const { skills: skillIndex, roles: roleIndex } = taxonomyIndexes(taxonomy);
 
-  const lines = text
-    .normalize('NFKC')
-    .split(/\r\n|\r|\n|\u2028|\u2029/u)
-    .map(capLine);
+  const lines = splitCvLines(text.normalize('NFKC')).map(capLine);
   const n = lines.length;
 
-  // Sections. With no heading at all every line counts as experience (best effort) and the
-  // first 2 non-empty lines are the contact block; otherwise everything before the first
-  // heading is.
-  const headingAt = lines.map((l) => headingKind(l));
+  const { headingAt, kind, dropped } = classifyLines(lines);
   const hasHeadings = headingAt.some((h) => h !== null);
-  const kind: SectionKind[] = new Array<SectionKind>(n);
-  const dropped = new Set<number>();
-  {
-    let current: SectionKind = hasHeadings ? 'other' : 'experience';
-    let seenHeading = false;
-    let nonEmpty = 0;
-    for (let i = 0; i < n; i += 1) {
-      const h = headingAt[i] ?? null;
-      if (h) {
-        current = h;
-        seenHeading = true;
-      }
-      kind[i] = !h && INLINE_SKILLS_RE.test(lines[i] as string) ? 'skills' : current;
-      if (current === 'contact') dropped.add(i);
-      if (hasHeadings) {
-        if (!seenHeading) dropped.add(i);
-      } else if (nonEmpty < 2 && (lines[i] as string).trim() !== '') {
-        dropped.add(i);
-        nonEmpty += 1;
-      }
-    }
-  }
   const isHeading = (i: number): boolean => headingAt[i] !== null;
 
   // Date ranges per line (experience lines only feed years).
