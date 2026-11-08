@@ -188,7 +188,7 @@ The app never jumps straight to courses. It first runs a short guided interview 
 
 **The course catalog:**
 - A curated list of verified learning resources, stored in the database and editable in the app. Each entry: title, provider, URL, skills taught (tags), level, estimated hours, cost, certificate type (`none` / `completion` / `official exam`), how recognized the certificate is (`low` / `medium` / `high`), prerequisites, format, language.
-- **Seed data is provided** in `data/catalog/` (researched separately): 121 items across 19 roles and 41 skills, with `catalog.json`, `roles.json`, `skills.json`, `questions.json` (the guided intake), `documents.jsonl` (ready to embed), `schema.sql` (pgvector + keyword search + `match_catalog()` with budget filters) and `seed.sql`. Read its README first – it marks which URLs and prices are verified. Unverified entries are shown with a "needs check" badge until the link checker confirms them.
+- **Seed data is provided** in `data/catalog/` (researched separately): 121 items across 27 roles and 59 skills, with `catalog.json`, `roles.json`, `skills.json`, `questions.json` (the guided intake), `documents.jsonl` (ready to embed), `schema.sql` (pgvector + keyword search + `match_catalog()` with budget filters) and `seed.sql`. Read its README first – it marks which URLs and prices are verified. Unverified entries are shown with a "needs check" badge until the link checker confirms them.
 - **Retrieval (RAG):** embed `documents.jsonl` with a free open model run locally (384 dimensions, e.g. all-MiniLM-L6-v2 via transformers.js – no paid API), store in `rag_documents`, and retrieve with hybrid search (vector + keyword + exact skill match). The LLM only sees retrieved items.
 - **Link checker:** a scheduled GitHub Action checks catalog URLs weekly and flags broken ones in the app.
 - I can add entries manually at any time, including from the "Unverified" suggestions above.
@@ -394,7 +394,7 @@ Invite           id, email | null (link invite), token_hash, expires_at, used_at
 LegalAcceptance  user_id, document: terms | privacy, version, accepted_at
 AdminAuditLog    id, admin_id, user_id, action (view_detail | view_tier2 | export | disable | delete | edit_cap), at
 IntakeSession    id, user_id, current_stage, answers {question_id: value}, status: in_progress | confirmed, updated_at
-UserProfile      user_id, status, background, education, tools [..], skill_levels {skill: 0-3}, interests, work_style, concerns
+UserProfile      user_id, answers {setup question_id: value}, skills [{skillId, level 0-3, source: cv | setup | manual}], roles_held [{roleId | null, title, years | null}], years_experience, cv_imported_at, setup_status: not_started | in_progress | completed | dismissed, setup_step, setup_completed_at (ADR 015; no CV text is stored)
 Goal             id, plan_id, goal_text, target_skills [{skill, current_level}],
                  background, start_date, end_date | duration_weeks,
                  budget_total, budget_currency, max_item_price, free_only: bool,
