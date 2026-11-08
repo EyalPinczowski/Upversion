@@ -11,6 +11,7 @@ import { downloadJson } from '../lib/download';
 import { LEGAL_PAGES } from '../lib/legal';
 import { AiUsageMeter } from './settings/AiUsageMeter';
 import { HelpSection } from './settings/HelpSection';
+import { SetupSettings } from './settings/SetupSettings';
 import { CalendarSettings } from './settings/CalendarSettings';
 import { useTheme, type ThemePreference } from '../lib/theme';
 
@@ -284,6 +285,7 @@ export function SettingsPage({ appEnv = 'operational' }: { appEnv?: AppEnv }) {
       <section aria-labelledby="app-settings-heading" className="space-y-6">
         <h2 id="app-settings-heading">App</h2>
         <ProfileSection />
+        <SetupSettings />
         <AppearanceSection />
         <AiUsageMeter />
         <HelpSection />

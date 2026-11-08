@@ -5,6 +5,7 @@ import {
   hasSeenWelcome,
   isWelcomeExcluded,
   markWelcomeSeen,
+  setWelcomeOpen,
   TOUR_STEPS,
   WELCOME_REOPEN_EVENT,
 } from '../../lib/welcome';
@@ -70,6 +71,12 @@ function Welcome({ userId }: { userId: string }) {
     dismiss();
     setTouring(true);
   }
+
+  const onScreen = touring || showDialog;
+  useEffect(() => {
+    setWelcomeOpen(onScreen);
+    return () => setWelcomeOpen(false);
+  }, [onScreen]);
 
   const closeTour = useCallback(() => setTouring(false), []);
 

@@ -4,6 +4,7 @@ import { useFinishCalendarConnect } from '../api/calendar-hooks';
 import { isApiError } from '../api/errors';
 import { Loading } from '../components/status';
 import { ErrorText, linkClass } from '../components/ui';
+import { clearSetupReturn, peekSetupReturn } from '../lib/setup-return';
 import { ConnectButton } from './settings/CalendarSettings';
 
 interface Returned {
@@ -25,12 +26,15 @@ function readReturned(search: string): Returned {
 export function CalendarCallbackPage() {
   // Read before anything else: replaceState below removes them from window.location.
   const [returned] = useState(() => readReturned(window.location.search));
+  // Set when the connect flow started in the setup wizard; read once, like the address bar values.
+  const [fromSetup] = useState(peekSetupReturn);
   const finish = useFinishCalendarConnect();
   const started = useRef(false);
 
   useEffect(() => {
     if (started.current) return;
     started.current = true;
+    clearSetupReturn();
     window.history.replaceState(window.history.state, '', window.location.pathname);
     if (returned.denied === null && returned.code && returned.state) {
       finish.mutate({ code: returned.code, state: returned.state });
@@ -46,6 +50,7 @@ export function CalendarCallbackPage() {
       <h1>Google Calendar</h1>
       {returned.denied !== null ? (
         <Failure
+          fromSetup={fromSetup}
           text={
             returned.denied === 'access_denied'
               ? 'Google Calendar was not connected because access was not allowed. Nothing was changed.'
@@ -53,16 +58,15 @@ export function CalendarCallbackPage() {
           }
         />
       ) : invalidLink ? (
-        <Failure text="Sign in, then connect again from Settings." />
+        <Failure fromSetup={fromSetup} text="Sign in, then connect again from Settings." />
       ) : finish.isSuccess ? (
         <div role="status" className="space-y-3">
           <p className="font-bold text-ok">Google Calendar is connected.</p>
-          <Link className={linkClass} to="/settings">
-            Back to Settings
-          </Link>
+          <BackLink fromSetup={fromSetup} />
         </div>
       ) : finish.isError ? (
         <Failure
+          fromSetup={fromSetup}
           text={
             isApiError(finish.error) && finish.error.code === 'scopes_not_granted'
               ? 'Both permissions are needed: seeing your calendars and managing events in the Upversion calendar. Nothing was connected. Try again and allow both.'
@@ -78,15 +82,25 @@ export function CalendarCallbackPage() {
   );
 }
 
-function Failure({ text }: { text: string }) {
+function BackLink({ fromSetup }: { fromSetup: boolean }) {
+  return fromSetup ? (
+    <Link className={linkClass} to="/setup">
+      Continue setup
+    </Link>
+  ) : (
+    <Link className={linkClass} to="/settings">
+      Back to Settings
+    </Link>
+  );
+}
+
+function Failure({ text, fromSetup }: { text: string; fromSetup: boolean }) {
   return (
     <div className="space-y-3">
       <ErrorText>{text}</ErrorText>
       <div className="flex flex-wrap items-center gap-4">
-        <ConnectButton label="Try again" primary />
-        <Link className={linkClass} to="/settings">
-          Back to Settings
-        </Link>
+        <ConnectButton label="Try again" primary returnToSetup={fromSetup} />
+        <BackLink fromSetup={fromSetup} />
       </div>
     </div>
   );

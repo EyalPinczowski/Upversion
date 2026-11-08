@@ -4,6 +4,7 @@
   "private": true,
   "description": "Shared types, validation schemas and the scheduling engine.",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts"
   },
