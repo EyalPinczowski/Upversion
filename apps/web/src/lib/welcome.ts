@@ -7,6 +7,21 @@ const keyFor = (userId: string) => `upversion.welcome-seen.${userId}`;
 const seenInMemory = new Set<string>();
 
 export const WELCOME_REOPEN_EVENT = 'upversion:welcome-reopen';
+/** Fired when the welcome dialog or tour opens or closes, so the first-run setup redirect can wait for it. */
+export const WELCOME_CHANGE_EVENT = 'upversion:welcome-change';
+let welcomeOpen = false;
+
+/** Called by the welcome guide while its dialog or tour is on screen. */
+export function setWelcomeOpen(open: boolean): void {
+  if (welcomeOpen === open) return;
+  welcomeOpen = open;
+  window.dispatchEvent(new Event(WELCOME_CHANGE_EVENT));
+}
+
+/** The welcome has been seen and is not on screen now (the setup redirect waits for this). */
+export function isWelcomeSettled(userId: string): boolean {
+  return hasSeenWelcome(userId) && !welcomeOpen;
+}
 
 export function hasSeenWelcome(userId: string): boolean {
   if (seenInMemory.has(userId)) return true;
@@ -30,6 +45,7 @@ export function markWelcomeSeen(userId: string, { persist = true } = {}): void {
 /** Test helper: forget the in-memory part so a test starts as a first visit. */
 export function resetWelcomeMemory(): void {
   seenInMemory.clear();
+  welcomeOpen = false;
 }
 
 /** Asks the app shell to open the welcome dialog again (the Settings "Help" button). */
@@ -38,7 +54,7 @@ export function requestWelcome(): void {
 }
 
 /** Routes where the welcome never opens, even though they sit inside the signed-in shell. */
-export const WELCOME_EXCLUDED_PATHS = ['/calendar/callback'];
+export const WELCOME_EXCLUDED_PATHS = ['/calendar/callback', '/setup'];
 
 /** `/calendar/callback/` and `/calendar/callback` are the same page. */
 export function normalizePath(pathname: string): string {

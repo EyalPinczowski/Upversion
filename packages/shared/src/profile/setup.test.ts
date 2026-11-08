@@ -45,6 +45,13 @@ describe('setupQuestions', () => {
     expect(byId.education?.required).toBe(false);
   });
 
+  it('uses setup.why instead of why in setup, and leaves the plan-builder why alone', () => {
+    const skills = setupQuestions().find((q) => q.id === 'target_skills');
+    expect(skills?.why).toBe('Pick up to 5.');
+    expect(skills?.why).not.toMatch(/type/i);
+    expect(CATALOG_QUESTIONS.find((q) => q.id === 'target_skills')?.why).toMatch(/You can type/);
+  });
+
   it('does not touch the plan-builder definitions', () => {
     setupQuestions(flagged());
     const role = CATALOG_QUESTIONS.find((q) => q.id === 'target_role');

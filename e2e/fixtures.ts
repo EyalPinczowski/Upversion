@@ -48,6 +48,8 @@ export const test = base.extend<Fixtures>({
       const problems: string[] = [];
       // The browser logs every failed request as a console error. Only the answers the API gives
       // on purpose are allowed, and only as many times as the API really gave them:
+      //  - 404 for GET /me/profile: the first-time setup is off in this stack (FEATURE_PROFILE_SETUP),
+      //    which is how the app learns to hide the wizard and its entry points (ADR 015);
       //  - 404 for "no review saved yet for this date" (docs/api-reviews.md);
       //  - 404 for GET /calendar: the calendar feature is off in this stack (FEATURE_CALENDAR), which
       //    is how the app learns to show nothing about it (docs/google-calendar-setup.md);
@@ -55,6 +57,7 @@ export const test = base.extend<Fixtures>({
       //    (docs/api-practice.md): the screen then shows the "AI unavailable" fallbacks.
       const allowedFailures = (status: number, method: string, path: string): boolean =>
         (status === 404 && method === 'GET' && path === '/api/v1/calendar') ||
+        (status === 404 && method === 'GET' && path === '/api/v1/me/profile') ||
         (status === 404 &&
           method === 'GET' &&
           /^\/api\/v1\/plans\/[^/]+\/days\/[\d-]+\/review$/.test(path)) ||

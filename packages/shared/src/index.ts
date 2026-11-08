@@ -31,3 +31,4 @@ export * from './profile/setup';
 export * from './profile/answers';
 export * from './profile/cv-match';
 export * from './profile/cv-payload';
+export { CATALOG_TAXONOMY } from './profile/catalog';

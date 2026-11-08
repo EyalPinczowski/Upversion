@@ -154,7 +154,7 @@ def check_role_paths(items, roles):
 
 SETUP_TYPES = ("single", "multi", "weekdays", "number", "yes_no", "multi_role", "multi_skill")
 SETUP_COUNT = 8
-SETUP_FLAGS = ("order", "ignore_show_if", "choices_only", "optional")
+SETUP_FLAGS = ("order", "ignore_show_if", "choices_only", "optional", "why")
 
 
 def check_setup_questions(questions):
@@ -179,6 +179,9 @@ def check_setup_questions(questions):
         for k, v in flag.items():
             if k not in SETUP_FLAGS:
                 errs.append(f"setup question {qid}: unknown setup field {k}")
+            elif k == "why":
+                if not isinstance(v, str) or not v.strip():
+                    errs.append(f"setup question {qid}: setup.why must be a non-empty string")
             elif k != "order" and v is not True:
                 errs.append(f"setup question {qid}: setup.{k} must be true when present")
         if q.get("type") not in SETUP_TYPES:
