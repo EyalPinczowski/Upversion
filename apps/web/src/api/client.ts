@@ -1,7 +1,6 @@
 import createClient from 'openapi-fetch';
 import { combineSignals, REQUEST_TIMEOUT_MS } from '../lib/abort';
 import { ApiError } from './errors';
-import type { ProfileImport, SetupStatusUpdate, UserProfile } from '@upversion/shared';
 import type { paths } from './schema';
 
 export type Me = paths['/api/v1/me']['get']['responses'][200]['content']['application/json'];
@@ -41,11 +40,9 @@ export type LogResult = Ok<paths['/api/v1/plans/{planId}/tasks/{taskId}/logs']['
 export type TaskPatch = Body<paths['/api/v1/plans/{planId}/tasks/{taskId}']['patch']>;
 export type ImportBody = Body<paths['/api/v1/plans/import']['post']>;
 
-// TODO: switch to generated types once WP-B (feature/api-user-profile) merges and schema.d.ts has
-// the /api/v1/me/profile paths. Until then these mirror the shapes in ADR 015 section 4.
-export type ProfileView = UserProfile;
-export type ProfileImportBody = ProfileImport;
-export type SetupStatusBody = SetupStatusUpdate;
+export type ProfileView = Ok<paths['/api/v1/me/profile']['get']>;
+export type ProfileImportBody = Body<paths['/api/v1/me/profile/import']['put']>;
+export type SetupStatusBody = Body<paths['/api/v1/me/profile/setup']['patch']>;
 
 export interface ApiClientOptions {
   /** Base URL of the API, without a trailing slash. */
@@ -100,27 +97,6 @@ export function createApiClient({
   };
 
   const raw = createClient<paths>({ baseUrl, fetch: guardedFetch });
-
-  // TODO: switch to generated types once WP-B merges (see ProfileView above). Same guarded fetch,
-  // so the token, timeout and the one ApiError shape apply.
-  const profileCall = async <T>(
-    method: 'GET' | 'PUT' | 'PATCH' | 'DELETE',
-    path: string,
-    body?: unknown,
-    signal?: AbortSignal,
-  ): Promise<T> => {
-    const response = await guardedFetch(
-      new Request(`${baseUrl}${path}`, {
-        method,
-        headers: body === undefined ? {} : { 'content-type': 'application/json' },
-        body: body === undefined ? undefined : JSON.stringify(body),
-        signal,
-      }),
-    );
-    const parsed: unknown = await response.json().catch(() => undefined);
-    if (!response.ok) throw ApiError.fromBody(response.status, parsed);
-    return parsed as T;
-  };
 
   return {
     /** For hooks of later features: `unwrap(api.raw.GET('/api/v1/plans'))`. */
@@ -230,15 +206,14 @@ export function createApiClient({
           params: { path: { planId, date } },
         }),
       ),
-    getProfile: (signal?: AbortSignal) =>
-      profileCall<ProfileView>('GET', '/api/v1/me/profile', undefined, signal),
+    getProfile: (signal?: AbortSignal) => unwrap(raw.GET('/api/v1/me/profile', { signal })),
     putProfileAnswers: (answers: Record<string, unknown>) =>
-      profileCall<ProfileView>('PUT', '/api/v1/me/profile/answers', { answers }),
+      unwrap(raw.PUT('/api/v1/me/profile/answers', { body: { answers } })),
     putProfileImport: (body: ProfileImportBody) =>
-      profileCall<ProfileView>('PUT', '/api/v1/me/profile/import', body),
+      unwrap(raw.PUT('/api/v1/me/profile/import', { body })),
     patchProfileSetup: (body: SetupStatusBody) =>
-      profileCall<ProfileView>('PATCH', '/api/v1/me/profile/setup', body),
-    deleteProfile: () => profileCall<ProfileView>('DELETE', '/api/v1/me/profile'),
+      unwrap(raw.PATCH('/api/v1/me/profile/setup', { body })),
+    deleteProfile: () => unwrap(raw.DELETE('/api/v1/me/profile', { body: {} })),
     exportData: () => unwrap(raw.GET('/api/v1/me/export')),
     deleteAccount: (confirmation: string) =>
       unwrap(raw.DELETE('/api/v1/me', { body: { confirmation } })),

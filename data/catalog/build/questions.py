@@ -15,7 +15,7 @@ Q = [
  "show_if":{"goal_type":["new_role","grow_in_role"]},"maps_to":"goal.target_roles","required":True,"setup":{"order":7,"ignore_show_if":True,"choices_only":True,"optional":True}},
 {"id":"target_skills","stage":"goal","text":"Which skills do you want to learn?","why":"Pick up to 5. You can type ones that aren't listed.",
  "type":"multi_skill","max":5,"options_source":"skills","allow_other":True,
- "show_if":{"goal_type":["specific_skill"]},"maps_to":"goal.target_skills","required":True,"setup":{"order":8,"ignore_show_if":True,"choices_only":True,"optional":True}},
+ "show_if":{"goal_type":["specific_skill"]},"maps_to":"goal.target_skills","required":True,"setup":{"order":8,"ignore_show_if":True,"choices_only":True,"optional":True,"why":"Pick up to 5."}},
 {"id":"target_certificate","stage":"goal","text":"Which certification or exam?","why":"The plan will be built backwards from the exam.",
  "type":"catalog_search","filter":{"type":"cert_exam"},"allow_other":True,
  "show_if":{"goal_type":["certificate"]},"maps_to":"goal.target_items","required":True},

@@ -17,17 +17,7 @@ export function hintFor(question: SetupQuestion, answers: Record<string, unknown
   return null;
 }
 
-/**
- * The `why` text from the question bank. `target_skills` still says "You can type ones that aren't
- * listed", which is true in the plan builder and false in setup (choices only), so that sentence is
- * left out here. Needs a data fix in questions.py; see the PR text.
- */
-export function whyText(question: SetupQuestion): string | null {
-  if (!question.why) return null;
-  const text = question.why.replace(/\s*You can type[^.]*\./i, '').trim();
-  return text === '' ? null : text;
-}
-
+/** Sunday first, the same numbering as the scheduling engine (0 = Sunday). */
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 /** An answer in words, for the summary. */

@@ -6,6 +6,8 @@ export interface SetupFlag {
   ignore_show_if?: boolean;
   choices_only?: boolean;
   optional?: boolean;
+  /** Replaces `why` in setup only. */
+  why?: string;
 }
 
 export type QuestionOption = string | { value: string; label: string };

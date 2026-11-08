@@ -89,7 +89,8 @@
         "order": 8,
         "ignore_show_if": true,
         "choices_only": true,
-        "optional": true
+        "optional": true,
+        "why": "Pick up to 5."
       }
     },
     {

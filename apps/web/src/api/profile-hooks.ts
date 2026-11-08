@@ -30,13 +30,9 @@ export function useProfile() {
   });
 }
 
-/** Takes the profile the server returned when it did, otherwise asks for it again. */
-function settle(queryClient: QueryClient, result: unknown) {
-  if (result && typeof result === 'object' && 'setupStatus' in result) {
-    queryClient.setQueryData(profileKey, result as ProfileView);
-  } else {
-    void queryClient.invalidateQueries({ queryKey: profileKey });
-  }
+/** Every write answers 200 with the full profile: put it straight into the cache. */
+function settle(queryClient: QueryClient, profile: ProfileView) {
+  queryClient.setQueryData(profileKey, profile);
 }
 
 /** Saves the answer(s) of one screen (partial merge on the server, safe to repeat). */
@@ -46,7 +42,7 @@ export function useSaveAnswers() {
   return useMutation({
     ...mutationDefaults,
     mutationFn: (answers: Record<string, unknown>) => api.putProfileAnswers(answers),
-    onSuccess: (result) => settle(queryClient, result),
+    onSuccess: (profile) => settle(queryClient, profile),
   });
 }
 
@@ -57,7 +53,7 @@ export function useImportProfile() {
   return useMutation({
     ...mutationDefaults,
     mutationFn: (body: ProfileImportBody) => api.putProfileImport(body),
-    onSuccess: (result) => settle(queryClient, result),
+    onSuccess: (profile) => settle(queryClient, profile),
   });
 }
 
@@ -68,7 +64,7 @@ export function useSetSetup() {
   return useMutation({
     ...mutationDefaults,
     mutationFn: (body: SetupStatusBody) => api.patchProfileSetup(body),
-    onSuccess: (result) => settle(queryClient, result),
+    onSuccess: (profile) => settle(queryClient, profile),
   });
 }
 
@@ -79,6 +75,6 @@ export function useClearProfile() {
   return useMutation({
     ...mutationDefaults,
     mutationFn: () => api.deleteProfile(),
-    onSuccess: (result) => settle(queryClient, result),
+    onSuccess: (profile) => settle(queryClient, profile),
   });
 }

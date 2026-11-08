@@ -1,7 +1,7 @@
 import { CATALOG_TAXONOMY, type QuestionOption, type SetupQuestion } from '@upversion/shared';
 import { useId } from 'react';
 import { ErrorText } from '../../components/ui';
-import { hintFor, whyText } from './question-model';
+import { hintFor } from './question-model';
 
 /** Sunday first, the same numbering as the scheduling engine (0 = Sunday). */
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -40,7 +40,7 @@ export function QuestionStep({
 }) {
   const ids = useId();
   const value = answers[question.id];
-  const why = whyText(question);
+  const why = question.why ?? null;
   const hint = hintFor(question, answers);
   const describedBy = [
     why ? `${ids}-why` : null,
