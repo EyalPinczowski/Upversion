@@ -194,3 +194,55 @@ describe('PDF reading: timeout, cancel and cleanup', () => {
     expect(destroy).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('DOCX reading honours the abort signal', () => {
+  it('throws CvCancelled when already aborted', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      extractCvText(buildDocx(['Excel and SQL for weekly reports']), { signal: controller.signal }),
+    ).rejects.toBeInstanceOf(CvCancelled);
+  });
+
+  it('drops the text when cancelled while the file is being read', async () => {
+    const controller = new AbortController();
+    const file = buildDocx(['Excel and SQL for weekly reports']);
+    const real = file.arrayBuffer.bind(file);
+    file.arrayBuffer = async () => {
+      const data = await real();
+      controller.abort();
+      return data;
+    };
+    const parse = vi.spyOn(DOMParser.prototype, 'parseFromString');
+    try {
+      await expect(extractCvText(file, { signal: controller.signal })).rejects.toBeInstanceOf(
+        CvCancelled,
+      );
+      // Stopped before any unpacking work.
+      expect(parse).not.toHaveBeenCalled();
+    } finally {
+      parse.mockRestore();
+    }
+  });
+
+  it('drops the text when cancelled while it is being unpacked', async () => {
+    const controller = new AbortController();
+    const parse = DOMParser.prototype.parseFromString;
+    const spy = vi.spyOn(DOMParser.prototype, 'parseFromString').mockImplementation(function (
+      this: DOMParser,
+      ...args: Parameters<typeof parse>
+    ) {
+      controller.abort();
+      return parse.apply(this, args);
+    });
+    try {
+      await expect(
+        extractCvText(buildDocx(['Excel and SQL for weekly reports']), {
+          signal: controller.signal,
+        }),
+      ).rejects.toBeInstanceOf(CvCancelled);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});

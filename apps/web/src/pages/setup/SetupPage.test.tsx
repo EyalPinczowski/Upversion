@@ -249,8 +249,9 @@ describe('the setup wizard', () => {
     await start();
     await waitFor(() => expect(heading()).toHaveFocus());
     expect(heading()).toHaveTextContent('Question 1 of 8');
-    // One announcement only: the focused heading (no second live region repeating it).
+    // One announcement only: the focused heading, described by the question (no live region).
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(heading()).toHaveAccessibleDescription(/What's your current situation/);
   });
 
   it('passes axe on every step', async () => {

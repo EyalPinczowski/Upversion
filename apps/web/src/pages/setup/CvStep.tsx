@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type DragEvent } from 'react';
+import { useEffect, useId, useRef, useState, type DragEvent } from 'react';
 import { Button, ErrorText, TextAreaField } from '../../components/ui';
 import { CV_ERROR_TEXT, CvCancelled, CvReadError, extractCvText } from './cv-extract';
 
@@ -23,6 +23,16 @@ export function CvStep({
   const [dragging, setDragging] = useState(false);
   const abort = useRef<AbortController | null>(null);
 
+  // Leaving the step (Back, Skip, skip setup) stops a read still in flight, so it cannot finish
+  // later and pull the person to the review screen.
+  useEffect(
+    () => () => {
+      abort.current?.abort();
+      abort.current = null;
+    },
+    [],
+  );
+
   async function read(file: File | undefined) {
     if (!file) return;
     setError(null);
@@ -36,8 +46,11 @@ export function CvStep({
       setError(e instanceof CvReadError ? e.message : CV_ERROR_TEXT.unreadable);
       setPasting(true);
     } finally {
-      if (abort.current === controller) abort.current = null;
-      setBusy(false);
+      // Only the newest read may touch the busy flag (Cancel, then pick another file).
+      if (abort.current === controller) {
+        abort.current = null;
+        setBusy(false);
+      }
     }
   }
 
@@ -108,6 +121,7 @@ export function CvStep({
           <Button
             onClick={() => {
               abort.current?.abort();
+              abort.current = null;
               setBusy(false);
             }}
           >

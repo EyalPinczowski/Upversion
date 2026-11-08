@@ -218,9 +218,20 @@ function Wizard({ profile }: { profile: ProfileView }) {
         </div>
       ) : null}
       <section aria-labelledby="setup-step-heading" className="space-y-5">
-        <h2 id="setup-step-heading" ref={headingRef} tabIndex={-1}>
+        <h2
+          id="setup-step-heading"
+          ref={headingRef}
+          tabIndex={-1}
+          aria-describedby={question ? 'setup-step-question' : undefined}
+        >
           {step === WELCOME ? 'Welcome' : heading}
         </h2>
+        {/* Read once, with the focused heading: "Question 3 of 8", then the question itself. */}
+        {question ? (
+          <p id="setup-step-question" className="sr-only">
+            {question.text}
+          </p>
+        ) : null}
 
         {step === WELCOME ? (
           <div className="space-y-4">

@@ -251,8 +251,11 @@ export async function extractCvText(file: File, options: ExtractOptions = {}): P
   } catch {
     throw new CvReadError('unreadable');
   }
+  if (options.signal?.aborted) throw new CvCancelled();
   if (ext === 'docx') {
     const text = extractDocxText(data);
+    // Cancelled while unpacking: the text is dropped, not handed on.
+    if (options.signal?.aborted) throw new CvCancelled();
     if (nonSpace(text) === 0) throw new CvReadError('unreadable');
     return text;
   }

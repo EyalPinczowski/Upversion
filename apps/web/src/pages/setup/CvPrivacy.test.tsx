@@ -34,6 +34,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   Reflect.deleteProperty(navigator, 'sendBeacon');
+  restoreImageSrc();
+  removeErrorListener();
 });
 
 const click = (name: string | RegExp) => userEvent.click(screen.getByRole('button', { name }));
@@ -59,6 +61,9 @@ function findLeak(haystack: string): string | null {
   }
   return null;
 }
+
+let restoreImageSrc: () => void = () => {};
+let removeErrorListener: () => void = () => {};
 
 const CONSOLE_METHODS = ['log', 'info', 'warn', 'error', 'debug'] as const;
 
@@ -86,7 +91,36 @@ function spyOnSideChannels() {
     addEventListener() {}
   }
   vi.stubGlobal('XMLHttpRequest', FakeXhr);
-  return { logged, beacon, xhr };
+  // Image requests (a tracking pixel), WebSockets and uncaught errors are channels too.
+  const images: string[] = [];
+  const originalSrc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+  Object.defineProperty(HTMLImageElement.prototype, 'src', {
+    configurable: true,
+    get: () => '',
+    set(value: string) {
+      images.push(String(value));
+    },
+  });
+  restoreImageSrc = () => {
+    if (originalSrc) Object.defineProperty(HTMLImageElement.prototype, 'src', originalSrc);
+  };
+  const sockets: string[] = [];
+  vi.stubGlobal(
+    'WebSocket',
+    class {
+      constructor(url: string) {
+        sockets.push(String(url));
+      }
+    },
+  );
+  const errors: string[] = [];
+  const onError = (event: ErrorEvent) => {
+    errors.push(`${event.message} ${event.error instanceof Error ? event.error.stack : ''}`);
+    event.preventDefault();
+  };
+  window.addEventListener('error', onError);
+  removeErrorListener = () => window.removeEventListener('error', onError);
+  return { logged, beacon, xhr, images, sockets, errors };
 }
 
 function webStorageDump() {
@@ -205,6 +239,12 @@ describe('privacy: the CV never leaves the browser', () => {
     expect(findLeak(side.logged.join('\n'))).toBeNull();
     expect(side.beacon).not.toHaveBeenCalled();
     expect(side.xhr).toEqual([]);
+    await new Promise((resolve) => setTimeout(resolve, 20)); // let any deferred error surface
+    expect(findLeak(side.images.join('\n'))).toBeNull();
+    expect(side.images).toEqual([]);
+    expect(side.sockets).toEqual([]);
+    expect(findLeak(side.errors.join('\n'))).toBeNull();
+    expect(side.errors).toEqual([]);
 
     // 4. After the CV steps the text and the evidence are gone from the page too.
     expect(document.body.textContent).not.toContain('CANARY');
@@ -327,12 +367,17 @@ describe('review: confirming and fixing CV-derived roles', () => {
     (await profileCalls(api)).find((c) => c.path.endsWith('/import'))?.body as
       { rolesHeld: { roleId: string | null; title: string; years: number | null }[] } | undefined;
 
+  it('labels the role fields with visible text', async () => {
+    await toReview();
+    expect(screen.getByText('Role 1 title')).toBeVisible();
+    expect(screen.getByText('Role 1 years')).toBeVisible();
+  });
+
   it('offers the unmatched title as an unticked, editable row', async () => {
     await toReview();
-    const titles = screen.getAllByRole('textbox').map((t) => (t as HTMLInputElement).value);
-    expect(titles).toContain('Chief Happiness Wizard');
-    const index = titles.indexOf('Chief Happiness Wizard') + 1;
-    expect(screen.getByRole('checkbox', { name: `Include role ${index}` })).not.toBeChecked();
+    // The include checkbox is named "Include" plus its title field's label.
+    expect(screen.getByRole('checkbox', { name: 'Include Role 2 title' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Include Role 1 title' })).toBeChecked();
   });
 
   it('sends an edited title and years, and a ticked unmatched row', async () => {
@@ -343,7 +388,7 @@ describe('review: confirming and fixing CV-derived roles', () => {
     const years = screen.getByRole('spinbutton', { name: 'Role 1 years' });
     await userEvent.clear(years);
     await userEvent.type(years, '3.5');
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Include role 2' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Include Role 2 title' }));
     await click('Save these to my profile');
     await screen.findByRole('heading', { name: 'Setup complete' });
     const body = await importBody(api);
@@ -357,7 +402,13 @@ describe('review: confirming and fixing CV-derived roles', () => {
     await userEvent.clear(title);
     await userEvent.type(title, 'Lead, mail dana.x@mailbox.example');
     await click('Save these to my profile');
-    expect(await screen.findByRole('alert')).toHaveTextContent('Role 1: remove the email');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Role 1: remove the email');
+    expect(title).toHaveAttribute('aria-invalid', 'true');
+    expect(title).toHaveAccessibleDescription(/remove the email/);
+    expect(screen.getByRole('spinbutton', { name: 'Role 1 years' })).not.toHaveAttribute(
+      'aria-invalid',
+    );
     expect(await importBody(api)).toBeUndefined();
   });
 
@@ -368,6 +419,8 @@ describe('review: confirming and fixing CV-derived roles', () => {
     await userEvent.type(years, '60');
     await click('Save these to my profile');
     expect(await screen.findByRole('alert')).toHaveTextContent('years must be between 0 and 50');
+    expect(years).toHaveAttribute('aria-invalid', 'true');
+    expect(years).toHaveAccessibleDescription(/years must be between/);
     expect(await importBody(api)).toBeUndefined();
   });
 });
