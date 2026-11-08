@@ -62,4 +62,5 @@ export const exportSchema = z.object({
   calendarLockedBlocks: rows,
   calendarBusy: rows,
   calendarSources: rows,
+  userProfiles: rows,
 });

@@ -35,6 +35,7 @@ import {
   type TokenVerifier,
 } from './modules/accounts/token-verifier';
 import { calendarRoutes } from './modules/calendar/routes';
+import { profileRoutes } from './modules/profile/routes';
 import { createCalendarService } from './modules/calendar/service';
 import { createCalendarSync, type CalendarSync } from './modules/calendar/sync';
 import { createDaysService } from './modules/days/service';
@@ -299,6 +300,9 @@ export function buildApp(config: Config, deps: AppDeps = {}) {
           service: calendarService,
           sync: calendarSync,
         });
+      }
+      if (config.features.profileSetup) {
+        v1.register(profileRoutes, { verifier, db, now: deps.now });
       }
       v1.register(planRoutes, {
         verifier,

@@ -16,6 +16,7 @@ export async function buildOpenApiDocument(): Promise<string> {
   const config = loadConfig({
     LOG_LEVEL: 'silent',
     FEATURE_CALENDAR: 'true',
+    FEATURE_PROFILE_SETUP: 'true',
     CALENDAR_TOKEN_KEYS: `v1:${Buffer.alloc(32).toString('base64')}`,
     GOOGLE_CLIENT_ID: 'openapi-dump-placeholder',
     GOOGLE_CLIENT_SECRET: 'openapi-dump-placeholder',
