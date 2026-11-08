@@ -1,6 +1,10 @@
 # 015 – First-time setup and in-browser CV import
 
-**Status:** Proposed · awaiting owner approval. The owner approved building "Profile import from CV" (spec 12.1) as part of a first-time setup; this record proposes how. LinkedIn import stays deferred. Builds on ADR 002/014 (calendar), 004/012 (AI optional), 010 (`current_user_id()`), 007 (catalog-grounded plans).
+**Status:** Accepted
+
+Approved by the owner on 2026-11-08 with one change to the question list (`language` and `formats` replaced by `target_role` and `target_skills`). The two new questions break two build rules; see "Check on the new questions" (proposed rule change **needs owner confirmation**).
+
+Background: the owner approved building "Profile import from CV" (spec 12.1) as part of a first-time setup; this record proposes how. LinkedIn import stays deferred. Builds on ADR 002/014 (calendar), 004/012 (AI optional), 010 (`current_user_id()`), 007 (catalog-grounded plans).
 
 ## Context
 - Spec 3.0 (plan builder, not built yet) runs a 28-question intake from `data/catalog/questions.json`. Spec 12.3 already defines the `ProfileSource` seam and a structured `UserProfile` (skills with levels, roles held, years, education).
@@ -18,12 +22,12 @@
 | 4 | `days_per_week` | time | weekdays | yes | `week_pattern.study_weekdays` | defaults for the calendar step and every plan |
 | 5 | `hours_per_day` | time | number | yes | `week_pattern.default_hours` | same; `hint_if` uses answer 1 |
 | 6 | `time_of_day` | time | single | no | `week_pattern.preferred_window` | places blocks in the calendar |
-| 7 | `language` | style | multi | no | `goal.languages` | a standing preference, stored as a profile default |
-| 8 | `formats` | style | multi | no | `goal.formats` | a standing preference, stored as a profile default |
+| 7 | `target_role` | goal | multi_role (max 2) | yes in `questions.json`; see check below | `goal.target_roles` | the roles the person is aiming for, stored as a profile default; pre-fills the first plan |
+| 8 | `target_skills` | goal | multi_skill (max 5) | yes in `questions.json`; see check below | `goal.target_skills` | the skills the person wants to learn, stored as a profile default; pre-fills the first plan |
 
-Left out on purpose: goal questions (per plan), `skill_levels` (needs a target role), `budget`/`certificates` (per plan), and every free-text question (`background`, `goal_why`, `concerns`, `job_posting`) so setup collects no free text that could hold personal details.
+Left out on purpose: the other goal questions (`goal_type`, `goal_why`, per plan), `language` and `formats` (asked in the plan builder), `skill_levels` (needs a target role), `budget`/`certificates` (per plan), and every free-text question (`background`, `goal_why`, `concerns`, `job_posting`) so setup collects no free text that could hold personal details.
 
-**Flag:** each of the 8 entries in `data/catalog/build/questions.py` gets `"setup": {"order": n}`. `build.py` validates: exactly 8 setup questions, orders 1..8 unique, none has `show_if`, none is a free-text type (`text`, `text_or_url`), none has `privacy`. `questions.json` is regenerated; the catalog-drift CI rule applies. The web reads setup questions with a shared selector (`setupQuestions()`), sorted by `setup.order`. Changing the set is a data change, not a code change.
+**Flag:** each of the 8 entries in `data/catalog/build/questions.py` gets `"setup": {"order": n}`. `build.py` validates: exactly 8 setup questions, orders 1..8 unique, none has `show_if`, none is a free-text type (`text`, `text_or_url`), none has `privacy`. **Rules 3 and 4 as written are broken by `target_role` and `target_skills`; see the next section.** `questions.json` is regenerated; the catalog-drift CI rule applies. The web reads setup questions with a shared selector (`setupQuestions()`), sorted by `setup.order`. Changing the set is a data change, not a code change.
 
 Answers to `goal.*` and `week_pattern.*` questions are stored in the profile as **defaults**; the plan builder copies them into the plan's `Goal`/`WeekPattern` (the question's `maps_to` is unchanged).
 
@@ -95,7 +99,26 @@ create table {{schema}}.user_profiles (
 - **Welcome guide** (`feature/web-welcome-guide`, `localStorage` "seen" flag): unchanged storage; it shows only after setup is `completed` or `dismissed` (never on top of `/setup`), and may read the profile to tailor tips (e.g. a calendar tip when not connected). Setup state is per user on the server; the guide's flag stays per device.
 - **Plan builder (3.0):** pre-fills intake answers with the same question ids from `profile.answers` (shown pre-filled, still editable), pre-fills the `skill_levels` matrix from `profile.skills` for the target role's skills, copies time answers into the new plan's `WeekPattern`, and uses `years_experience`/`roles_held.roleId` in the rule-based fallback. **AI prompts** may receive skill ids, levels, years, education level, tools and `roleId`s only, never the free-text `title`.
 
-## Proposed spec edit (do not apply until approved)
+## Check on the new questions
+Read from `data/catalog/questions.json` and `data/catalog/build/questions.py` (2026-11-08):
+
+| Rule | `target_role` | `target_skills` |
+|---|---|---|
+| Type | `multi_role`, `max: 2`, `options_source: "roles"` (choice from `roles.json`) | `multi_skill`, `max: 5`, `options_source: "skills"` (choice from `skills.json`) |
+| `show_if` | **Yes:** `goal_type` in `new_role`, `grow_in_role`. Breaks "no `show_if`". | **Yes:** `goal_type` in `specific_skill`. Breaks "no `show_if`". |
+| Free text | **Yes:** `allow_other: true` lets the user type a role not in the list. Breaks "no free text". | **Yes:** `allow_other: true`, and its `why` says "You can type ones that aren't listed". Breaks "no free text". |
+| `required` | `true` | `true` |
+
+Neither question is a `text` or `text_or_url` type, and neither has `privacy`, but both break the `show_if` and free-text rules, and both are `required: true` (which would force an answer in a setup that must be fully skippable). `goal_type` is not a setup question, so a `show_if` on it can never be evaluated in setup: left as is, the screens would be hidden.
+
+**Proposed minimal rule change (needs owner confirmation; not applied):** keep "no free text" and keep the 8-question rule, and change only how the flag overrides the plan-builder definition. The `setup` object gets two optional fields, used only by setup:
+- `"setup": {"order": n, "ignore_show_if": true, "choices_only": true, "optional": true}`. In setup, `ignore_show_if` shows the question regardless of `goal_type`; `choices_only` removes the "Other" entry and the typed-value field, so only ids from `roles.json` / `skills.json` can be stored; `optional` means setup never blocks on it (the plan builder still treats it as `required`). The plan-builder definition of both questions (with `show_if`, `allow_other`, `required`) is unchanged.
+- Build rules become: exactly 8 setup questions; orders 1..8 unique; a setup question has no `show_if` **unless** it carries `ignore_show_if: true`; no free-text type (`text`, `text_or_url`) and no `allow_other` unless `choices_only: true`; none has `privacy`. The build fails otherwise, so a future question cannot slip free text into setup.
+- `validateAnswer` gains `multi_role` and `multi_skill` (ids must exist in the taxonomy, count within `max`). The "Other" entry is not a way to store anything in `user_profiles.answers`.
+
+Alternatives for the owner: (a) accept this change; (b) drop the two questions and ask them only in the plan builder, as before; (c) allow `allow_other` in setup with the typed text screened by the same PII check as role titles. Option (c) weakens "setup collects no free text" and is not recommended. Also to confirm: a role or skill picked in setup is a standing default, not a plan goal, so the plan builder shows it pre-filled and editable and does not skip `goal_type`.
+
+## Spec edit (applied to `docs/SPEC.md` in the same change, as approved)
 ```diff
 @@ 3.0 Plan builder
 +**Step 0 – First-time setup (once per user, skippable):** before the first plan, the app asks the
@@ -117,7 +140,7 @@ create table {{schema}}.user_profiles (
 +  - **LinkedIn (later):** the user's own data export (CSV) or a "Save to PDF" of the profile, read the same way – never scraping.
 +  - **Privacy:** contact details are dropped on the device; free-text role titles are never sent to a model.
 ```
-Also needed after approval (not in this record's change): a row in `docs/decisions/README.md`, the privacy-policy draft in `docs/legal/` (CV processed on the device only; owner wording), section 8 (Screens: Setup) and section 4 (data model: `user_profiles`).
+Also needed after approval (not in this change): the privacy-policy draft in `docs/legal/` (CV processed on the device only; owner wording), section 8 (Screens: Setup) and section 4 (data model: `user_profiles`).
 
 ## Work packages (Sonnet builders, each in its own worktree, PR into `rnd`)
 Order: **WP-D → WP-A → (WP-B ∥ WP-C)**. WP-A's matcher part can start in parallel with WP-D; its `setupQuestions()` part waits for WP-D. WP-C builds against a mocked client after WP-A and wires the generated client after WP-B merges.
