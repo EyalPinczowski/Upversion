@@ -17,6 +17,14 @@ export interface ConnectionRow {
   last_error_code: string | null;
 }
 
+export interface BusyItemRow {
+  date: string;
+  start_minute: number;
+  end_minute: number;
+  all_day: boolean;
+  title: string;
+}
+
 export interface SourceRow {
   calendar_id: string;
   name: string;
@@ -151,6 +159,53 @@ export const calendarRepo = {
       [userId, calendarId, blocksTime],
     );
     return rowCount ?? 0;
+  },
+
+  /**
+   * Busy intervals for the time grid: only calendars the owner chose to block time, only events
+   * that count as busy (not tentative ones, not all-day ones unless marked as blocking).
+   */
+  async listBusy(
+    ctx: UserContext,
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<BusyItemRow[]> {
+    const { rows } = await ctx.client.query<BusyItemRow>(
+      `select b.date::text as date, b.start_minute, b.end_minute,
+              (b.kind = 'all_day') as all_day, b.title
+       from ${ctx.schema}.calendar_busy b
+       join ${ctx.schema}.calendar_sources s
+         on s.user_id = b.user_id and s.calendar_id = b.source_calendar_id and s.blocks_time
+       where b.user_id = $1 and b.date between $2::date and $3::date
+         and (b.kind = 'busy' or (b.kind = 'all_day' and b.blocks_day))
+       order by b.date, b.start_minute, b.external_event_id`,
+      [userId, from, to],
+    );
+    return rows;
+  },
+
+  /** Slots of blocks the user deleted in Google (they stay unavailable), with the sync's zone. */
+  async listDeletedLocks(
+    ctx: UserContext,
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<{ starts_at: Date; ends_at: Date; sync_timezone: string | null }[]> {
+    const { rows } = await ctx.client.query<{
+      starts_at: Date;
+      ends_at: Date;
+      sync_timezone: string | null;
+    }>(
+      `select l.starts_at, l.ends_at, c.sync_timezone
+       from ${ctx.schema}.calendar_locked_blocks l
+       left join ${ctx.schema}.calendar_connections c on c.user_id = l.user_id
+       where l.user_id = $1 and l.reason = 'deleted'
+         and l.ends_at > ($2::date - 1) and l.starts_at < ($3::date + 2)
+       order by l.starts_at, l.block_key`,
+      [userId, from, to],
+    );
+    return rows;
   },
 
   /** Removes everything the app stores about the connection. The account and plans stay. */

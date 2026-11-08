@@ -1132,6 +1132,182 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/calendar/busy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Busy time from the calendars that block study time
+         * @description Read only. `from` and `to` are local dates (inclusive, at most 14 days). Returns only the intervals of calendars the owner chose to block time (and slots of study blocks the owner deleted in Google), with start and end minutes of the day, an all-day flag and the event title. This is the owner's own calendar data for display to the owner; it is never sent to an AI model.
+         */
+        get: {
+            parameters: {
+                query: {
+                    from: string;
+                    to: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: {
+                                date: string;
+                                startMinute: number;
+                                endMinute: number;
+                                allDay: boolean;
+                                title: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/calendar/connect": {
         parameters: {
             query?: never;

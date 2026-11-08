@@ -1,4 +1,4 @@
-import { APP_CALENDAR_NAME } from '@upversion/shared';
+import { APP_CALENDAR_NAME, splitByDay } from '@upversion/shared';
 import { CalendarCryptoError, type CalendarTokenCrypto } from '../../calendar-crypto';
 import type { GoogleCalendarConfig } from '../../config';
 import type { Database } from '../../db/database';
@@ -45,6 +45,14 @@ export interface CalendarView {
   lastSyncedAt: string | null;
   lastErrorCode: string | null;
   sources: { calendarId: string; name: string; blocksTime: boolean }[];
+}
+
+export interface BusyItem {
+  date: string;
+  startMinute: number;
+  endMinute: number;
+  allDay: boolean;
+  title: string;
 }
 
 /** Codes are stored and shown to the client, so keep them short and plain. */
@@ -197,6 +205,39 @@ export function createCalendarService(options: CalendarServiceOptions) {
     providerFor,
 
     getCalendar: view,
+
+    /**
+     * Busy time of the owner's calendars for [from, to] (both inclusive local dates), plus the
+     * slots of blocks the owner deleted in Google. Read only; for display to the owner alone.
+     */
+    async getBusy(userId: string, from: string, to: string): Promise<BusyItem[]> {
+      return db.withUser(userId, async (ctx) => {
+        const items: BusyItem[] = (await calendarRepo.listBusy(ctx, userId, from, to)).map((r) => ({
+          date: r.date,
+          startMinute: r.start_minute,
+          endMinute: r.end_minute,
+          allDay: r.all_day,
+          title: r.title,
+        }));
+        for (const l of await calendarRepo.listDeletedLocks(ctx, userId, from, to)) {
+          for (const i of splitByDay(
+            l.starts_at.getTime(),
+            l.ends_at.getTime(),
+            l.sync_timezone ?? 'UTC',
+          )) {
+            if (i.date < from || i.date > to || i.endMinute <= i.startMinute) continue;
+            items.push({
+              date: i.date,
+              startMinute: i.startMinute,
+              endMinute: i.endMinute,
+              allDay: false,
+              title: '',
+            });
+          }
+        }
+        return items.sort((a, b) => a.date.localeCompare(b.date) || a.startMinute - b.startMinute);
+      });
+    },
 
     async startConnect(userId: string): Promise<{ authorizationUrl: string }> {
       const state = createStateNonce();
