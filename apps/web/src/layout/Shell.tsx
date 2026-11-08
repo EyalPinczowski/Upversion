@@ -7,6 +7,7 @@ import { PlanIcon, SettingsIcon, TodayIcon, WeekIcon } from '../components/icons
 import { Logo } from '../components/Logo';
 import { WelcomeGuide } from '../components/welcome/WelcomeGuide';
 import type { AppEnv } from '../env';
+import { SetupRedirect } from '../pages/setup/SetupRedirect';
 
 /** Moves focus to the page content after a route change, so keyboard and screen reader users start there. */
 function useFocusMainOnNavigation() {
@@ -108,6 +109,7 @@ export function AppShell({ appEnv }: { appEnv: AppEnv }) {
           <div className={wide ? 'max-w-3xl lg:max-w-none' : 'max-w-3xl'}>
             <CalendarWatcher />
             <WelcomeGuide />
+            <SetupRedirect />
             <Outlet />
           </div>
         </main>

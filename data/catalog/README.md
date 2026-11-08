@@ -71,7 +71,7 @@ Learn-before-practice ordering for the same skill is a planner rule; this data o
 - `prerequisite_kinds`, `last_verified_at`, `subscription_group` or `skill_depth` are malformed;
 - the `setup` flag on questions breaks the ADR 015 rules (see below).
 
-`questions.json` entries may carry `setup: {order, ignore_show_if?, choices_only?, optional?}`: the 8 first-time setup questions (ADR 015), checked by `lint.check_setup_questions`. Exactly 8, orders 1..8, type from `single, multi, weekdays, number, yes_no, multi_role, multi_skill`, no `show_if` without `ignore_show_if`, no `allow_other` without `choices_only`, no `privacy`.
+`questions.json` entries may carry `setup: {order, ignore_show_if?, choices_only?, optional?, why?}`: the 8 first-time setup questions (ADR 015), checked by `lint.check_setup_questions`. Exactly 8, orders 1..8, type from `single, multi, weekdays, number, yes_no, multi_role, multi_skill`, no `show_if` without `ignore_show_if`, no `allow_other` without `choices_only`, no `privacy`. `setup.why` (optional string) replaces the question's `why` in setup only (e.g. when the plan-builder text mentions typing a value that setup does not allow).
 
 ## Main sources
 

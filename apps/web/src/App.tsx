@@ -1,5 +1,5 @@
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { createApiClient } from './api/client';
 import { ApiProvider } from './api/ApiProvider';
@@ -14,6 +14,7 @@ import { BriefingPage } from './pages/briefing/BriefingPage';
 import { LegalPage } from './pages/LegalPage';
 import { ActivePlanProvider } from './plan/ActivePlan';
 import { PlanLayout } from './plan/PlanSummaryBar';
+import { Loading } from './components/status';
 import { PlanPage } from './pages/PlanPage';
 import { PracticePage } from './pages/practice/PracticePage';
 import { PracticeTrendsPage } from './pages/practice-trends/PracticeTrendsPage';
@@ -23,6 +24,15 @@ import { SignInPage } from './pages/SignInPage';
 import { TaskDetailPage } from './pages/TaskDetailPage';
 import { TodayPage } from './pages/TodayPage';
 import { WeekPage } from './pages/WeekPage';
+
+// Loaded on first visit only: the wizard (and, behind it, the CV reader) stays out of the main chunk.
+const SetupPage = lazy(() =>
+  import('./pages/setup/SetupPage').then((m) => ({ default: m.SetupPage })),
+);
+
+const ChangeCvPage = lazy(() =>
+  import('./pages/settings/ChangeCvPage').then((m) => ({ default: m.ChangeCvPage })),
+);
 
 /**
  * The whole app. The router is supplied from outside (BrowserRouter in production, MemoryRouter in
@@ -73,8 +83,24 @@ export function App({
                   <Route path="practice-history" element={<PracticeTrendsPage />} />
                   <Route path="practice/:taskId" element={<PracticePage />} />
                   <Route path="review/:date" element={<ReviewPage />} />
+                  <Route
+                    path="setup"
+                    element={
+                      <Suspense fallback={<Loading label="Loading…" />}>
+                        <SetupPage />
+                      </Suspense>
+                    }
+                  />
                   <Route path="calendar/callback" element={<CalendarCallbackPage />} />
                   <Route path="settings" element={<SettingsPage appEnv={env.appEnv} />} />
+                  <Route
+                    path="settings/cv"
+                    element={
+                      <Suspense fallback={<Loading label="Loading…" />}>
+                        <ChangeCvPage />
+                      </Suspense>
+                    }
+                  />
                 </Route>
               </Route>
             </Route>

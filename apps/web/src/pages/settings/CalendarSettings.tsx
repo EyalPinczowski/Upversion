@@ -10,6 +10,7 @@ import {
 import { isApiError } from '../../api/errors';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Button, ErrorText } from '../../components/ui';
+import { clearSetupReturn, rememberSetupReturn } from '../../lib/setup-return';
 import { lastErrorText, STATUS_TEXT } from './calendar-text';
 
 const TITLE_ID = 'calendar-heading';
@@ -38,7 +39,16 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 /** Starts the Google consent flow. Used here and by the reconnect banner. */
-export function ConnectButton({ label, primary = false }: { label: string; primary?: boolean }) {
+export function ConnectButton({
+  label,
+  primary = false,
+  returnToSetup = false,
+}: {
+  label: string;
+  primary?: boolean;
+  /** The connect flow started in the setup wizard: the callback page then links back to it. */
+  returnToSetup?: boolean;
+}) {
   const connect = useConnectCalendar();
   const { reset } = connect;
   // Coming back with the Back button restores this page from the cache with the button still
@@ -54,7 +64,11 @@ export function ConnectButton({ label, primary = false }: { label: string; prima
     <>
       <Button
         variant={primary ? 'primary' : 'secondary'}
-        onClick={() => connect.mutate()}
+        onClick={() => {
+          if (returnToSetup) rememberSetupReturn();
+          else clearSetupReturn();
+          connect.mutate();
+        }}
         disabled={connect.isPending || connect.isSuccess}
       >
         {connect.isPending || connect.isSuccess ? 'Opening Google…' : label}

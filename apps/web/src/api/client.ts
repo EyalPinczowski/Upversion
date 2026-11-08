@@ -40,6 +40,10 @@ export type LogResult = Ok<paths['/api/v1/plans/{planId}/tasks/{taskId}/logs']['
 export type TaskPatch = Body<paths['/api/v1/plans/{planId}/tasks/{taskId}']['patch']>;
 export type ImportBody = Body<paths['/api/v1/plans/import']['post']>;
 
+export type ProfileView = Ok<paths['/api/v1/me/profile']['get']>;
+export type ProfileImportBody = Body<paths['/api/v1/me/profile/import']['put']>;
+export type SetupStatusBody = Body<paths['/api/v1/me/profile/setup']['patch']>;
+
 export interface ApiClientOptions {
   /** Base URL of the API, without a trailing slash. */
   baseUrl: string;
@@ -202,6 +206,14 @@ export function createApiClient({
           params: { path: { planId, date } },
         }),
       ),
+    getProfile: (signal?: AbortSignal) => unwrap(raw.GET('/api/v1/me/profile', { signal })),
+    putProfileAnswers: (answers: Record<string, unknown>) =>
+      unwrap(raw.PUT('/api/v1/me/profile/answers', { body: { answers } })),
+    putProfileImport: (body: ProfileImportBody) =>
+      unwrap(raw.PUT('/api/v1/me/profile/import', { body })),
+    patchProfileSetup: (body: SetupStatusBody) =>
+      unwrap(raw.PATCH('/api/v1/me/profile/setup', { body })),
+    deleteProfile: () => unwrap(raw.DELETE('/api/v1/me/profile', { body: {} })),
     exportData: () => unwrap(raw.GET('/api/v1/me/export')),
     deleteAccount: (confirmation: string) =>
       unwrap(raw.DELETE('/api/v1/me', { body: { confirmation } })),
