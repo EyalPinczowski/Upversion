@@ -44,10 +44,12 @@ export type ParsedTailorOutput =
       redacted: number;
     };
 
-/** A heading alone on its line, any case, optional markdown decoration and colon. */
-const HEADING_ALONE_RE = /^[\s#*_]*(SUMMARY|EXPERIENCE|SKILLS)[\s*_]*:?[\s*_]*$/iu;
-/** `SUMMARY: text`: the heading in capitals exactly as specified, text on the same line. */
-const HEADING_INLINE_RE = /^[\s#*_]*(SUMMARY|EXPERIENCE|SKILLS)[\s*_]*:[\s*_]*(\S.*)$/u;
+/**
+ * A heading at the START of a line: optional `#` / `*` / `_` decoration, one of the three words
+ * (any case), optional colon, optional text on the same line.
+ */
+const HEADING_RE = /^([\s#*_]*)(SUMMARY|EXPERIENCE|SKILLS)([\s*_]*)(:?)[\s*_]*(.*)$/iu;
+const SECTION_ORDER = ['summary', 'experience', 'skills'] as const;
 /** Longer lines are never headings (also keeps the heading regexes cheap). */
 const MAX_HEADING_LINE = 200;
 const NOTES_RE = /^[\s#*_]*={2,}\s*NOTES\s*={2,}[\s*_]*$/iu;
@@ -72,20 +74,34 @@ export function parseTailorOutput(raw: string, options: RedactOptions = {}): Par
   const keywords: string[] = [];
   let state: keyof typeof body | 'notes' | null = null;
   let hasNotes = false;
+  let inlineTitle = false;
   for (const line of lines) {
     if (NOTES_RE.test(line)) {
       state = 'notes';
       hasNotes = true;
       continue;
     }
-    const h =
-      state === 'notes' || line.length > MAX_HEADING_LINE
-        ? null
-        : (HEADING_ALONE_RE.exec(line) ?? HEADING_INLINE_RE.exec(line));
+    const h = state === 'notes' || line.length > MAX_HEADING_LINE ? null : HEADING_RE.exec(line);
     if (h) {
-      state = (h[1] as string).toLowerCase() as keyof typeof body;
-      if (h[2] && h[2].trim() !== '') body[state].push(h[2].trim());
-      continue;
+      const name = (h[2] as string).toLowerCase() as (typeof SECTION_ORDER)[number];
+      const inline = (h[5] as string).trim();
+      const decorated = /[#*_]/u.test(h[1] as string) || /[*_]/u.test(h[3] as string);
+      const upper = h[2] === (h[2] as string).toUpperCase();
+      // Sections come in the order SUMMARY, EXPERIENCE, SKILLS, each once.
+      const inOrder =
+        SECTION_ORDER.indexOf(name) >
+        (state ? SECTION_ORDER.indexOf(state as (typeof SECTION_ORDER)[number]) : -1);
+      // Text on the heading line needs a colon and a clear signal: capitals, decoration, the very
+      // first heading, or the same title-case style as the first heading. Otherwise
+      // `Experience: 5 years of ...` inside the summary is just a sentence.
+      const inlineOk =
+        inline === '' || (h[4] === ':' && (upper || decorated || state === null || inlineTitle));
+      if (inOrder && inlineOk) {
+        if (inline !== '' && !upper && !decorated && state === null) inlineTitle = true;
+        state = name;
+        if (inline !== '') body[state].push(inline);
+        continue;
+      }
     }
     if (state === 'notes') {
       const n = NOTE_RE.exec(line);
@@ -174,19 +190,51 @@ const NUMBER_RE = /(?<![\p{L}\p{N}])\d+(?:[.,]\d+)*(?:\s?%)?/gu;
 /** `25%` and `25` are different numbers: the percent sign stays in the key. */
 const numberKey = (s: string): string => s.replace(/[,\s]/gu, '');
 
+const SPELLED_VALUES: Record<string, number> = {
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  eleven: 11,
+  twelve: 12,
+  thirteen: 13,
+  fourteen: 14,
+  fifteen: 15,
+  sixteen: 16,
+  seventeen: 17,
+  eighteen: 18,
+  nineteen: 19,
+  twenty: 20,
+  thirty: 30,
+  forty: 40,
+  fifty: 50,
+  sixty: 60,
+  seventy: 70,
+  eighty: 80,
+  ninety: 90,
+  hundred: 100,
+  thousand: 1000,
+  million: 1_000_000,
+};
 const SPELLED_NUMBER = new RegExp(
-  '(?<![\\p{L}\\p{N}])(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|' +
-    'fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|' +
-    'eighty|ninety|hundred|thousand|million)(?![\\p{L}\\p{N}])',
+  `(?<![\\p{L}\\p{N}])(?:${Object.keys(SPELLED_VALUES).join('|')})(?![\\p{L}\\p{N}])`,
   'giu',
 );
+/** `one` is a number only before a unit (`one year`, `one million`); `one-page`, `one team` are not. */
+const ONE_UNIT = /^\s*(?:years?|months?|%|percent|million|thousand|hundred)(?![\p{L}\p{N}])/iu;
 
 const CERT_ACRONYMS =
   'PMP|PMI-ACP|CAPM|CISSP|CISA|CISM|CPA|CFA|CCNA|CCNP|CSM|PSM|ITIL|PRINCE2|TOGAF|CEH|OSCP|PHR|SPHR|SHRM-CP|CKA|CKAD|CKS|Security\\+|Network\\+';
 const CERT_RES: RegExp[] = [
   new RegExp(`(?<![\\p{L}\\p{N}])(?:${CERT_ACRONYMS})(?![\\p{L}\\p{N}])`, 'gu'),
-  /(?<![\p{L}\p{N}])certified\s+\p{L}[\p{L}\p{N}-]*(?:\s+\p{Lu}[\p{L}\p{N}-]*){0,3}/giu,
-  /(?<![\p{L}\p{N}])(?:[\p{L}\p{N}&-]+\s+){1,4}(?:certification|certificate)(?![\p{L}\p{N}])/giu,
+  /(?<![\p{L}\p{N}])certified[ \t]+\p{L}[\p{L}\p{N}-]*(?:[ \t]+\p{Lu}[\p{L}\p{N}-]*){0,3}/giu,
+  /(?<![\p{L}\p{N}])(?:[\p{L}\p{N}][\p{L}\p{N}&-]*[ \t]+){1,4}(?:certification|certificate)(?![\p{L}\p{N}])/giu,
   /(?<![\p{L}\p{N}])(?:lean\s+)?six\s+sigma\s+(?:white|yellow|green|black)\s+belt/giu,
 ];
 const DEGREE_RES: RegExp[] = [
@@ -219,6 +267,23 @@ const CONNECTORS = new Set(['of', 'and', '&']);
 /** A modifier before a CV phrase (`Senior Operations Analyst`) does not make a new phrase. */
 const MODIFIERS = new Set(
   'former senior junior lead bilingual associate assistant chief head principal interim acting'.split(
+    ' ',
+  ),
+);
+/**
+ * Company names that are also in the catalog (as a platform or vendor). A catalog name does not
+ * make them safe: used as an employer or credential they must be in the CV.
+ */
+const VENDORS = new Set(
+  (
+    'google oracle microsoft amazon salesforce meta apple ibm sap adobe atlassian cisco intel ' +
+    'nvidia samsung facebook netflix uber linkedin slack hubspot servicenow workday shopify ' +
+    'stripe paypal tesla siemens accenture deloitte mckinsey'
+  ).split(' '),
+);
+/** Words before a certificate word that are not part of its name. */
+const CERT_FILLER = new Set(
+  'a an the this that my our your earned earn holds hold holding has have obtained completed passed gained his her any valid new relevant additional own formal professional'.split(
     ' ',
   ),
 );
@@ -278,7 +343,7 @@ function catalogWords(taxonomy: MatchTaxonomy, tools: readonly string[] | undefi
 function isSentenceStart(text: string, at: number): boolean {
   let i = at - 1;
   while (i >= 0 && /[ \t\-•*▪◦·–]/u.test(text.charAt(i))) i -= 1;
-  return i < 0 || /[\n.!?:]/u.test(text.charAt(i));
+  return i < 0 || /[\n\r.!?:;]/u.test(text.charAt(i));
 }
 
 function* matches(re: RegExp, text: string): Generator<RegExpMatchArray> {
@@ -333,13 +398,28 @@ export function checkTailoredOutput(
   const skillNames = new Map(taxonomy.skills.map((s) => [s.id, s.name]));
   const cvSkills = new Set(inCv.skills);
   const cvTools = new Set(inCv.tools);
-  for (const id of inOut.skills) if (!cvSkills.has(id)) add('skill', skillNames.get(id) ?? id);
-  for (const tool of inOut.tools) if (!cvTools.has(tool)) add('skill', tool);
+  const inRole = options.targetRole
+    ? findCatalogMentions(options.targetRole, mine)
+    : { skills: [], tools: [] };
+  const roleSkills = new Set<string>(inRole.skills);
+  const roleTools = new Set<string>(inRole.tools);
+  for (const id of inOut.skills) {
+    if (!cvSkills.has(id) && !roleSkills.has(id)) add('skill', skillNames.get(id) ?? id);
+  }
+  for (const tool of inOut.tools) {
+    if (!cvTools.has(tool) && !roleTools.has(tool)) add('skill', tool);
+  }
 
   // Certificates and degrees: the matched phrase must be in the CV.
   for (const re of CERT_RES) {
     for (const m of matches(re, text)) {
-      if (!certInCv(cvNorm, m[0])) add('certificate', m[0].trim());
+      let words = m[0].trim().split(/[ \t]+/u);
+      // `a certificate`, `the certification`: no name, nothing to check.
+      words = words.filter((w, i) => i === words.length - 1 || !CERT_FILLER.has(w.toLowerCase()));
+      const last = (words[words.length - 1] ?? '').toLowerCase();
+      if (words.length < 2 && (last === 'certificate' || last === 'certification')) continue;
+      const phrase = words.join(' ');
+      if (!certInCv(cvNorm, phrase)) add('certificate', phrase);
     }
   }
   for (const re of DEGREE_RES) {
@@ -376,12 +456,18 @@ export function checkTailoredOutput(
       phrase = rest;
     }
     const key = norm(phrase);
-    // `Tableau and Python`: only catalog names.
+    const phraseWords = phrase.split(' ').filter((w) => !CONNECTORS.has(w));
+    // `Tableau and Python`: only catalog names (vendors count only when the CV has them).
+    if (phraseWords.every((w) => known.has(norm(w)) && !VENDORS.has(norm(w)))) continue;
+    // `Hebrew and English`: words joined by of / and / &, each one in the CV or a common word.
     if (
-      phrase
-        .split(' ')
-        .filter((w) => !CONNECTORS.has(w))
-        .every((w) => known.has(norm(w)))
+      phraseWords.length < phrase.split(' ').length &&
+      phraseWords.every(
+        (w) =>
+          COMMON_CAPITALISED.has(norm(w)) ||
+          containsWord(cvNorm, norm(w)) ||
+          (known.has(norm(w)) && !VENDORS.has(norm(w))),
+      )
     ) {
       continue;
     }
@@ -413,7 +499,7 @@ export function checkTailoredOutput(
     const lower = norm(m[0]);
     if (
       COMMON_CAPITALISED.has(lower) ||
-      known.has(lower) ||
+      (known.has(lower) && !VENDORS.has(lower)) ||
       containsWord(cvNorm, lower) ||
       containsWord(roleNorm, lower)
     ) {
@@ -422,12 +508,13 @@ export function checkTailoredOutput(
     add('term', m[0]);
   }
 
-  // Numbers written as words (`thirty`), unless the CV uses the word.
+  // Numbers written as words (`thirty`), unless the CV has the word or its digits (`6` for `six`).
   for (const m of matches(SPELLED_NUMBER, text)) {
     const word = norm(m[0]);
-    const after = text.slice((m.index ?? 0) + m[0].length, (m.index ?? 0) + m[0].length + 8);
-    if (word === 'one' && /^\s+(?:of|another|or)\b/iu.test(after)) continue;
-    if (!containsWord(cvNorm, word)) add('number', m[0]);
+    const end = (m.index ?? 0) + m[0].length;
+    if (word === 'one' && !ONE_UNIT.test(text.slice(end, end + 12))) continue;
+    if (containsWord(cvNorm, word) || cvNumbers.has(String(SPELLED_VALUES[word]))) continue;
+    add('number', m[0]);
   }
 
   // Placeholders.

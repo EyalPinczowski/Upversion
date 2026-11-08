@@ -177,12 +177,28 @@ export function redactCvPii(
 ): { text: string; count: number } {
   const m = mask(text, options);
   const r = redactPii(m.text, options);
-  return { text: unmask(r.text, m), count: r.count };
+  const first = { text: unmask(r.text, m), count: r.count };
+  // Superscript, subscript and circled digits are kept as they are by `redactPii` (`10⁹`), but
+  // NFKC turns them into a phone number. When the NFKC form still holds a detail, redact that.
+  const flat = first.text.normalize('NFKC');
+  if (flat !== first.text && findPiiMasked(flat, options).length > 0) {
+    const m2 = mask(flat, options);
+    const r2 = redactPii(m2.text, options);
+    return { text: unmask(r2.text, m2), count: first.count + r2.count };
+  }
+  return first;
+}
+
+function findPiiMasked(text: string, options: RedactOptions): PiiKind[] {
+  return findPii(mask(text, options).text, options);
 }
 
 /** `findPii` with the shared tool-name allowance: what the server runs on CV and job text. */
 export function findCvPii(text: string, options: RedactOptions = {}): PiiKind[] {
-  return findPii(mask(text, options).text, options);
+  const kinds = new Set(findPiiMasked(text, options));
+  const flat = text.normalize('NFKC');
+  if (flat !== text) for (const k of findPiiMasked(flat, options)) kinds.add(k);
+  return [...kinds];
 }
 
 export interface PreparedText {
@@ -236,6 +252,32 @@ export function removeControlChars(text: string): string {
 
 /** Longest input read at all; the rest is cut first (the API limits are far lower). */
 export const MAX_PREPARE_INPUT = 50_000;
+/** Room kept free when a cut has no line break or space to use (a URL is at most 2,000). */
+const CUT_SAFETY = 2100;
+
+/**
+ * Cuts `text` to MAX_PREPARE_INPUT at the last line break, else the last whitespace, never inside
+ * a surrogate pair, so an address or phone number cannot be cut in half and survive as a
+ * fragment. Text without any break loses a further CUT_SAFETY characters.
+ */
+function cutInput(text: string): { text: string; truncated: boolean } {
+  if (text.length <= MAX_PREPARE_INPUT) return { text, truncated: false };
+  let cut = MAX_PREPARE_INPUT;
+  const high = text.charCodeAt(cut - 1);
+  if (high >= 0xd800 && high <= 0xdbff) cut -= 1;
+  const head = text.slice(0, cut);
+  let at = Math.max(head.lastIndexOf('\n'), head.lastIndexOf('\r'));
+  if (at <= 0) {
+    at = -1;
+    for (let i = head.length - 1; i > 0; i -= 1) {
+      if (/\s/u.test(head.charAt(i))) {
+        at = i;
+        break;
+      }
+    }
+  }
+  return { text: at > 0 ? head.slice(0, at) : head.slice(0, cut - CUT_SAFETY), truncated: true };
+}
 
 /**
  * Prepares CV text for an AI model: drops the contact block, a Contact / Personal details
@@ -243,12 +285,13 @@ export const MAX_PREPARE_INPUT = 50_000;
  * and control characters, then removes personal details with `redactCvPii`.
  */
 export function prepareCvForAi(text: string, options: RedactOptions = {}): PreparedText {
-  const lines = splitCvLines(removeControlChars(text.slice(0, MAX_PREPARE_INPUT)));
+  const cutResult = cutInput(text);
+  const lines = splitCvLines(removeControlChars(cutResult.text));
   const drop = dropContactLines(lines);
   const dropped = lines.filter((l, i) => drop.has(i) && l.trim() !== '').map((l) => l.trim());
   const kept = lines.filter((_, i) => !drop.has(i));
   const r = redactCvPii(neutraliseMarkup(collapseBlankLines(kept)), options);
-  return { text: r.text, dropped, removed: r.count, truncated: text.length > MAX_PREPARE_INPUT };
+  return { text: r.text, dropped, removed: r.count, truncated: cutResult.truncated };
 }
 
 /**
@@ -256,14 +299,13 @@ export function prepareCvForAi(text: string, options: RedactOptions = {}): Prepa
  * its title).
  */
 export function prepareJobForAi(text: string, options: RedactOptions = {}): PreparedText {
-  const clean = collapseBlankLines(
-    splitCvLines(removeControlChars(text.slice(0, MAX_PREPARE_INPUT))),
-  );
+  const cutResult = cutInput(text);
+  const clean = collapseBlankLines(splitCvLines(removeControlChars(cutResult.text)));
   const r = redactCvPii(neutraliseMarkup(clean), options);
   return {
     text: r.text,
     dropped: [],
     removed: r.count,
-    truncated: text.length > MAX_PREPARE_INPUT,
+    truncated: cutResult.truncated,
   };
 }
