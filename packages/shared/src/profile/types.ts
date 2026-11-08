@@ -40,7 +40,13 @@ export type AnswerResult = { ok: true; value: unknown } | { ok: false; error: st
 /** The taxonomy the matcher reads (shape of `skills.json` / `roles.json`). */
 export interface MatchTaxonomy {
   skills: readonly { id: string; name: string; keywords: readonly string[] }[];
-  roles: readonly { id: string; title: string; aliases: readonly string[] }[];
+  roles: readonly {
+    id: string;
+    title: string;
+    aliases: readonly string[];
+    /** Catalog skills of the role (`roles.json`); optional for matcher-only taxonomies. */
+    skills?: readonly { skill: string; weight: number }[];
+  }[];
 }
 
 export interface CvMatchOptions {
