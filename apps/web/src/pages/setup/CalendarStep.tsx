@@ -27,6 +27,15 @@ export function CalendarStep({ onNext }: { onNext: () => void }) {
       </div>
     );
   }
+  if (off) {
+    // Normally the step passes straight on; this shows if that could not be saved.
+    return (
+      <div className="space-y-4">
+        <p>Calendar sync is not available yet.</p>
+        <Button onClick={onNext}>Continue</Button>
+      </div>
+    );
+  }
   if (!query.data) return <Loading label="Checking your calendar…" />;
 
   const status = query.data.status;

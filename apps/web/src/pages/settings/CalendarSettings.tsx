@@ -10,7 +10,7 @@ import {
 import { isApiError } from '../../api/errors';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Button, ErrorText } from '../../components/ui';
-import { rememberSetupReturn } from '../../lib/setup-return';
+import { clearSetupReturn, rememberSetupReturn } from '../../lib/setup-return';
 import { lastErrorText, STATUS_TEXT } from './calendar-text';
 
 const TITLE_ID = 'calendar-heading';
@@ -66,6 +66,7 @@ export function ConnectButton({
         variant={primary ? 'primary' : 'secondary'}
         onClick={() => {
           if (returnToSetup) rememberSetupReturn();
+          else clearSetupReturn();
           connect.mutate();
         }}
         disabled={connect.isPending || connect.isSuccess}

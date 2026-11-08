@@ -1,5 +1,8 @@
 import {
   CATALOG_TAXONOMY,
+  MAX_ROLE_TITLE_LENGTH,
+  MAX_YEARS,
+  redactPii,
   toImportPayload,
   type CvExtraction,
   type ProfileImport,
@@ -64,7 +67,16 @@ export function CvReviewStep({
   const [skills, setSkills] = useState(() =>
     extraction.skills.map((s) => ({ checked: s.checked, level: s.level as number })),
   );
-  const [roles, setRoles] = useState(() => extraction.rolesHeld.map((r) => r.checked));
+  // The one place in setup with typed text: a role title taken from the CV, to confirm or fix.
+  // It goes through `toImportPayload`, which drops a title holding personal details.
+  const [roles, setRoles] = useState(() =>
+    extraction.rolesHeld.map((r) => ({
+      checked: r.checked,
+      title: r.title,
+      years: r.years === null ? '' : String(r.years),
+    })),
+  );
+  const [roleError, setRoleError] = useState<string | null>(null);
   const [years, setYears] = useState(extraction.yearsExperience !== null);
   const [education, setEducation] = useState(extraction.education !== null);
   const [tools, setTools] = useState(() => extraction.tools.map(() => true));
@@ -77,12 +89,41 @@ export function CvReviewStep({
     extraction.tools.length === 0;
 
   function save() {
+    for (const [i, r] of roles.entries()) {
+      if (!r.checked) continue;
+      const years = r.years.trim() === '' ? null : Number(r.years);
+      if (r.title.trim() === '') {
+        setRoleError(`Role ${i + 1} needs a title, or untick it.`);
+        return;
+      }
+      if (redactPii(r.title).count > 0) {
+        setRoleError(
+          `Role ${i + 1}: remove the email, link, phone number or handle from the title.`,
+        );
+        return;
+      }
+      if (years !== null && !(years >= 0 && years <= MAX_YEARS)) {
+        setRoleError(`Role ${i + 1}: years must be between 0 and ${MAX_YEARS}.`);
+        return;
+      }
+    }
+    setRoleError(null);
     onSave(
       toImportPayload({
         skills: extraction.skills
           .map((s, i) => ({ skillId: s.skillId, level: skills[i]!.level, on: skills[i]!.checked }))
           .filter((s) => s.on),
-        rolesHeld: extraction.rolesHeld.filter((_, i) => roles[i]),
+        rolesHeld: extraction.rolesHeld.flatMap((r, i) =>
+          roles[i]!.checked
+            ? [
+                {
+                  roleId: r.roleId,
+                  title: roles[i]!.title,
+                  years: roles[i]!.years.trim() === '' ? null : Number(roles[i]!.years),
+                },
+              ]
+            : [],
+        ),
         yearsExperience: years ? extraction.yearsExperience : null,
         education: education ? (extraction.education?.value ?? null) : null,
         tools: extraction.tools.filter((_, i) => tools[i]).map((t) => t.tool),
@@ -155,20 +196,47 @@ export function CvReviewStep({
         <Group legend="Roles you have held">
           {extraction.rolesHeld.map((r, i) => (
             <li key={`${r.title}-${i}`} className={rowClass}>
-              <label className="flex min-h-11 items-center gap-3">
-                <input
-                  type="checkbox"
-                  className={boxClass}
-                  checked={roles[i]}
-                  onChange={(e) =>
-                    setRoles((prev) => prev.map((x, j) => (j === i ? e.target.checked : x)))
-                  }
-                />
-                <span dir="auto">
-                  {r.title}
-                  {r.years !== null ? `, ${r.years} years` : ''}
-                </span>
-              </label>
+              <input
+                type="checkbox"
+                className={boxClass}
+                aria-label={`Include role ${i + 1}`}
+                checked={roles[i]!.checked}
+                onChange={(e) =>
+                  setRoles((prev) =>
+                    prev.map((x, j) => (j === i ? { ...x, checked: e.target.checked } : x)),
+                  )
+                }
+              />
+              <input
+                type="text"
+                dir="auto"
+                aria-label={`Role ${i + 1} title`}
+                maxLength={MAX_ROLE_TITLE_LENGTH}
+                autoComplete="off"
+                spellCheck={false}
+                className="min-h-11 min-w-0 grow basis-48 rounded-sm border border-border bg-surface px-3 text-text"
+                value={roles[i]!.title}
+                onChange={(e) =>
+                  setRoles((prev) =>
+                    prev.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)),
+                  )
+                }
+              />
+              <input
+                type="number"
+                inputMode="decimal"
+                aria-label={`Role ${i + 1} years`}
+                min={0}
+                max={MAX_YEARS}
+                step={0.5}
+                className="min-h-11 w-24 rounded-sm border border-border bg-surface px-3 text-text"
+                value={roles[i]!.years}
+                onChange={(e) =>
+                  setRoles((prev) =>
+                    prev.map((x, j) => (j === i ? { ...x, years: e.target.value } : x)),
+                  )
+                }
+              />
               <Evidence text={r.evidence} />
             </li>
           ))}
@@ -231,6 +299,7 @@ export function CvReviewStep({
         </Group>
       ) : null}
 
+      {roleError ? <ErrorText id={`${ids}-role-err`}>{roleError}</ErrorText> : null}
       {error ? <ErrorText id={`${ids}-err`}>{error}</ErrorText> : null}
       <div className="flex flex-wrap gap-3">
         <Button variant="primary" onClick={save} disabled={busy}>

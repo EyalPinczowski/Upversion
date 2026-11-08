@@ -57,9 +57,11 @@ export function SetupSettings() {
             {status === 'completed' ? 'Run setup again' : 'Set up your profile'}
           </Button>
         )}
-        <Button variant="danger" onClick={() => setConfirming(true)}>
-          Clear my profile
-        </Button>
+        {status !== 'not_started' ? (
+          <Button variant="danger" onClick={() => setConfirming(true)}>
+            Clear my profile
+          </Button>
+        ) : null}
       </div>
       {failed ? <ErrorText>We couldn’t start the setup. Try again in a moment.</ErrorText> : null}
       {clear.isError ? (

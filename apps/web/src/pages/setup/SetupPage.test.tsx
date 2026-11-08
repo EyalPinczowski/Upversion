@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as navigate from '../../lib/navigate';
 import { expectNoAxeViolations } from '../../test/axe';
-import { fakeAuth, renderApp, SESSION } from '../../test/helpers';
+import { fakeAuth, json, renderApp, SESSION } from '../../test/helpers';
 import { installSetupApi, profileCalls, profileView } from '../../test/setup-fixtures';
 
 const redirect = vi.spyOn(navigate, 'redirectTo').mockImplementation(() => {});
@@ -249,9 +249,8 @@ describe('the setup wizard', () => {
     await start();
     await waitFor(() => expect(heading()).toHaveFocus());
     expect(heading()).toHaveTextContent('Question 1 of 8');
-    expect(screen.getByRole('status', { name: '' })).toHaveTextContent(
-      /Question 1 of 8\. What's your current situation/,
-    );
+    // One announcement only: the focused heading (no second live region repeating it).
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('passes axe on every step', async () => {
@@ -501,5 +500,120 @@ describe('chunking', () => {
     expect(extract).toMatch(/import\('pdfjs-dist\/legacy\/build\/pdf\.mjs'\)/);
     // The redirect in the shell is tiny and must not pull the wizard in.
     expect(read('./SetupRedirect.tsx')).not.toMatch(/SetupPage|cv-extract|pdfjs/);
+  });
+});
+
+describe('saving problems and cleanup', () => {
+  const failFirstCompletion = () => {
+    let failed = false;
+    return async (request: Request) => {
+      const body = (await request.clone().json()) as { status: string; step?: string };
+      if (body.status === 'completed' && !failed) {
+        failed = true;
+        throw new TypeError('Failed to fetch');
+      }
+      return json(
+        profileView({ setupStatus: body.status as 'in_progress', setupStep: body.step ?? null }),
+      );
+    };
+  };
+
+  async function toCalendarStep() {
+    open();
+    await screen.findByRole('heading', { name: 'Welcome' });
+    await start();
+    await passQuestions(8);
+    await click('Skip this step');
+  }
+
+  it('shows an alert with Retry when finishing the calendar step cannot be saved', async () => {
+    installSetupApi({
+      profile: profileView({ answers: { current_status: 'student' } }),
+      calendar: { status: 'disconnected' },
+      extra: { 'PATCH /api/v1/me/profile/setup': failFirstCompletion() },
+    });
+    await toCalendarStep();
+    await screen.findByRole('heading', { name: 'Calendar (optional)' });
+    await click('Skip for now');
+    expect(await screen.findByRole('alert')).toHaveTextContent('We couldn’t save that');
+    await click('Retry');
+    expect(await screen.findByRole('heading', { name: 'Setup complete' })).toBeInTheDocument();
+  });
+
+  it('does not sit on "Checking your calendar…" when the calendar is off and saving fails', async () => {
+    installSetupApi({
+      profile: profileView({ answers: { current_status: 'student' } }),
+      calendar: 404,
+      extra: { 'PATCH /api/v1/me/profile/setup': failFirstCompletion() },
+    });
+    await toCalendarStep();
+    expect(await screen.findByText('Calendar sync is not available yet.')).toBeInTheDocument();
+    expect(screen.queryByText('Checking your calendar…')).not.toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    await click('Continue');
+    expect(await screen.findByRole('heading', { name: 'Setup complete' })).toBeInTheDocument();
+  });
+
+  it('clears a saved list answer when everything is unticked and the person presses Skip', async () => {
+    const api = installSetupApi({
+      profile: profileView({
+        setupStatus: 'in_progress',
+        setupStep: 'q:tools_known',
+        answers: { current_status: 'student', tools_known: ['Excel', 'SQL'] },
+      }),
+    });
+    open();
+    await screen.findByRole('heading', { name: 'Question 3 of 8' });
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Excel' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'SQL' }));
+    await click('Skip');
+    await screen.findByRole('heading', { name: 'Question 4 of 8' });
+    const saved = (await profileCalls(api)).filter((c) => c.path.endsWith('/answers'));
+    expect(saved.at(-1)?.body).toEqual({ answers: { tools_known: [] } });
+    expect(api.state.profile?.answers.tools_known).toEqual([]);
+  });
+
+  it('does not send anything for an untouched optional question', async () => {
+    const api = installSetupApi({
+      profile: profileView({
+        setupStatus: 'in_progress',
+        setupStep: 'q:tools_known',
+        answers: { current_status: 'student' },
+      }),
+    });
+    open();
+    await screen.findByRole('heading', { name: 'Question 3 of 8' });
+    await click('Skip');
+    await screen.findByRole('heading', { name: 'Question 4 of 8' });
+    expect((await profileCalls(api)).some((c) => c.path.endsWith('/answers'))).toBe(false);
+  });
+});
+
+describe('the calendar return path', () => {
+  it('is cleared by a connect from Settings, so no "Continue setup" is offered later', async () => {
+    window.sessionStorage.setItem('upversion.calendar-return', '/setup');
+    installSetupApi({
+      plans: true,
+      calendar: { status: 'disconnected' },
+      extra: {
+        'POST /api/v1/calendar/connect': () =>
+          json({ authorizationUrl: 'https://accounts.google.com/o/oauth2/x' }),
+      },
+    });
+    open('/settings');
+    await userEvent.click(await screen.findByRole('button', { name: 'Connect Google Calendar' }));
+    await waitFor(() => expect(redirect).toHaveBeenCalled());
+    expect(window.sessionStorage.getItem('upversion.calendar-return')).toBeNull();
+  });
+});
+
+describe('Settings entry details', () => {
+  it('hides "Clear my profile" before the setup has started', async () => {
+    installSetupApi({ plans: true });
+    open('/settings');
+    const region = await screen.findByRole('region', { name: 'Profile setup' });
+    expect(
+      within(region).queryByRole('button', { name: 'Clear my profile' }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -99,12 +99,18 @@ function Wizard({ profile }: { profile: ProfileView }) {
   }
 
   const afterCv = () => go(CALENDAR);
-  const afterCalendar = useCallback(() => {
+  const { mutateAsync: setSetupAsync } = setSetup;
+  const afterCalendar = useCallback(async () => {
     setError(null);
-    setSetup.mutate({ status: 'completed', step: DONE }, { onSuccess: () => setStep(DONE) });
-    // `setSetup.mutate` is stable enough for a one-shot step change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    try {
+      await setSetupAsync({ status: 'completed', step: DONE });
+      setStep(DONE);
+    } catch {
+      setError(SAVE_ERROR);
+    }
+  }, [setSetupAsync]);
+
+  const finishCalendar = useCallback(() => void afterCalendar(), [afterCalendar]);
 
   async function next() {
     if (!question) return;
@@ -113,6 +119,18 @@ function Wizard({ profile }: { profile: ProfileView }) {
       if (question.required) {
         setError('Choose an answer to continue.');
         return;
+      }
+      // Unticked everything on a list question that had a saved answer: save the empty list so
+      // the old value does not come back. (Single-choice answers cannot be unselected, and the
+      // API has no way to delete one answer, so only list questions are cleared.)
+      const saved = profile.answers[question.id];
+      if (Array.isArray(saved) && saved.length > 0 && Array.isArray(value)) {
+        try {
+          await saveAnswers.mutateAsync({ [question.id]: [] });
+        } catch {
+          setError(SAVE_ERROR);
+          return;
+        }
       }
     } else {
       const checked = validateAnswer(question, value);
@@ -203,10 +221,6 @@ function Wizard({ profile }: { profile: ProfileView }) {
         <h2 id="setup-step-heading" ref={headingRef} tabIndex={-1}>
           {step === WELCOME ? 'Welcome' : heading}
         </h2>
-        {/* Announces each step change to screen readers, next to the focus move. */}
-        <p role="status" className="sr-only">
-          {step === WELCOME ? '' : question ? `${heading}. ${question.text}` : heading}
-        </p>
 
         {step === WELCOME ? (
           <div className="space-y-4">
@@ -282,7 +296,7 @@ function Wizard({ profile }: { profile: ProfileView }) {
 
         {step === CALENDAR ? (
           <>
-            <CalendarStep onNext={afterCalendar} />
+            <CalendarStep onNext={finishCalendar} />
             <Button disabled={busy} onClick={back}>
               Back
             </Button>
@@ -304,6 +318,11 @@ function Wizard({ profile }: { profile: ProfileView }) {
         ) : null}
 
         {error && step !== REVIEW && !question ? <ErrorText>{error}</ErrorText> : null}
+        {error && step === CALENDAR ? (
+          <Button disabled={busy} onClick={() => void afterCalendar()}>
+            Retry
+          </Button>
+        ) : null}
       </section>
 
       {canSkipAll ? (

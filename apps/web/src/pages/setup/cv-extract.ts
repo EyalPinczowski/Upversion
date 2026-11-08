@@ -91,7 +91,28 @@ export function itemsToText(
 
 const nonSpace = (text: string) => text.replace(/\s/g, '').length;
 
-export async function extractPdfText(data: ArrayBuffer, pdfjs: PdfjsLike): Promise<string> {
+/** The person pressed Cancel while a file was being read. Not an error to show. */
+export class CvCancelled extends Error {
+  constructor() {
+    super('Reading was cancelled.');
+    this.name = 'CvCancelled';
+  }
+}
+
+export const PDF_TIMEOUT_MS = 20_000;
+
+export interface PdfOptions {
+  /** Gives up (as "unreadable") after this long. Default 20 seconds. */
+  timeoutMs?: number;
+  /** Aborting stops reading and throws `CvCancelled`. */
+  signal?: AbortSignal;
+}
+
+export async function extractPdfText(
+  data: ArrayBuffer,
+  pdfjs: PdfjsLike,
+  { timeoutMs = PDF_TIMEOUT_MS, signal }: PdfOptions = {},
+): Promise<string> {
   const task = pdfjs.getDocument({
     data: new Uint8Array(data),
     // CVE-2024-4367: never let a font run code. Nothing is rendered, only text is read.
@@ -100,31 +121,51 @@ export async function extractPdfText(data: ArrayBuffer, pdfjs: PdfjsLike): Promi
     // Only errors: a missing standard-font file is irrelevant when nothing is rendered.
     verbosity: 0,
   });
-  let doc: Awaited<typeof task.promise>;
-  try {
-    doc = await task.promise;
-  } catch (error) {
-    const name = error instanceof Error ? error.name : '';
-    throw new CvReadError(name === 'PasswordException' ? 'encrypted' : 'unreadable');
+
+  async function read(): Promise<string> {
+    let doc: Awaited<typeof task.promise>;
+    try {
+      doc = await task.promise;
+    } catch (error) {
+      const name = error instanceof Error ? error.name : '';
+      throw new CvReadError(name === 'PasswordException' ? 'encrypted' : 'unreadable');
+    }
+    try {
+      if (doc.numPages > MAX_PDF_PAGES) throw new CvReadError('too_many_pages');
+      const pages: string[] = [];
+      for (let n = 1; n <= doc.numPages; n++) {
+        const page = await doc.getPage(n);
+        const content = await page.getTextContent();
+        pages.push(itemsToText(content.items));
+      }
+      const text = pages.join('\n');
+      if (nonSpace(text) < MIN_CHARS_PER_PAGE * Math.max(1, doc.numPages)) {
+        throw new CvReadError('scanned');
+      }
+      return text;
+    } catch (error) {
+      if (error instanceof CvReadError) throw error;
+      throw new CvReadError('unreadable');
+    }
   }
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let onAbort: (() => void) | undefined;
+  const stopped = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new CvReadError('unreadable')), timeoutMs);
+    if (signal?.aborted) reject(new CvCancelled());
+    onAbort = () => reject(new CvCancelled());
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
   try {
-    if (doc.numPages > MAX_PDF_PAGES) throw new CvReadError('too_many_pages');
-    const pages: string[] = [];
-    for (let n = 1; n <= doc.numPages; n++) {
-      const page = await doc.getPage(n);
-      const content = await page.getTextContent();
-      pages.push(itemsToText(content.items));
-    }
-    const text = pages.join('\n');
-    if (nonSpace(text) < MIN_CHARS_PER_PAGE * Math.max(1, doc.numPages)) {
-      throw new CvReadError('scanned');
-    }
-    return text;
-  } catch (error) {
-    if (error instanceof CvReadError) throw error;
-    throw new CvReadError('unreadable');
+    return await Promise.race([read(), stopped]);
   } finally {
+    clearTimeout(timer);
+    if (onAbort) signal?.removeEventListener('abort', onAbort);
+    // Always, also when the file was refused (password): frees the pdf.js worker for a retry.
     void task.destroy().catch(() => undefined);
+    // The losing branch must not become an unhandled rejection.
+    stopped.catch(() => undefined);
   }
 }
 
@@ -165,6 +206,8 @@ export function extractDocxText(data: ArrayBuffer): string {
   if (oversize) throw new CvReadError('too_large');
   const xml = files['word/document.xml'];
   if (!xml) throw new CvReadError('unreadable');
+  // The header size can lie: check what really came out too.
+  if (xml.length > MAX_DOCX_XML_BYTES) throw new CvReadError('too_large');
   const doc = new DOMParser().parseFromString(new TextDecoder().decode(xml), 'application/xml');
   if (doc.getElementsByTagName('parsererror').length > 0) throw new CvReadError('unreadable');
   const lines: string[] = [];
@@ -191,7 +234,7 @@ async function loadPdfjs(): Promise<PdfjsLike> {
 
 const extensionOf = (name: string) => name.slice(name.lastIndexOf('.') + 1).toLowerCase();
 
-export interface ExtractOptions {
+export interface ExtractOptions extends PdfOptions {
   /** Replaceable for tests. */
   loadPdfjs?: () => Promise<PdfjsLike>;
 }
@@ -220,5 +263,6 @@ export async function extractCvText(file: File, options: ExtractOptions = {}): P
     // The library could not load (very old browser): the paste-text path still works.
     throw new CvReadError('unreadable');
   }
-  return extractPdfText(data, pdfjs);
+  if (options.signal?.aborted) throw new CvCancelled();
+  return extractPdfText(data, pdfjs, options);
 }

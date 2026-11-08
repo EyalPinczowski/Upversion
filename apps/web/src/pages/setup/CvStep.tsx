@@ -1,6 +1,6 @@
-import { useId, useState, type DragEvent } from 'react';
+import { useId, useRef, useState, type DragEvent } from 'react';
 import { Button, ErrorText, TextAreaField } from '../../components/ui';
-import { CvReadError, extractCvText } from './cv-extract';
+import { CV_ERROR_TEXT, CvCancelled, CvReadError, extractCvText } from './cv-extract';
 
 /**
  * The optional CV step. The file is read on this device and never sent anywhere; only its text
@@ -21,21 +21,22 @@ export function CvStep({
   const [pasting, setPasting] = useState(false);
   const [pasted, setPasted] = useState('');
   const [dragging, setDragging] = useState(false);
+  const abort = useRef<AbortController | null>(null);
 
   async function read(file: File | undefined) {
     if (!file) return;
     setError(null);
     setBusy(true);
+    const controller = new AbortController();
+    abort.current = controller;
     try {
-      onText(await extractCvText(file));
+      onText(await extractCvText(file, { signal: controller.signal }));
     } catch (e) {
-      setError(
-        e instanceof CvReadError
-          ? e.message
-          : 'We couldn’t read this file. Paste the text instead.',
-      );
+      if (e instanceof CvCancelled) return;
+      setError(e instanceof CvReadError ? e.message : CV_ERROR_TEXT.unreadable);
       setPasting(true);
     } finally {
+      if (abort.current === controller) abort.current = null;
       setBusy(false);
     }
   }
@@ -52,7 +53,12 @@ export function CvStep({
       return;
     }
     setError(null);
-    onText(pasted);
+    try {
+      onText(pasted);
+    } catch {
+      setError(CV_ERROR_TEXT.unreadable);
+      return;
+    }
     setPasted('');
   }
 
@@ -95,9 +101,19 @@ export function CvStep({
       </div>
 
       {busy ? (
-        <p role="status" className="text-muted">
-          Reading your CV on this device…
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p role="status" className="text-muted">
+            Reading your CV on this device…
+          </p>
+          <Button
+            onClick={() => {
+              abort.current?.abort();
+              setBusy(false);
+            }}
+          >
+            Cancel
+          </Button>
+        </div>
       ) : null}
       {error ? <ErrorText>{error}</ErrorText> : null}
 
