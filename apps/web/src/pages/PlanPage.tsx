@@ -40,8 +40,11 @@ export function PlanPage() {
       const target = document.getElementById(id);
       if (!target) return false;
       target.tabIndex = -1;
-      target.scrollIntoView();
-      target.focus({ preventScroll: true });
+      // After the shell's own focus move to the page content on a route change (same commit).
+      queueMicrotask(() => {
+        target.scrollIntoView();
+        target.focus({ preventScroll: true });
+      });
       return true;
     };
     if (reveal()) return;

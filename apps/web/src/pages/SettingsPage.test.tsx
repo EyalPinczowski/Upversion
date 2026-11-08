@@ -24,11 +24,16 @@ beforeEach(() => {
   document.documentElement.removeAttribute('data-theme');
 });
 
+let scrollSpy: ReturnType<typeof vi.spyOn> | undefined;
+
 afterEach(() => {
   createObjectURL.mockClear();
   revokeObjectURL.mockClear();
   clickSpy.mockClear();
   vi.unstubAllGlobals();
+  scrollSpy?.mockRestore();
+  scrollSpy = undefined;
+  delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
 });
 
 function open(
@@ -90,8 +95,10 @@ describe('settings page', () => {
   it.each(['#time-heading', '#practice-heading', '#start-date-heading'])(
     'sends the old anchor %s to the Plan settings tab',
     async (hash) => {
-      const scroll = vi.fn();
-      Element.prototype.scrollIntoView = scroll;
+      // jsdom has no scrollIntoView; define it so it can be spied on (removed in afterEach).
+      Element.prototype.scrollIntoView = () => {};
+      const scroll = vi.spyOn(Element.prototype, 'scrollIntoView');
+      scrollSpy = scroll;
       installApi(planRoutes());
       const urls: string[] = [];
       renderApp({
@@ -106,10 +113,13 @@ describe('settings page', () => {
       expect(await screen.findByRole('heading', { name: 'Study time' })).toBeInTheDocument();
       // The hash stays, and the page scrolls to the section once it has rendered.
       expect(urls[urls.length - 1]).toBe(`/plan?tab=settings${hash}`);
-      const target = document.getElementById(hash.slice(1));
-      await waitFor(() => expect(scroll).toHaveBeenCalled());
+      const target = await waitFor(() => {
+        const el = document.getElementById(hash.slice(1));
+        expect(el).toHaveFocus();
+        return el;
+      });
+      expect(scroll).toHaveBeenCalled();
       expect(scroll.mock.contexts[0]).toBe(target);
-      expect(target).toHaveFocus();
     },
   );
 
