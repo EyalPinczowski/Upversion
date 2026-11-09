@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../src/app';
 import type { AIProvider } from '../src/ai/provider';
 import { createCloudflareAIProvider } from '../src/ai/providers/cloudflare-ai';
@@ -10,6 +10,23 @@ import { createSupabaseVerifier } from '../src/modules/accounts/token-verifier';
 import { acceptCurrentLegal, dbAvailable, prepareDatabase, type TestDb } from './db-helpers';
 import { testConfig } from './helpers';
 import { ISSUER, makeTestKeys, type TestKeys } from './tokens';
+
+// Lets two tests force the failure paths that the shared checks normally prevent.
+const force = vi.hoisted(() => ({ mode: 'off' as 'off' | 'throw' | 'oversize' }));
+vi.mock('@upversion/shared', async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  const real = original.checkTailoredOutput as (...a: unknown[]) => Record<string, unknown>;
+  return {
+    ...original,
+    checkTailoredOutput: (...args: unknown[]) => {
+      const r = real(...args);
+      if (force.mode === 'throw') throw new Error('boom');
+      // Over the response schema (8000 characters): a serialization failure after the run was counted.
+      if (force.mode === 'oversize') return { ...r, text: `${String(r.text)} ${'x'.repeat(9000)}` };
+      return r;
+    },
+  };
+});
 
 const A = '11111111-1111-4111-8111-111111111111';
 const B = '22222222-2222-4222-8222-222222222222';
@@ -143,6 +160,7 @@ describe.skipIf(!dbAvailable)('POST /me/cv/tailor (real Postgres, real provider 
   };
 
   beforeEach(async () => {
+    force.mode = 'off';
     fetched = [];
     logs = [];
     respond = () => completion(ANSWER);
@@ -553,6 +571,40 @@ describe.skipIf(!dbAvailable)('POST /me/cv/tailor (real Postgres, real provider 
     expect(res.json().text).not.toMatch(EMAIL_RE);
     expect(res.json().notes.map((n: { kind: string }) => n.kind)).toContain('output_redacted');
   });
+
+  it('caps flags at 100 with text of at most 200 characters: a 200, not a 500 after the run was counted', async () => {
+    const numbers = Array.from({ length: 150 }, (_, i) => `- Saved ${1000 + i} hours`).join('\n');
+    const words = Array.from({ length: 40 }, (_, i) => `Zq${String.fromCharCode(97 + (i % 26))}x`);
+    const title = words.map((w) => w[0]!.toUpperCase() + w.slice(1)).join(' ');
+    respond = () =>
+      completion(
+        `SUMMARY\nAnalyst.\n\nEXPERIENCE\n${numbers}\n- Worked at ${title}\n\nSKILLS\nSQL`,
+      );
+    await start();
+    const res = await run();
+    expect(res.statusCode).toBe(200);
+    const { flags } = res.json();
+    expect(flags.length).toBeLessThanOrEqual(100);
+    expect(flags.length).toBeGreaterThan(50);
+    for (const f of flags) expect(f.text.length).toBeLessThanOrEqual(200);
+    expect(await tailorRows()).toEqual([{ user_id: A, requests: 1 }]);
+  });
+
+  it.each(['throw', 'oversize'] as const)(
+    'a failure after the run was counted (%s) is a 500 and logs nothing of the texts or the answer',
+    async (mode) => {
+      await start();
+      force.mode = mode;
+      const res = await run();
+      expect(res.statusCode).toBe(500);
+      expect(res.json().error.code).toBe('internal_error');
+      for (const text of [CV, JOB, ANSWER]) expect(leaks(res.body, text)).toBe(false);
+      const out = logs.join('\n');
+      expect(out).toContain('unhandled error');
+      for (const text of [CV, JOB, ANSWER]) expect(leaks(out, text)).toBe(false);
+      expect(await tailorRows()).toEqual([{ user_id: A, requests: 1 }]);
+    },
+  );
 
   it('does not let a user see or change another user’s counter (RLS)', async () => {
     await start();

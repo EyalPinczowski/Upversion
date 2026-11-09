@@ -73,7 +73,7 @@ const unavailableAIUsage: AIUsageStore = {
   async providerUsage() {
     throw new Error('no database');
   },
-  async featureTotalToday() {
+  async cvTailorTotalToday() {
     throw new Error('no database');
   },
 };

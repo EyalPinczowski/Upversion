@@ -109,7 +109,7 @@ describe.skipIf(!dbAvailable)('table convention: RLS enabled and a backup SELECT
         );
         // A new SECURITY DEFINER function must be reviewed and added here on purpose.
         expect(rows.map((r) => r.name)).toEqual([
-          'ai_feature_usage_today',
+          'ai_cv_tailor_usage_today',
           'ai_provider_usage_today',
           'ai_reserve_provider',
           'delete_account',
@@ -124,7 +124,7 @@ describe.skipIf(!dbAvailable)('table convention: RLS enabled and a backup SELECT
         // The exact EXECUTE list (besides the owner), so a stray GRANT to the backup role, the
         // login role or another environment's role fails here.
         const expected: Record<string, string[]> = {
-          ai_feature_usage_today: [`app_${schema}_user`],
+          ai_cv_tailor_usage_today: [`app_${schema}_user`],
           ai_provider_usage_today: [`app_${schema}_user`],
           ai_reserve_provider: [`app_${schema}_user`],
           delete_account: [`app_${schema}_user`],

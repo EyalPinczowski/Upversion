@@ -82,8 +82,8 @@ function memoryUsage(log: string[] = []) {
     async providerUsage() {
       return Object.fromEntries(providers);
     },
-    async featureTotalToday(_userId, purpose) {
-      return [...users].reduce((n, [key, v]) => (key.endsWith(`:${purpose}`) ? n + v : n), 0);
+    async cvTailorTotalToday() {
+      return [...users].reduce((n, [key, v]) => (key.endsWith(':cv_tailor') ? n + v : n), 0);
     },
     async snapshot() {
       throw new Error('not used');
@@ -861,6 +861,33 @@ describe('providers option and the budget check before the user’s reservation 
     expect(usage.users.size).toBe(0);
     const res = await gateway.generate({ userId: USER_A, request: cv(), providers: ['two'] });
     expect(res.providerId).toBe('two');
+  });
+
+  it('does not reserve the user’s call when the turn deadline passed before any provider was tried', async () => {
+    const calls: string[] = [];
+    let ticks = 0;
+    const t0 = Date.parse('2026-11-01T10:00:00Z');
+    // The first reading starts the turn; every later one is past the turn deadline (5000 ms).
+    const now = () => new Date(ticks++ === 0 ? t0 : t0 + 6000);
+    const { gateway, usage } = setup([provider('one', ok('x'), calls)], {}, { now });
+    await expect(gateway.generate({ userId: USER_A, request: cv() })).rejects.toBeInstanceOf(
+      AIUnavailableError,
+    );
+    expect(calls).toEqual([]);
+    expect(usage.users.size).toBe(0);
+    expect(usage.providers.size).toBe(0);
+  });
+
+  it('still answers 429 at the user cap before any provider is reserved', async () => {
+    const calls: string[] = [];
+    const { gateway, usage } = setup([provider('one', ok('x'), calls)], {
+      userCaps: { practice_message: 5, practice_feedback: 2, day_overview: 1, cv_tailor: 1 },
+    });
+    await gateway.generate({ userId: USER_A, request: cv() });
+    await expect(gateway.generate({ userId: USER_A, request: cv() })).rejects.toBeInstanceOf(
+      AIUserCapError,
+    );
+    expect(usage.providers.get('one')).toBe(1);
   });
 
   it('skips the check when the budget read fails (the user’s call is then reserved as before)', async () => {

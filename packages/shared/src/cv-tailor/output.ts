@@ -14,6 +14,8 @@ import { redactCvPii, removeControlChars } from './prepare';
 
 export const MAX_NOTE_LENGTH = 200;
 const MAX_NOTES_EACH = 20;
+/** At most this many flags are returned, each with text of at most MAX_NOTE_LENGTH characters. */
+export const MAX_TAILOR_FLAGS = 100;
 
 export interface TailorSections {
   summary: string;
@@ -375,7 +377,9 @@ export function checkTailoredOutput(
 
   const flags: TailorFlag[] = [];
   const seen = new Set<string>();
-  const add = (kind: TailorFlagKind, t: string): void => {
+  const add = (kind: TailorFlagKind, raw: string): void => {
+    if (flags.length >= MAX_TAILOR_FLAGS) return;
+    const t = raw.slice(0, MAX_NOTE_LENGTH);
     const key = `${kind}|${t.toLowerCase()}`;
     if (seen.has(key)) return;
     seen.add(key);

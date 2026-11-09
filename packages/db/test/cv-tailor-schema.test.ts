@@ -107,7 +107,7 @@ for (const schema of ENVS) {
       );
     });
 
-    it('ai_feature_usage_today sums today over all users and nothing else', async () => {
+    it('ai_cv_tailor_usage_today sums today over all users and nothing else', async () => {
       await withClient(TEST_DATABASE_URL!, async (client) => {
         await client.query('begin');
         await client.query(`set local role owner_${s}`);
@@ -123,13 +123,17 @@ for (const schema of ENVS) {
       });
       const sum = (sub: string | null) =>
         as(sub, async (q) => {
-          const r = await q(`select ${s}.ai_feature_usage_today('cv_tailor') as n`);
+          const r = await q(`select ${s}.ai_cv_tailor_usage_today() as n`);
           return Number(r.rows[0]!.n);
         });
       expect(await sum(USER_A)).toBe(5);
       expect(await sum(USER_B)).toBe(5);
       // Without a signed-in user the function reveals nothing.
       expect(await sum(null)).toBe(0);
+      // The function is fixed to cv_tailor: no argument form exists, so no other purpose is readable.
+      await expect(
+        as(USER_A, (q) => q(`select ${s}.ai_cv_tailor_usage_today('day_overview')`)),
+      ).rejects.toThrow(/does not exist/);
       // A user still cannot read another user's rows directly.
       await as(USER_A, async (q) => {
         const r = await q(`select user_id from ${s}.ai_usage_daily`);

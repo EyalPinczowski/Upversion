@@ -200,6 +200,20 @@ describe('checkTailoredOutput', () => {
     expect(r.text.endsWith('team')).toBe(true);
   });
 
+  it('caps the flags at 100 and each flag text at 200 characters', () => {
+    const numbers = Array.from({ length: 150 }, (_, i) => `- Saved ${1000 + i} hours`).join('\n');
+    const many = checkTailoredOutput(numbers, tailorCv);
+    expect(many.flags).toHaveLength(100);
+    const longRun = Array.from({ length: 60 }, (_, i) => `Zq${'abcdefgh'[i % 8]}x${i}`).join(' ');
+    const title = longRun.replace(/\d+/g, (d) => String.fromCharCode(97 + (Number(d) % 26)));
+    const long = checkTailoredOutput(
+      `- Worked at ${title.replace(/\b(\w)/g, (c) => c.toUpperCase())}`,
+      tailorCv,
+    );
+    expect(long.flags.length).toBeGreaterThan(0);
+    for (const f of long.flags) expect(f.text.length).toBeLessThanOrEqual(200);
+  });
+
   it('is linear: 6000 characters in under 50 ms', () => {
     const text = '- Built Power BI dashboards for Acme Widgets Ltd with 300 orders\n'.repeat(95);
     const t = performance.now();

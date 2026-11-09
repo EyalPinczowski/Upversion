@@ -71,7 +71,7 @@ The **job description** goes through the same steps 2 and 3 (no contact-block dr
 - One screen shows **exactly the two texts that will be sent**, in two editable `<textarea>`s ("Your CV, as it will be sent" and "The job post, as it will be sent"), with the dropped lines listed under "Removed before sending" and every `[removed]` visible in place.
 - The user can delete or change anything. **On every edit the browser runs the same `findPii` the server runs**; while it finds something, "Send to AI" is disabled and the message names the kind ("An email address is still in the text").
 - A fixed warning above the button, not dismissible: "**Remove your name, home address and anyone else's name before sending. The app removes emails, phone numbers and links, but it cannot recognise names or addresses.**" and a required checkbox "I checked the text and removed my name and address".
-- The page names **who receives the text**: "Sent to Cloudflare Workers AI; if that fails after it received the text, also to Groq" (labels from `GET /api/v1/ai/usage`, `providers[]` in gateway order, `available: true`), with a link to each provider's data page as listed in `docs/setup/ai-providers.md`, and the line "Groq is used with Zero Data Retention on" (without it Groq stays disabled, so no other wording is used). The result names **every** provider that received the text (the one that answered and, when the gateway switched, the one that failed first), taken from `provider` and `switched`.
+- The page names **who receives the text**: "Sent to Cloudflare Workers AI; if that fails after it received the text, also to Groq" (labels from `GET /api/v1/ai/usage`, `providers[]` in gateway order, `available: true`), with a link to each provider's data page as listed in `docs/setup/ai-providers.md`, and the line "Groq is used with Zero Data Retention on" (without it Groq stays disabled, so no other wording is used). The result names **every** provider that received the text (the one that answered and, when the gateway switched, the one that failed first), taken from `providers` in the response (see the response shape in section 3).
 - The gateway order for this purpose is fixed: **Cloudflare first, then Groq as backup.** No other provider (for example Gemini or GitHub Models, if ever enabled) may receive CV text; the `cv_tailor` purpose is restricted to an allowlist of these two provider ids.
 - Over-removal is explained: "Numeric dates such as 03/2018 may be removed; write them as Mar 2018 to keep them."
 - Only the button **"Send to AI"** sends. No auto-send, no send on Enter.
@@ -99,7 +99,7 @@ Body (strict zod, unknown keys → 400; U+0000 → 422 as elsewhere):
 }
 ```
 - **Size caps** are chosen so the longest prompt fits the smallest provider window: system and instructions ≤ 2000 + 6000 + 3000 = 11,000 < 12,000 (`maxContextChars`). The service compares the built prompt with `maxContextChars` of the two allowed providers directly (not `gateway.historyLimitChars()`, which is the minimum over all registered providers and the chat-history limit, `gateway.ts` `historyLimitChars`) and answers 422 `too_long` if either is smaller. A shared test builds the longest prompt and asserts the bound.
-- `roleId` adds the role's catalog **title and skill ids** (never free text) to the prompt.
+- `roleId` adds only the role's catalog **title** (never free text, and no skill ids) to the prompt. **Deliberate decision (WP-F, 2026-11-09):** the prompt builder takes a title only, which is the safer choice (nothing but one catalog string is added); the role's skills still feed the rule-based keyword notes on the server.
 
 Order of work in the service (each step before the next):
 1. Validate the body; check the flag.
@@ -123,11 +123,13 @@ Response 200:
         | 'check_number' | 'check_skill' | 'check_term' | 'output_redacted',
     text: string             // <= 200 characters each, <= 40 notes
   }>,
-  provider: { id: string, label: string, model: string | null },  // slug rule as in practice
-  switched: { from, fromLabel, to, toLabel, reason } | null,
+  flags: Array<{ kind: 'number' | 'skill' | 'certificate' | 'degree' | 'term' | 'placeholder',
+                 text: string }>,   // <= 100 flags, text <= 200 characters each
+  providers: Array<{ id: string, label: string }>,  // every provider that received the text, in order
   usage: { used: number, cap: number }
 }
 ```
+**Deliberate decision (WP-F, 2026-11-09), replacing the earlier `provider` / `switched` / `model` fields:** the response carries `providers`, the list of **every** provider that received the text (the one that failed first, when the gateway switched, then the one that answered). That is the fact the page must show; `switched` and the model name added nothing the list does not say. `flags` carries the items behind the `check_*` notes so the UI can highlight them.
 - `GET /api/v1/ai/usage` gains `user.cvTailor` (the meter) and `features.cvTailor: boolean`, so the web knows whether to show the entry without probing. `features.cvTailor` is the `FEATURE_CV_TAILOR` flag and nothing else: it does not say whether a provider is available (that is `GET /api/v1/ai/usage`'s existing `configured` / `providers[]`).
 - Reuse, no copies: `buildSafeRequest`, `createAIGateway`, `AIUsageStore`, `createUserLimiter`, `knownIdentifiersFor`, `PiiLeakError`, the error shapes and the provider-label slug rule of the practice chat. Provider error text never reaches a response or log (gateway contract).
 - `docs/api-cv-tailor.md` documents the route in the style of `docs/api-practice.md`; OpenAPI and `apps/web/src/api/schema.d.ts` are regenerated.
