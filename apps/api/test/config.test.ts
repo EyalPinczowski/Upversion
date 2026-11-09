@@ -23,6 +23,7 @@ describe('loadConfig defaults', () => {
         pushNotifications: false,
         aiOverview: false,
         profileSetup: false,
+        cvTailor: false,
       },
       calendar: { enabled: false, tokenKeys: [], google: null },
       ai: {
@@ -31,13 +32,14 @@ describe('loadConfig defaults', () => {
         providerOrder: [],
         fakeProvider: false,
         budgets: {},
-        userCaps: { practice_message: 40, practice_feedback: 6, day_overview: 1 },
+        userCaps: { practice_message: 40, practice_feedback: 6, day_overview: 1, cv_tailor: 3 },
         timeoutMs: 15000,
         turnTimeoutMs: 25000,
         historyChars: 12000,
+        cvTailorDailyTotal: 20,
       },
     });
-    expect(featureNames).toHaveLength(6);
+    expect(featureNames).toHaveLength(7);
   });
 });
 
@@ -103,6 +105,7 @@ describe('boolean variables', () => {
       pushNotifications: true,
       aiOverview: false,
       profileSetup: false,
+      cvTailor: false,
     });
   });
 
@@ -273,7 +276,13 @@ describe('AI configuration', () => {
     const { ai } = loadConfig({});
     expect(ai.providerOrder).toEqual([]);
     expect(ai.budgets).toEqual({});
-    expect(ai.userCaps).toEqual({ practice_message: 40, practice_feedback: 6, day_overview: 1 });
+    expect(ai.userCaps).toEqual({
+      practice_message: 40,
+      practice_feedback: 6,
+      day_overview: 1,
+      cv_tailor: 3,
+    });
+    expect(ai.cvTailorDailyTotal).toBe(20);
   });
 
   it('refuses AI_ALLOW_PAID without a spending cap above zero', () => {

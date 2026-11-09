@@ -88,6 +88,13 @@ export interface GenerateOptions {
    * `already_reserved`: the caller did it in an earlier transaction (practice chat, plan 2.2).
    */
   userCap?: 'reserve' | 'already_reserved';
+  /**
+   * Restricts this call to these provider ids, in this order. No other provider is ever
+   * consulted (not for the usable check, a budget, a cooldown or an attempt). Used by purposes
+   * whose text only certain providers may receive (CV tailoring, ADR 016). Default: all, in the
+   * gateway's own order.
+   */
+  providers?: readonly string[];
 }
 
 export interface GatewayResult {
@@ -99,6 +106,11 @@ export interface GatewayResult {
   /** Set when an earlier provider was skipped or failed and another answered. */
   switched: { from: string; to: string; reason: SwitchReason } | null;
   cached: boolean;
+  /**
+   * Ids of every provider the request body was handed to, in order: the ones that failed after
+   * the call started, then the one that answered. Empty for a cache hit.
+   */
+  sentTo: string[];
 }
 
 export interface ProviderStatus {
@@ -204,7 +216,7 @@ export function createAIGateway(deps: GatewayDeps): AIGateway {
       return Math.min(config.historyChars, ...limits.filter((n) => n > 0));
     },
 
-    async generate({ userId, request, signal, userCap = 'reserve' }) {
+    async generate({ userId, request, signal, userCap = 'reserve', providers: only }) {
       if (!isSafeAIRequest(request))
         throw new TypeError('generate needs a request from buildSafeRequest.');
       const purpose = request.purpose;
@@ -226,6 +238,7 @@ export function createAIGateway(deps: GatewayDeps): AIGateway {
               model: null,
               switched: null,
               cached: true,
+              sentTo: [],
             };
           }
         } catch {
@@ -234,22 +247,38 @@ export function createAIGateway(deps: GatewayDeps): AIGateway {
       }
 
       // 2. Is any provider usable at all? Checked BEFORE the user's cap is spent.
-      const ordered = config.providerOrder
+      const ordered = (only ?? config.providerOrder)
         .map((id) => registry.get(id))
         .filter((p): p is AIProvider => p !== undefined);
       if (!ordered.some((p) => budgetOf(p.id) > 0 && !coolingUntil(p.id))) {
         throw new AIUnavailableError(ordered.length === 0 ? 'not_configured' : 'exhausted');
       }
-
-      // 3. The user's cap, in its own committed transaction.
+      // The budget that is LEFT is checked too, before the user's call is reserved, so a run that
+      // no provider could take (every budget used up) costs the user nothing. A budget used up
+      // between this read and the reservation below can still end in 'exhausted' after the user's
+      // call was reserved (a race, accepted). When the read fails the check is skipped.
       if (userCap === 'reserve') {
-        const { ok } = await usage.reserveUser(userId, purpose, config.userCaps[purpose]);
-        if (!ok) throw new AIUserCapError(purpose);
+        const used = await usage.providerUsage(userId).catch(() => {
+          warn({ code: 'budget_read_failed' }, 'ai budget read failed');
+          return null;
+        });
+        if (
+          used &&
+          !ordered.some((p) => !coolingUntil(p.id) && (used[p.id] ?? 0) < budgetOf(p.id))
+        ) {
+          throw new AIUnavailableError('exhausted');
+        }
       }
+
+      // 3. The user's cap is reserved (own committed transaction) lazily, in the loop below, right
+      //    before the first provider that is really about to be tried, so a turn whose deadline
+      //    passed or whose providers were all skipped costs the user nothing.
+      let userReserved = userCap !== 'reserve';
 
       // 4. The providers, one attempt each, in order.
       const deadline = startedAt + config.turnTimeoutMs;
       const attempts: { providerId: string; outcome: string }[] = [];
+      const sentTo: string[] = [];
       let problem: { id: string; reason: SwitchReason } | null = null;
       for (const provider of ordered) {
         if (signal?.aborted) throw new AIAbortedError();
@@ -265,6 +294,12 @@ export function createAIGateway(deps: GatewayDeps): AIGateway {
         if (remaining <= 0) {
           attempts.push({ providerId: provider.id, outcome: 'turn_timeout' });
           break;
+        }
+
+        if (!userReserved) {
+          const { ok } = await usage.reserveUser(userId, purpose, config.userCaps[purpose]);
+          if (!ok) throw new AIUserCapError(purpose);
+          userReserved = true;
         }
 
         // The budget is reserved and committed BEFORE the call. A failed call still counts.
@@ -287,6 +322,7 @@ export function createAIGateway(deps: GatewayDeps): AIGateway {
         // its timeout ends the turn. Timers and the wall clock are separate clocks, so asking
         // the clock again could say a millisecond is left and start one more doomed attempt.
         const cappedByTurn = remaining <= config.timeoutMs;
+        sentTo.push(provider.id);
         try {
           const response = await attempt(
             provider,
@@ -311,6 +347,7 @@ export function createAIGateway(deps: GatewayDeps): AIGateway {
               ? { from: problem.id, to: provider.id, reason: problem.reason }
               : null,
             cached: false,
+            sentTo,
           };
         } catch (error) {
           if (signal?.aborted) throw new AIAbortedError();

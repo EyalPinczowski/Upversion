@@ -35,6 +35,7 @@ import {
   type TokenVerifier,
 } from './modules/accounts/token-verifier';
 import { calendarRoutes } from './modules/calendar/routes';
+import { cvTailorRoutes } from './modules/cv-tailor/routes';
 import { profileRoutes } from './modules/profile/routes';
 import { createCalendarService } from './modules/calendar/service';
 import { createCalendarSync, type CalendarSync } from './modules/calendar/sync';
@@ -67,6 +68,12 @@ const unavailableAIUsage: AIUsageStore = {
     throw new Error('no database');
   },
   async snapshot() {
+    throw new Error('no database');
+  },
+  async providerUsage() {
+    throw new Error('no database');
+  },
+  async cvTailorTotalToday() {
     throw new Error('no database');
   },
 };
@@ -304,6 +311,17 @@ export function buildApp(config: Config, deps: AppDeps = {}) {
       if (config.features.profileSetup) {
         v1.register(profileRoutes, { verifier, db, now: deps.now });
       }
+      if (config.features.cvTailor) {
+        v1.register(cvTailorRoutes, {
+          verifier,
+          db,
+          gateway: aiGateway,
+          registry: aiRegistry,
+          usage: aiUsage,
+          userCap: config.ai.userCaps.cv_tailor,
+          dailyTotal: config.ai.cvTailorDailyTotal,
+        });
+      }
       v1.register(planRoutes, {
         verifier,
         db,
@@ -325,6 +343,7 @@ export function buildApp(config: Config, deps: AppDeps = {}) {
         gateway: aiGateway,
         usage: aiUsage,
         userCaps: config.ai.userCaps,
+        features: { cvTailor: config.features.cvTailor },
       });
     },
     { prefix: '/api/v1' },

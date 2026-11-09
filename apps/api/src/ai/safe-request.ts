@@ -1,4 +1,4 @@
-import { assertNoPii, redactPii } from '@upversion/shared';
+import { assertNoPii, findCvPii, PiiLeakError, redactCvPii, redactPii } from '@upversion/shared';
 import { z } from 'zod';
 import { AI_PURPOSES } from './provider';
 
@@ -54,10 +54,24 @@ export function isSafeAIRequest(value: unknown): value is SafeAIRequest {
 export function buildSafeRequest(
   parts: SafeAIRequestParts,
   knownIdentifiers: readonly string[],
+  settings: {
+    /**
+     * Treat catalog tool names that look like hosts (`ASP.NET`, `monday.com`) as plain text, the
+     * same allowance `findCvPii` gives CV text before it reaches this function (ADR 016). Without
+     * it the redaction would silently change text the user was told is sent as written.
+     */
+    allowToolNames?: boolean;
+  } = {},
 ): SafeAIRequest {
   const parsed = partsSchema.parse(parts);
   const options = { knownIdentifiers };
   const clean = (text: string): string => {
+    if (settings.allowToolNames === true) {
+      const redacted = redactCvPii(text, options).text;
+      const kinds = findCvPii(redacted, options);
+      if (kinds.length > 0) throw new PiiLeakError(kinds);
+      return redacted;
+    }
     const redacted = redactPii(text, options).text;
     assertNoPii(redacted, options);
     return redacted;
