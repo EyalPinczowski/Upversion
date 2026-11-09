@@ -31,6 +31,7 @@ const PURPOSE: AIPurpose = 'cv_tailor';
 const MAX_OUTPUT_TOKENS = 1500;
 const MAX_NOTES = 40;
 const MAX_NOTE_TEXT = 200;
+const MAX_FLAGS = 100;
 /** What the client can offer instead (ADR 016 section 3). */
 const FALLBACKS = ['keyword_list'];
 const CAP_FALLBACKS = ['keyword_list', 'copy_prompt'];
@@ -102,7 +103,7 @@ export function createCvTailorService(deps: CvTailorDeps) {
       if (kinds.length > 0) throw new PiiLeakError(kinds);
 
       // 3. The app-wide cap, counted in the database (all users, today, UTC).
-      const total = await usage.featureTotalToday(userId, PURPOSE);
+      const total = await usage.cvTailorTotalToday(userId);
       if (total >= deps.dailyTotal) {
         throw new HttpError(
           429,
@@ -212,7 +213,9 @@ export function createCvTailorService(deps: CvTailorDeps) {
       return {
         text: checked.text,
         notes: notes.slice(0, MAX_NOTES),
-        flags: checked.flags,
+        flags: checked.flags
+          .slice(0, MAX_FLAGS)
+          .map((f) => ({ kind: f.kind, text: f.text.slice(0, MAX_NOTE_TEXT) })),
         providers: sent.filter((id) => id !== '').map((id) => ({ id, label: labelOf(id) })),
         usage: { used, cap: deps.userCap },
       };

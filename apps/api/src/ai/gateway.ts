@@ -270,11 +270,10 @@ export function createAIGateway(deps: GatewayDeps): AIGateway {
         }
       }
 
-      // 3. The user's cap, in its own committed transaction.
-      if (userCap === 'reserve') {
-        const { ok } = await usage.reserveUser(userId, purpose, config.userCaps[purpose]);
-        if (!ok) throw new AIUserCapError(purpose);
-      }
+      // 3. The user's cap is reserved (own committed transaction) lazily, in the loop below, right
+      //    before the first provider that is really about to be tried, so a turn whose deadline
+      //    passed or whose providers were all skipped costs the user nothing.
+      let userReserved = userCap !== 'reserve';
 
       // 4. The providers, one attempt each, in order.
       const deadline = startedAt + config.turnTimeoutMs;
@@ -295,6 +294,12 @@ export function createAIGateway(deps: GatewayDeps): AIGateway {
         if (remaining <= 0) {
           attempts.push({ providerId: provider.id, outcome: 'turn_timeout' });
           break;
+        }
+
+        if (!userReserved) {
+          const { ok } = await usage.reserveUser(userId, purpose, config.userCaps[purpose]);
+          if (!ok) throw new AIUserCapError(purpose);
+          userReserved = true;
         }
 
         // The budget is reserved and committed BEFORE the call. A failed call still counts.

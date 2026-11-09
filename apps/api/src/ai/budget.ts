@@ -44,11 +44,11 @@ export interface AIUsageStore {
   /** Today's reserved calls per provider id, environment-wide (no user data). */
   providerUsage(userId: string): Promise<Record<string, number>>;
   /**
-   * Today's (UTC) reserved calls for one purpose summed over ALL users: the one number an
-   * app-wide cap needs. Read through a SECURITY DEFINER function (migration 0017) because RLS
-   * gives the app role only its own rows.
+   * Today's (UTC) reserved `cv_tailor` calls summed over ALL users: the one number the app-wide
+   * cap needs. Read through a SECURITY DEFINER function (migration 0017, fixed to that purpose)
+   * because RLS gives the app role only its own rows.
    */
-  featureTotalToday(userId: string, purpose: AIPurpose): Promise<number>;
+  cvTailorTotalToday(userId: string): Promise<number>;
 }
 
 /**
@@ -123,11 +123,10 @@ export function createAIUsageStore(db: Database, now: () => Date = () => new Dat
       });
     },
 
-    featureTotalToday(userId, purpose) {
+    cvTailorTotalToday(userId) {
       return db.withUser(userId, async (ctx) => {
         const { rows } = await ctx.client.query<{ n: string }>(
-          `select ${ctx.schema}.ai_feature_usage_today($1::text) as n`,
-          [purpose],
+          `select ${ctx.schema}.ai_cv_tailor_usage_today() as n`,
         );
         return Number(rows[0]?.n ?? 0);
       });
