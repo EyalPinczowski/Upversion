@@ -30,6 +30,9 @@ const SetupPage = lazy(() =>
   import('./pages/setup/SetupPage').then((m) => ({ default: m.SetupPage })),
 );
 
+const TailorCvPage = lazy(() =>
+  import('./pages/cv-tailor/TailorCvPage').then((m) => ({ default: m.TailorCvPage })),
+);
 const ChangeCvPage = lazy(() =>
   import('./pages/settings/ChangeCvPage').then((m) => ({ default: m.ChangeCvPage })),
 );
@@ -93,6 +96,14 @@ export function App({
                   />
                   <Route path="calendar/callback" element={<CalendarCallbackPage />} />
                   <Route path="settings" element={<SettingsPage appEnv={env.appEnv} />} />
+                  <Route
+                    path="settings/tailor-cv"
+                    element={
+                      <Suspense fallback={<Loading label="Loading…" />}>
+                        <TailorCvPage />
+                      </Suspense>
+                    }
+                  />
                   <Route
                     path="settings/cv"
                     element={

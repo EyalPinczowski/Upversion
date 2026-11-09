@@ -2,6 +2,7 @@ import { extractProfileFromText, type CvExtraction, type ProfileImport } from '@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router';
 import type { ProfileView } from '../../api/client';
+import { useCvTailorEnabled } from '../../api/ai-hooks';
 import { useImportProfile, useProfile } from '../../api/profile-hooks';
 import { cvTextSession } from '../../cv/cv-text-session';
 import { Loading, ServerProblem } from '../../components/status';
@@ -26,6 +27,7 @@ function replaceInfo(profile: ProfileView): ReplaceInfo {
 function Changer({ profile }: { profile: ProfileView }) {
   const navigate = useNavigate();
   const importProfile = useImportProfile();
+  const tailorOn = useCvTailorEnabled();
   const [step, setStep] = useState<Step>('pick');
   const [extraction, setExtraction] = useState<CvExtraction | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +115,14 @@ function Changer({ profile }: { profile: ProfileView }) {
         ? 'Review what we found'
         : 'CV saved';
 
+  const tailorLink = tailorOn ? (
+    <p>
+      <Link to="/settings/tailor-cv" className={linkClass}>
+        Tailor my CV to a job
+      </Link>
+    </p>
+  ) : null;
+
   return (
     <div className="space-y-6">
       <h1>Change my CV</h1>
@@ -152,6 +162,7 @@ function Changer({ profile }: { profile: ProfileView }) {
                 our server. Unticking the box, signing out, reloading or closing the tab removes it.
               </p>
             </div>
+            {tailorLink}
             <CvStep
               onText={readText}
               onSkip={cancel}
@@ -191,6 +202,7 @@ function Changer({ profile }: { profile: ProfileView }) {
               Your profile now matches your new CV. Skills you added yourself were not changed.
             </p>
             {keptNotice}
+            {tailorLink}
             <Link to="/settings" className={linkClass}>
               Back to Settings
             </Link>

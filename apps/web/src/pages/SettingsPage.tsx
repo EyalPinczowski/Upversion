@@ -12,6 +12,7 @@ import { LEGAL_PAGES } from '../lib/legal';
 import { AiUsageMeter } from './settings/AiUsageMeter';
 import { HelpSection } from './settings/HelpSection';
 import { ChangeCvSettings } from './settings/ChangeCvSettings';
+import { TailorCvSettings } from './settings/TailorCvSettings';
 import { SetupSettings } from './settings/SetupSettings';
 import { CalendarSettings } from './settings/CalendarSettings';
 import { useTheme, type ThemePreference } from '../lib/theme';
@@ -288,6 +289,7 @@ export function SettingsPage({ appEnv = 'operational' }: { appEnv?: AppEnv }) {
         <ProfileSection />
         <SetupSettings />
         <ChangeCvSettings />
+        <TailorCvSettings />
         <AppearanceSection />
         <AiUsageMeter />
         <HelpSection />
