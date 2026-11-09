@@ -20,10 +20,11 @@ import { cvTextSession } from '../../cv/cv-text-session';
 import { Loading, ServerProblem } from '../../components/status';
 import { Button, ErrorText, linkClass, TextAreaField } from '../../components/ui';
 import { CvStep } from '../setup/CvStep';
-import { countPlaceholders, HighlightedText } from './HighlightedText';
+import { HighlightedText } from './HighlightedText';
 import {
   aiAvailable,
   CHECK_LINE,
+  countPlaceholders,
   lengthProblems,
   NAME_WARNING,
   piiMessages,
@@ -230,14 +231,16 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
     } catch (error) {
       let rose = false;
       let resetsAt: string | undefined;
+      let used: number | undefined;
       try {
         const after = await usage.refetch();
-        rose = (after.data?.user.cvTailor.used ?? 0) > before;
+        used = after.data?.user.cvTailor.used;
+        rose = (used ?? 0) > before;
         resetsAt = after.data?.resetsAt;
       } catch {
         // The count is unknown: the message then claims nothing about what was sent.
       }
-      setProblem(tailorProblem(error, { countRose: rose, cap, resetsAt }));
+      setProblem(tailorProblem(error, { countRose: rose, cap, used, resetsAt }));
     } finally {
       sending.current = false;
     }

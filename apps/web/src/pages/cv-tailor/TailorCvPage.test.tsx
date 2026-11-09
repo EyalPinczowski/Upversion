@@ -151,7 +151,7 @@ describe('Tailor my CV: the flow and the privacy rules', () => {
     // Steps 1 to 3 made no tailoring request. The keyword list was computed on this device.
     expect(tailorCalls(api)).toHaveLength(0);
     expect(screen.getByText('In the post, not in your CV')).toBeVisible();
-    expect(screen.getByText('Tableau')).toBeVisible();
+    expect(screen.getByText(/^Python/)).toBeVisible();
 
     await click('Next: write a tailored version with AI');
     await screen.findByRole('heading', { name: 'Preview and send', level: 2 });
@@ -316,9 +316,32 @@ describe('Tailor my CV: the flow and the privacy rules', () => {
     // A placeholder remains: a warning and a Copy button that says so.
     expect(screen.getByRole('alert')).toHaveTextContent('1 [number?] placeholder still need');
     await click('Copy text anyway');
-    expect(await screen.findByText(/still need a real number/)).toBeVisible();
+    expect(await screen.findByRole('status')).toHaveTextContent(/still need a real number/);
     expect(await navigator.clipboard.readText()).toContain('Analyst with Excel');
     expect(screen.getByText(/1 of 3 used/)).toBeVisible();
+  });
+
+  it('does not break when a flag is cut short, missing from the text or full of regex characters', async () => {
+    install({
+      reply: () =>
+        json(
+          answer({
+            text: 'SUMMARY\nLed a team of (12 people) at a firm.',
+            flags: [
+              { kind: 'term', text: '(12 people' },
+              { kind: 'term', text: 'x'.repeat(200) },
+              { kind: 'term', text: '[unclosed' },
+            ],
+          }),
+        ),
+    });
+    await open();
+    await toStep4();
+    await tick();
+    await click('Send to AI');
+    await screen.findByRole('heading', { name: 'Result', level: 2 });
+    expect(screen.getByText('(12 people', { selector: 'mark' })).toBeVisible();
+    expect(screen.getByText(/Led a team of/)).toBeVisible();
   });
 
   it('has no placeholder warning when none remain', async () => {
@@ -429,7 +452,7 @@ describe('Tailor my CV: limits and accessibility', () => {
     await toStep2();
     await user.click(screen.getByRole('textbox', { name: 'The job post' }));
     await user.paste('word '.repeat(700));
-    expect(screen.getByText(/3,500 of 3,000 characters \(too long\)/)).toBeVisible();
+    expect(screen.getByText(/3,499 of 3,000 characters \(too long\)/)).toBeVisible();
     expect(screen.getByRole('button', { name: 'Next: keyword list' })).toBeDisabled();
   });
 

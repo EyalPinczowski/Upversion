@@ -12,6 +12,10 @@ export const CHECK_LINE =
   'Check every line. Only keep what is true. You may be asked about any of it in an interview.';
 export const PLACEHOLDER = '[number?]';
 
+export function countPlaceholders(text: string): number {
+  return text.split(PLACEHOLDER).length - 1;
+}
+
 export const NAME_WARNING =
   'Remove your name, home address and anyone else’s name before sending. The app removes emails, phone numbers and links, but it cannot recognise names or addresses.';
 
@@ -77,7 +81,7 @@ export interface TailorProblem {
  */
 export function tailorProblem(
   error: unknown,
-  ctx: { countRose: boolean; cap: number; resetsAt?: string },
+  ctx: { countRose: boolean; cap: number; used?: number; resetsAt?: string },
 ): TailorProblem {
   if (isApiError(error) && error.kind === 'http') {
     const { status, code } = error;
@@ -90,7 +94,9 @@ export function tailorProblem(
       return { message: 'The text is too long.', offer: 'edit' };
     if (status === 400)
       return { message: 'Something in the request was not accepted.', offer: 'edit' };
-    if (status === 429 && code === 'ai_user_cap') {
+    // The server answers 503 (not 429) to a user at the cap whose turn deadline has passed.
+    const atCap = ctx.used !== undefined && ctx.used >= ctx.cap;
+    if ((status === 429 && code === 'ai_user_cap') || (status === 503 && atCap)) {
       const d = ctx.resetsAt ? new Date(ctx.resetsAt) : null;
       const time =
         d && !Number.isNaN(d.getTime())

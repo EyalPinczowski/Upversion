@@ -15,6 +15,14 @@ describe('tailorProblem', () => {
       /may have reached Cloudflare/,
     );
   });
+  it('treats a 503 for a user already at the cap as the cap message', () => {
+    expect(tailorProblem(http(503, 'ai_unavailable'), { ...ctx, used: 3 }).message).toMatch(
+      /You used today’s 3 tailoring runs/,
+    );
+    expect(tailorProblem(http(503, 'ai_unavailable'), { ...ctx, used: 2 }).message).toMatch(
+      /not available right now/,
+    );
+  });
   it('never claims nothing was sent for unknown failures', () => {
     for (const e of [ApiError.network(), ApiError.timeout(), http(500, 'internal')]) {
       expect(tailorProblem(e, ctx).message).not.toMatch(/nothing was sent/i);

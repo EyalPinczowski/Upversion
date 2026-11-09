@@ -4,10 +4,6 @@ function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export function countPlaceholders(text: string): number {
-  return text.split(PLACEHOLDER).length - 1;
-}
-
 /**
  * The answer as plain text (never HTML). Flagged items and each `[number?]` are wrapped in
  * `<mark>`; they are also bold and underlined, so colour is not the only signal.
