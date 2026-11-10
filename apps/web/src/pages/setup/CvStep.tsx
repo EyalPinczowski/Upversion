@@ -12,6 +12,7 @@ export function CvStep({
   onSkip,
   skipLabel = 'Skip this step',
   intro,
+  pasteHint = 'Keep the line breaks. Nothing you paste is saved or sent.',
 }: {
   /** Receives the extracted or pasted text. The caller matches it and lets go of it. */
   onText: (text: string) => void;
@@ -20,6 +21,8 @@ export function CvStep({
   skipLabel?: string;
   /** Replaces the privacy paragraph (the wizard keeps its own text). */
   intro?: string;
+  /** Replaces the hint under the paste field (tailoring sends text later, after a preview). */
+  pasteHint?: string;
 }) {
   const ids = useId();
   const [busy, setBusy] = useState(false);
@@ -145,7 +148,7 @@ export function CvStep({
         <div className="space-y-3">
           <TextAreaField
             label="Paste the text of your CV"
-            hint="Keep the line breaks. Nothing you paste is saved or sent."
+            hint={pasteHint}
             rows={8}
             value={pasted}
             onChange={(e) => setPasted(e.target.value)}
