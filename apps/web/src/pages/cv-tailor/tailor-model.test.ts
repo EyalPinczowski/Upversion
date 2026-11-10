@@ -12,14 +12,18 @@ describe('tailorProblem', () => {
     expect(tailorProblem(http(503, 'ai_unavailable'), ctx).message).toMatch(
       /not available right now/,
     );
-    expect(tailorProblem(http(503, 'ai_unavailable'), { ...ctx, countRose: true }).message).toMatch(
-      /may have reached Cloudflare/,
-    );
+    expect(
+      tailorProblem(http(503, 'ai_unavailable'), {
+        ...ctx,
+        countRose: true,
+        receivers: ['Cloudflare Workers AI', 'Groq'],
+      }).message,
+    ).toMatch(/may have reached Cloudflare/);
   });
   it('a counted 503 is never the cap message, even when used has reached the cap', () => {
     const e = http(503, 'ai_unavailable');
-    const m = tailorProblem(e, { ...ctx, countRose: true, used: 3 }).message;
-    expect(m).toMatch(/may have reached Cloudflare/);
+    const m = tailorProblem(e, { ...ctx, countRose: true, used: 3, receivers: ['Groq'] }).message;
+    expect(m).toMatch(/may have reached Groq/);
     expect(m).not.toMatch(/You used today/);
   });
   it('an unreadable count claims nothing: not "nothing sent", not "not available"', () => {
@@ -32,10 +36,27 @@ describe('tailorProblem', () => {
     expect(tailorProblem(http(404, 'not_found'), ctx).message).toMatch(/switched off/);
     expect(tailorProblem(http(422, 'unprocessable'), ctx).message).toMatch(/character/);
   });
-  it('offers the keyword list and Copy prompt when AI cannot help', () => {
-    expect(tailorProblem(http(503, 'ai_unavailable'), ctx).offers).toEqual(['list', 'prompt']);
-    expect(tailorProblem(http(429, 'ai_user_cap'), ctx).offers).toEqual(['list', 'prompt']);
+  it('offers the keyword list when AI cannot help', () => {
+    expect(tailorProblem(http(503, 'ai_unavailable'), ctx).offers).toEqual(['list']);
+    expect(tailorProblem(http(429, 'ai_user_cap'), ctx).offers).toEqual(['list']);
     expect(tailorProblem(http(429, 'rate_limited'), ctx).offers).toEqual(['retry']);
+  });
+  it('names only the providers that can receive the text in the counted 503', () => {
+    const e = http(503, 'ai_unavailable');
+    const base = { ...ctx, countRose: true };
+    const groqOnly = tailorProblem(e, { ...base, receivers: ['Groq'] }).message;
+    expect(groqOnly).toMatch(/may have reached Groq, and this run counted/);
+    expect(groqOnly).not.toMatch(/Cloudflare/);
+    const both = tailorProblem(e, { ...base, receivers: ['Cloudflare Workers AI', 'Groq'] });
+    expect(both.message).toMatch(/Cloudflare Workers AI, and Groq if Cloudflare Workers AI failed/);
+    expect(tailorProblem(e, base).message).toMatch(/an AI provider/);
+  });
+  it('says the feature cap is the daily limit for everyone, not a minute wait', () => {
+    const m = tailorProblem(http(429, 'ai_feature_cap'), ctx).message;
+    expect(m).toMatch(/daily limit for everyone/);
+    expect(m).not.toMatch(/minute/);
+    expect(tailorProblem(http(429, 'ai_feature_cap'), ctx).offers).toEqual(['list']);
+    expect(tailorProblem(http(429, 'rate_limited'), ctx).message).toMatch(/minute/);
   });
   it('treats a 503 for a user already at the cap as the cap message', () => {
     expect(tailorProblem(http(503, 'ai_unavailable'), { ...ctx, used: 3 }).message).toMatch(

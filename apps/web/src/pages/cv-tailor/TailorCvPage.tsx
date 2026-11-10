@@ -119,6 +119,11 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
   const [sent, setSent] = useState<Sent | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [manual, setManual] = useState<string | null>(null);
+  // The usage data's timestamp when the count could not be read after a failure: while it is
+  // unchanged, the count on the page is stale and is labelled so.
+  const [unknownSince, setUnknownSince] = useState<number | null>(null);
+  const lastFailure = useRef<{ error: unknown; before: number; receivers: string[] } | null>(null);
+  const [checking, setChecking] = useState(false);
   const [fromTab, setFromTab] = useState(() => cvTextSession.has());
   const sending = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -141,6 +146,7 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
   const aiOn = aiAvailable(u);
   const receivers = recipients(u);
   const cap = u.user.cvTailor.cap;
+  const countUnknown = unknownSince !== null && usage.dataUpdatedAt === unknownSince;
   const capReached = u.user.cvTailor.used >= cap;
   const role = ROLES.find((r) => r.id === roleId);
 
@@ -217,6 +223,7 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
     setJobRaw('');
     setCvEdit('');
     setJobEdit('');
+    setRoleId('');
     setPrep(null);
     setSent(null);
     setProblem(null);
@@ -264,22 +271,25 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
     sending.current = true;
     setProblem(null);
     const before = usage.data?.user.cvTailor.used ?? 0;
+    const receiverLabels = receivers.map((r) => r.label);
     try {
       const result = await tailor.mutateAsync({
         cvText: cvEdit.trim(),
         jobText: jobEdit.trim(),
         ...(roleId ? { roleId } : {}),
       });
-      setSent({ result, cv: cvEdit, job: jobEdit });
+      setSent({ result, cv: cvEdit.trim(), job: jobEdit.trim() });
       go(5);
     } catch (error) {
       // null: the count could not be read, so the message claims nothing about what was sent.
       let rose: boolean | null = null;
       let resetsAt: string | undefined;
       let used: number | undefined;
+      let readAt = usage.dataUpdatedAt;
       try {
         // refetch() does not throw on failure: it returns the stale data with an error flag.
         const after = await usage.refetch();
+        readAt = after.dataUpdatedAt;
         if (!after.isError && !after.isRefetchError && after.data) {
           used = after.data.user.cvTailor.used;
           rose = used > before;
@@ -288,9 +298,39 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
       } catch {
         // Same: unknown.
       }
-      setProblem(tailorProblem(error, { countRose: rose, cap, used, resetsAt }));
+      lastFailure.current = { error, before, receivers: receiverLabels };
+      setUnknownSince(rose === null ? readAt : null);
+      setProblem(
+        tailorProblem(error, { countRose: rose, cap, used, resetsAt, receivers: receiverLabels }),
+      );
     } finally {
       sending.current = false;
+    }
+  }
+
+  /** Reads today's count again after a failure that left it unknown, and re-words the message. */
+  async function checkCount() {
+    const failure = lastFailure.current;
+    if (!failure || checking) return;
+    setChecking(true);
+    try {
+      const after = await usage.refetch();
+      if (after.isError || after.isRefetchError || !after.data) return;
+      const used = after.data.user.cvTailor.used;
+      setUnknownSince(null);
+      setProblem(
+        tailorProblem(failure.error, {
+          countRose: used > failure.before,
+          cap,
+          used,
+          resetsAt: after.data.resetsAt,
+          receivers: failure.receivers,
+        }),
+      );
+    } catch {
+      // Still unknown: the message and the stale label stay.
+    } finally {
+      setChecking(false);
     }
   }
 
@@ -564,7 +604,9 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
                 assistant’s terms.
               </p>
               <p className="text-muted">
-                Tailoring runs today: {u.user.cvTailor.used} of {cap} used.
+                {countUnknown
+                  ? 'Tailoring runs today: we could not read the count just now.'
+                  : `Tailoring runs today: ${u.user.cvTailor.used} of ${cap} used.`}
               </p>
             </div>
 
@@ -597,7 +639,11 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
                       ) : null}
                     </>
                   ) : null}
-                  {problem.offers.includes('retry') ? (
+                  {problem.offers.includes('retry') && countUnknown ? (
+                    <Button disabled={checking} onClick={() => void checkCount()}>
+                      Check count
+                    </Button>
+                  ) : problem.offers.includes('retry') ? (
                     <Button disabled={!canSend || tailor.isPending} onClick={() => void send()}>
                       Try again
                     </Button>

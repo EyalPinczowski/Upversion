@@ -95,7 +95,7 @@ function install(opts: Setup = {}) {
   return {
     api,
     setUsage: (u: typeof usage) => (usage = u),
-    failUsage: () => (usageFails = true),
+    failUsage: (on = true) => (usageFails = on),
   };
 }
 
@@ -420,7 +420,7 @@ describe('Tailor my CV: error states keep the text and say what still works', ()
       (setUsage) => setUsage({ used: 1 }),
     );
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Your text may have reached Cloudflare, and Groq if Cloudflare failed, and this run counted.',
+      'Your text may have reached Cloudflare Workers AI, and Groq if Cloudflare Workers AI failed, and this run counted.',
     );
   });
 
@@ -444,7 +444,60 @@ describe('Tailor my CV: error states keep the text and say what still works', ()
     expect(alert.textContent).not.toMatch(/not available right now|nothing was sent/i);
     // The failed background read must not replace the page or the text.
     expect((cvBox() as HTMLTextAreaElement).value).toBe(text);
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible();
+    // The count is stale: say so, and offer to read it again instead of sending again.
+    expect(screen.getByText(/we could not read the count just now/)).toBeVisible();
+    expect(screen.queryByText(/Tailoring runs today: 0 of 3/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Check count' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+  });
+
+  it('Check count reads the count again and re-words the message', async () => {
+    const { setUsage, failUsage } = install({ reply: () => apiError(503, 'ai_unavailable', 'x') });
+    await open();
+    await toStep4();
+    await tick();
+    failUsage();
+    await click('Send to AI');
+    await screen.findByRole('button', { name: 'Check count' });
+    // The count is readable again and the run did count.
+    failUsage(false);
+    setUsage({ used: 1 });
+    await click('Check count');
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('this run counted'));
+    expect(screen.getByText(/Tailoring runs today: 1 of 3 used/)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Check count' })).toBeNull();
+  });
+
+  it('names only Groq in the counted 503 when only Groq is available', async () => {
+    let posted = false;
+    installApi({
+      'GET /api/v1/me': () => json(meBody({ displayName: 'Dana Q Example' })),
+      'GET /api/v1/ai/usage': () => {
+        const u = usageBody({ used: posted ? 1 : 0 });
+        u.providers = u.providers.map((p) =>
+          p.id === 'cloudflare-ai' ? { ...p, available: false } : p,
+        );
+        return json(u);
+      },
+      [TAILOR]: () => {
+        posted = true;
+        return apiError(503, 'ai_unavailable', 'x');
+      },
+    });
+    await open();
+    await toStep4();
+    await tick();
+    await click('Send to AI');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('may have reached Groq, and this run counted');
+    expect(alert.textContent).not.toMatch(/Cloudflare/);
+  });
+
+  it('429 ai_feature_cap is the daily limit for everyone, with no wait of a minute', async () => {
+    await failWith(() => apiError(429, 'ai_feature_cap', 'x'));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('daily limit for everyone');
+    expect(alert.textContent).not.toMatch(/minute/);
   });
 
   it('offers the way back to the keyword list, Copy list and Copy prompt after a failure', async () => {
@@ -646,6 +699,43 @@ describe('Tailor my CV: what is sent and what is kept', () => {
     await click('Send to AI');
     await screen.findByRole('heading', { name: 'Result', level: 2 });
   }
+
+  it('shows the trimmed texts that were actually sent', async () => {
+    install();
+    await open();
+    await toStep4();
+    await user.type(
+      screen.getByRole('textbox', { name: 'The job post, as it will be sent' }),
+      '   ',
+    );
+    await tick();
+    await click('Send to AI');
+    await screen.findByRole('heading', { name: 'Result', level: 2 });
+    const job = screen
+      .getByRole('heading', { name: 'The job post that was sent' })
+      .closest('section')!
+      .querySelector('p')!;
+    expect(job.textContent).toBe(job.textContent!.trim());
+    expect(job.textContent!.length).toBeGreaterThan(50);
+  });
+
+  it('Forget my CV text also clears the chosen role', async () => {
+    install();
+    cvTextSession.set(CV_TEXT);
+    await open();
+    await click('Use the CV text from this tab');
+    await screen.findByRole('heading', { name: 'The job', level: 2 });
+    const pick = screen.getByRole('combobox', { name: /Target role/ }) as HTMLSelectElement;
+    await user.selectOptions(pick, pick.options[1]!.value);
+    expect(pick.value).not.toBe('');
+    cvTextSession.set(CV_TEXT);
+    await click('Back');
+    await click('Forget my CV text');
+    await toStep2();
+    expect((screen.getByRole('combobox', { name: /Target role/ }) as HTMLSelectElement).value).toBe(
+      '',
+    );
+  });
 
   it('shows the job post that was sent on the result', async () => {
     await toResult();

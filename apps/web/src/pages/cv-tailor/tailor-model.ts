@@ -82,11 +82,21 @@ export const PROVIDER_DATA_PAGE: Record<string, string> = {
 };
 
 /** What the person can do next after a failure (ADR 016 section 6). */
-export type Offer = 'list' | 'prompt' | 'retry';
+export type Offer = 'list' | 'retry';
 export interface TailorProblem {
   message: string;
-  /** `list`: back to the keyword list and copy it; `prompt`: Copy prompt; `retry`: send again. */
+  /**
+   * `list`: back to the keyword list and copy it; `retry`: send again (or check the count first).
+   * Copy prompt is a button the preview always has, so it is named in messages, not offered here.
+   */
   offers: readonly Offer[];
+}
+
+/** "Your text may have reached A, and B if A failed", from the providers that can receive it. */
+function mayHaveReached(receivers: readonly string[] = []): string {
+  const [first, second] = receivers;
+  if (!first) return 'Your text may have reached an AI provider';
+  return `Your text may have reached ${first}${second ? `, and ${second} if ${first} failed` : ''}`;
 }
 
 const CANT_TELL =
@@ -99,7 +109,14 @@ const CANT_TELL =
  */
 export function tailorProblem(
   error: unknown,
-  ctx: { countRose: boolean | null; cap: number; used?: number; resetsAt?: string },
+  ctx: {
+    countRose: boolean | null;
+    cap: number;
+    used?: number;
+    resetsAt?: string;
+    /** Labels of the providers that may have received the text, in gateway order. */
+    receivers?: readonly string[];
+  },
 ): TailorProblem {
   if (isApiError(error) && error.kind === 'http') {
     const { status, code } = error;
@@ -107,7 +124,7 @@ export function tailorProblem(
       return {
         message:
           'Tailoring is switched off on the server right now. Your keyword list still works.',
-        offers: ['list', 'prompt'],
+        offers: ['list'],
       };
     if (status === 422 && code === 'pii_blocked')
       return {
@@ -124,18 +141,23 @@ export function tailorProblem(
       };
     if (status === 400)
       return { message: 'Something in the request was not accepted.', offers: [] };
+    const d = ctx.resetsAt ? new Date(ctx.resetsAt) : null;
+    const time =
+      d && !Number.isNaN(d.getTime())
+        ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : 'midnight UTC';
     const capProblem = (): TailorProblem => {
-      const d = ctx.resetsAt ? new Date(ctx.resetsAt) : null;
-      const time =
-        d && !Number.isNaN(d.getTime())
-          ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : 'midnight UTC';
       return {
         message: `You used today’s ${ctx.cap} tailoring runs. They reset at ${time}. Your keyword list and Copy prompt still work.`,
-        offers: ['list', 'prompt'],
+        offers: ['list'],
       };
     };
     if (status === 429 && code === 'ai_user_cap') return capProblem();
+    if (status === 429 && code === 'ai_feature_cap')
+      return {
+        message: `Tailoring has reached its daily limit for everyone using the app. It resets at ${time}, so try again after that. Your keyword list and Copy prompt still work.`,
+        offers: ['list'],
+      };
     if (status === 429)
       return { message: 'Too many requests right now. Try again in a minute.', offers: ['retry'] };
     if (status === 503 && code === 'ai_unavailable') {
@@ -143,15 +165,14 @@ export function tailorProblem(
       if (ctx.countRose === null) return { message: CANT_TELL, offers: ['retry', 'list'] };
       if (ctx.countRose)
         return {
-          message:
-            'The AI did not answer. Your text may have reached Cloudflare, and Groq if Cloudflare failed, and this run counted. Your keyword list still works.',
-          offers: ['list', 'prompt'],
+          message: `The AI did not answer. ${mayHaveReached(ctx.receivers)}, and this run counted. Your keyword list still works.`,
+          offers: ['list'],
         };
       // The server answers 503 (not 429) to a user at the cap whose turn deadline has passed.
       if (ctx.used !== undefined && ctx.used >= ctx.cap) return capProblem();
       return {
         message: 'AI is not available right now. Your keyword list still works.',
-        offers: ['list', 'prompt'],
+        offers: ['list'],
       };
     }
   }
