@@ -289,3 +289,10 @@ Residual risk of undetected names and addresses: see section 9 (not answered sep
 - The app stays fully usable with AI off: Change my CV, the keyword list and "Copy prompt" need no model.
 - One new purpose (`cv_tailor`), one route, one flag, one migration that widens a check; no new table and no stored text.
 - ADR 015's "CV text never leaves the device" stays true for setup and import; the only exception is this one user-triggered route.
+
+## As built (web, WP-G2)
+- The page is at `/settings/tailor-cv` (not `/cv/tailor`), under Settings; Cancel on step 1 goes back to `/settings`. A server with `features.cvTailor` off redirects to `/settings`.
+- Files: `apps/web/src/pages/cv-tailor/{TailorCvPage.tsx,tailor-model.ts,HighlightedText.tsx}` and tests, not the per-step files listed above. The POST hook is `useCvTailor` in `apps/web/src/api/ai-hooks.ts`.
+- Errors read the day's run count again after a failure. If that read fails too, the page says it cannot tell whether the text was sent; it never says nothing was sent. A count that rose always means "may have reached the provider", even when the user is now at the cap.
+- Send is off, with the reason shown, when today's runs are used or no provider is available. Only available providers are named, each with a link to its data page; the Groq line shows only when Groq is one of them.
+- Editing either text after ticking the confirmation clears the tick. "Start again" and "Forget my CV text" also drop the mutation's answer and the page's copies of the texts and the result.

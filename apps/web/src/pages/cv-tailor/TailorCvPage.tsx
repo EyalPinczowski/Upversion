@@ -6,6 +6,7 @@ import {
   knownIdentifiersFor,
   MAX_CV_TAILOR_CV,
   MAX_CV_TAILOR_JOB,
+  MIN_CV_TAILOR_CV,
   MIN_CV_TAILOR_JOB,
   prepareCvForAi,
   prepareJobForAi,
@@ -13,7 +14,7 @@ import {
   type PreparedText,
 } from '@upversion/shared';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Link, Navigate } from 'react-router';
+import { Link, Navigate, useNavigate } from 'react-router';
 import { useAiUsage, useCvTailor, type CvTailorResult } from '../../api/ai-hooks';
 import { useMe } from '../../api/hooks';
 import { cvTextSession } from '../../cv/cv-text-session';
@@ -24,12 +25,14 @@ import { HighlightedText } from './HighlightedText';
 import {
   aiAvailable,
   CHECK_LINE,
+  CONFIRM_LABEL,
   countPlaceholders,
   lengthProblems,
   NAME_WARNING,
   piiMessages,
+  PROVIDER_DATA_PAGE,
+  recipients,
   tailorProblem,
-  tailorProviders,
   type TailorProblem,
 } from './tailor-model';
 
@@ -47,6 +50,7 @@ const ROLES = [...CATALOG_TAXONOMY.roles].sort((a, b) => a.title.localeCompare(b
 interface Sent {
   result: CvTailorResult;
   cv: string;
+  job: string;
 }
 
 function KeywordList({
@@ -100,6 +104,7 @@ function Counter({
 function Tailor({ identifiers }: { identifiers: string[] }) {
   const usage = useAiUsage();
   const tailor = useCvTailor();
+  const navigate = useNavigate();
   const ids = useId();
   const [step, setStep] = useState<Step>(1);
   // The only copies of the texts: component state, gone when the page closes. Never storage.
@@ -125,15 +130,23 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
     }
     headingRef.current?.focus();
   }, [step]);
+  // Drop the mutation's copy of the answer when the page closes.
+  const resetTailor = useRef(tailor.reset);
+  useEffect(() => {
+    resetTailor.current = tailor.reset;
+  });
+  useEffect(() => () => resetTailor.current(), []);
 
   const u = usage.data!;
   const aiOn = aiAvailable(u);
-  const providers = tailorProviders(u);
+  const receivers = recipients(u);
   const cap = u.user.cvTailor.cap;
+  const capReached = u.user.cvTailor.used >= cap;
   const role = ROLES.find((r) => r.id === roleId);
 
   const gaps = useMemo(
-    () => (step === 3 ? keywordGaps(cvRaw, jobRaw, { roleId: roleId || undefined }) : null),
+    () =>
+      step === 3 || step === 4 ? keywordGaps(cvRaw, jobRaw, { roleId: roleId || undefined }) : null,
     [step, cvRaw, jobRaw, roleId],
   );
 
@@ -146,9 +159,18 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
   const reasons = [
     ...piiMessages(piiKinds),
     ...lengths,
-    ...(confirmed ? [] : ['Tick “I removed my name and address”.']),
+    ...(confirmed ? [] : [`Tick “${CONFIRM_LABEL}”.`]),
   ];
   const textOk = piiKinds.length === 0 && lengths.length === 0 && confirmed;
+  const sendOff = !aiOn
+    ? 'AI is not available right now, so Send to AI is off.'
+    : capReached
+      ? `You used today’s ${cap} tailoring runs, so Send to AI is off until they reset.`
+      : null;
+  const canSend = textOk && sendOff === null;
+  const describedBy =
+    [!textOk ? `${ids}-why` : null, sendOff ? `${ids}-off` : null].filter(Boolean).join(' ') ||
+    undefined;
 
   function go(next: Step) {
     setNote(null);
@@ -182,13 +204,35 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
     setSent(null);
     setProblem(null);
     setConfirmed(false);
+    tailor.reset();
     go(1);
   }
 
+  /** Drops the tab's CV text and every copy this page holds: the texts, the sent text, the result. */
   function forgetCv() {
     cvTextSession.clear();
     setFromTab(false);
-    setNote('CV text removed from this tab');
+    tailor.reset();
+    setCvRaw('');
+    setJobRaw('');
+    setCvEdit('');
+    setJobEdit('');
+    setPrep(null);
+    setSent(null);
+    setProblem(null);
+    setConfirmed(false);
+    go(1);
+    setNote('CV text removed from this tab and from this page');
+  }
+
+  function editCv(text: string) {
+    setCvEdit(text);
+    setConfirmed(false);
+  }
+
+  function editJob(text: string) {
+    setJobEdit(text);
+    setConfirmed(false);
   }
 
   async function copy(text: string, done: string) {
@@ -216,7 +260,7 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
   }
 
   async function send() {
-    if (!textOk || !aiOn || sending.current) return;
+    if (!canSend || sending.current) return;
     sending.current = true;
     setProblem(null);
     const before = usage.data?.user.cvTailor.used ?? 0;
@@ -226,19 +270,23 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
         jobText: jobEdit.trim(),
         ...(roleId ? { roleId } : {}),
       });
-      setSent({ result, cv: cvEdit });
+      setSent({ result, cv: cvEdit, job: jobEdit });
       go(5);
     } catch (error) {
-      let rose = false;
+      // null: the count could not be read, so the message claims nothing about what was sent.
+      let rose: boolean | null = null;
       let resetsAt: string | undefined;
       let used: number | undefined;
       try {
+        // refetch() does not throw on failure: it returns the stale data with an error flag.
         const after = await usage.refetch();
-        used = after.data?.user.cvTailor.used;
-        rose = (used ?? 0) > before;
-        resetsAt = after.data?.resetsAt;
+        if (!after.isError && !after.isRefetchError && after.data) {
+          used = after.data.user.cvTailor.used;
+          rose = used > before;
+          resetsAt = after.data.resetsAt;
+        }
       } catch {
-        // The count is unknown: the message then claims nothing about what was sent.
+        // Same: unknown.
       }
       setProblem(tailorProblem(error, { countRose: rose, cap, used, resetsAt }));
     } finally {
@@ -291,7 +339,7 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
             {note ? <p role="status">{note}</p> : null}
             <CvStep
               onText={takeCv}
-              onSkip={() => window.history.back()}
+              onSkip={() => void navigate('/settings')}
               skipLabel="Cancel"
               intro="The file is read on this device only. Nothing leaves this device until you have seen the exact text on step 4 and pressed Send to AI. Nothing is saved."
               pasteHint="Keep the line breaks. Nothing you paste is saved. It is sent only if you press Send to AI on step 4."
@@ -429,7 +477,7 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
                 rows={14}
                 dir="auto"
                 value={cvEdit}
-                onChange={(e) => setCvEdit(e.target.value)}
+                onChange={(e) => editCv(e.target.value)}
                 aria-describedby={`${tabLabelCv}-count`}
                 autoComplete="off"
                 spellCheck={false}
@@ -438,7 +486,7 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
                 id={`${tabLabelCv}-count`}
                 value={cvEdit.trim().length}
                 max={MAX_CV_TAILOR_CV}
-                min={200}
+                min={MIN_CV_TAILOR_CV}
               />
             </div>
             <div className="space-y-1">
@@ -447,7 +495,7 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
                 rows={8}
                 dir="auto"
                 value={jobEdit}
-                onChange={(e) => setJobEdit(e.target.value)}
+                onChange={(e) => editJob(e.target.value)}
                 aria-describedby={`${tabLabelJob}-count2`}
                 autoComplete="off"
                 spellCheck={false}
@@ -475,17 +523,45 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
               />
-              I removed my name and address
+              {CONFIRM_LABEL}
             </label>
 
-            <div className="space-y-1">
+            <div className="space-y-2">
               <h3>Who receives the text</h3>
-              <p>
-                Send to AI sends exactly the two texts above to{' '}
-                <strong>{providers[0]!.label}</strong>. If that fails, it may then also go to{' '}
-                <strong>{providers[1]!.label}</strong> as a backup. No other provider is used. Copy
-                prompt sends nothing: where you paste it is your choice and your own assistant’s
-                terms.
+              {receivers.length > 0 ? (
+                <>
+                  <p>
+                    Send to AI sends exactly the two texts above to{' '}
+                    <strong>{receivers[0]!.label}</strong>.
+                    {receivers[1]
+                      ? ` If that fails after it received the text, it may then also go to ${receivers[1].label} as a backup.`
+                      : ''}{' '}
+                    No other provider is used.
+                  </p>
+                  <ul className="space-y-1">
+                    {receivers.map((r) => (
+                      <li key={r.id}>
+                        <a
+                          href={PROVIDER_DATA_PAGE[r.id]}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className={linkClass}
+                        >
+                          How {r.label} handles data
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                  {receivers.some((r) => r.id === 'groq') ? (
+                    <p>Groq is used with Zero Data Retention on.</p>
+                  ) : null}
+                </>
+              ) : (
+                <p>Send to AI is off, so no provider receives anything.</p>
+              )}
+              <p className="text-muted">
+                Copy prompt sends nothing: where you paste it is your choice and your own
+                assistant’s terms.
               </p>
               <p className="text-muted">
                 Tailoring runs today: {u.user.cvTailor.used} of {cap} used.
@@ -497,11 +573,38 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
                 Not ready: {reasons.join(' ')}
               </p>
             ) : null}
-            {!aiOn ? (
-              <p role="status">AI is not available right now, so Send to AI is off.</p>
+            {sendOff ? (
+              <p id={`${ids}-off`} className="font-bold">
+                {sendOff}
+              </p>
             ) : null}
             {tailor.isPending ? <p role="status">Sending… this can take up to a minute.</p> : null}
-            {problem ? <ErrorText>{problem.message}</ErrorText> : null}
+            {problem ? (
+              <div className="space-y-2">
+                <ErrorText>{problem.message}</ErrorText>
+                <div className="flex flex-wrap gap-3">
+                  {problem.offers.includes('list') ? (
+                    <>
+                      <Button onClick={() => go(3)} disabled={tailor.isPending}>
+                        Back to keyword list
+                      </Button>
+                      {gaps ? (
+                        <Button
+                          onClick={() => void copy(keywordText(gaps), 'Keyword list copied.')}
+                        >
+                          Copy list
+                        </Button>
+                      ) : null}
+                    </>
+                  ) : null}
+                  {problem.offers.includes('retry') ? (
+                    <Button disabled={!canSend || tailor.isPending} onClick={() => void send()}>
+                      Try again
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
             {note ? <p role="status">{note}</p> : null}
             {manual ? (
               <TextAreaField label="Prompt to copy" readOnly rows={8} dir="auto" value={manual} />
@@ -520,8 +623,8 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
               </Button>
               <Button
                 variant="primary"
-                disabled={!textOk || !aiOn || tailor.isPending}
-                aria-describedby={!textOk ? `${ids}-why` : undefined}
+                disabled={!canSend || tailor.isPending}
+                aria-describedby={describedBy}
                 onClick={() => void send()}
               >
                 Send to AI
@@ -561,6 +664,12 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
                 </p>
               </section>
             </div>
+            <section aria-labelledby={`${ids}-sentjob`} className="space-y-2">
+              <h3 id={`${ids}-sentjob`}>The job post that was sent</h3>
+              <p dir="auto" className="whitespace-pre-wrap break-words text-muted">
+                {sent.job}
+              </p>
+            </section>
             <section aria-labelledby={`${ids}-notes`} className="space-y-2">
               <h3 id={`${ids}-notes`}>Notes</h3>
               {sent.result.notes.length === 0 ? (
@@ -637,7 +746,8 @@ export function TailorCvPage() {
     [me.data],
   );
   if (usage.data && !usage.data.features.cvTailor) return <Navigate to="/settings" replace />;
-  const failed = usage.isError ? usage : me.isError ? me : null;
+  // A failed background refetch keeps the data: never replace the page (and the text) with an error.
+  const failed = usage.isError && !usage.data ? usage : me.isError && !me.data ? me : null;
   if (failed) return <ServerProblem error={failed.error} onRetry={() => void failed.refetch()} />;
   if (!usage.data || !me.data) return <Loading label="Loading…" />;
   return <Tailor identifiers={identifiers} />;

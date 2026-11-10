@@ -1,6 +1,7 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type * as AiHooks from '../../api/ai-hooks';
 import type { AiUsage, CvTailorResult } from '../../api/ai-hooks';
 import { cvTextSession } from '../../cv/cv-text-session';
 import { expectNoAxeViolations } from '../../test/axe';
@@ -15,6 +16,25 @@ import {
   SESSION,
 } from '../../test/helpers';
 import { restoreSideChannels, spyOnSideChannels, webStorageDump } from '../../test/privacy-harness';
+
+const resetSpy = vi.hoisted(() => vi.fn());
+// Wraps the real hook only to see that the page drops the mutation's copy of the answer.
+vi.mock('../../api/ai-hooks', async (original) => {
+  const real = await original<typeof AiHooks>();
+  return {
+    ...real,
+    useCvTailor: () => {
+      const t = real.useCvTailor();
+      return {
+        ...t,
+        reset: () => {
+          resetSpy();
+          t.reset();
+        },
+      };
+    },
+  };
+});
 
 const JOB =
   'We need an operations analyst who can build Excel reports and SQL queries, run project management for vendors, and use Python and Tableau to present results to the weekly review.';
@@ -65,12 +85,18 @@ interface Setup {
 
 function install(opts: Setup = {}) {
   let usage = opts.usage ?? {};
+  let usageFails = false;
   const api = installApi({
     'GET /api/v1/me': () => json(meBody({ displayName: 'Dana Q Example' })),
-    'GET /api/v1/ai/usage': () => json(usageBody(usage)),
+    'GET /api/v1/ai/usage': () =>
+      usageFails ? apiError(500, 'internal', 'x') : json(usageBody(usage)),
     [TAILOR]: (r) => (opts.reply ? opts.reply(r) : json(answer())),
   });
-  return { api, setUsage: (u: typeof usage) => (usage = u) };
+  return {
+    api,
+    setUsage: (u: typeof usage) => (usage = u),
+    failUsage: () => (usageFails = true),
+  };
 }
 
 const tailorCalls = (api: ReturnType<typeof install>['api']) =>
@@ -83,6 +109,7 @@ beforeEach(() => {
   window.sessionStorage.clear();
   cvTextSession.clear();
   user = userEvent.setup();
+  resetSpy.mockClear();
 });
 afterEach(() => {
   cvTextSession.clear();
@@ -122,8 +149,9 @@ async function toStep4() {
   await screen.findByRole('heading', { name: 'Preview and send', level: 2 });
 }
 
-const tick = () =>
-  user.click(screen.getByRole('checkbox', { name: 'I removed my name and address' }));
+const CONFIRM = 'I checked the text and removed my name and address';
+const tick = () => user.click(screen.getByRole('checkbox', { name: CONFIRM }));
+const box = () => screen.getByRole('checkbox', { name: CONFIRM }) as HTMLInputElement;
 const cvBox = () => screen.getByRole('textbox', { name: 'Your CV, as it will be sent' });
 
 describe('Tailor my CV: gate and entries', () => {
@@ -163,14 +191,18 @@ describe('Tailor my CV: the flow and the privacy rules', () => {
     // Blocked until the box is ticked, with the reason in words.
     const send = screen.getByRole('button', { name: 'Send to AI' });
     expect(send).toBeDisabled();
-    expect(screen.getByText(/Tick “I removed my name and address”/)).toBeVisible();
+    expect(
+      screen.getByText(/Tick “I checked the text and removed my name and address”/),
+    ).toBeVisible();
     await user.click(send);
     expect(tailorCalls(api)).toHaveLength(0);
 
     await tick();
     expect(send).toBeEnabled();
     // The providers are named before sending.
-    expect(screen.getByText(/Cloudflare Workers AI/)).toBeVisible();
+    expect(screen.getByText(/sends exactly the two texts above to/)).toHaveTextContent(
+      'Cloudflare Workers AI',
+    );
     await user.click(send);
     await screen.findByRole('heading', { name: 'Result', level: 2 });
 
@@ -220,6 +252,9 @@ describe('Tailor my CV: the flow and the privacy rules', () => {
 
     await user.clear(cvBox());
     await user.paste(CV_TEXT.split('\n').slice(5).join('\n'));
+    // Editing the text withdraws the person's confirmation: it has to be given again.
+    expect(send).toBeDisabled();
+    await tick();
     await waitFor(() => expect(send).toBeEnabled());
   });
 
@@ -359,14 +394,14 @@ describe('Tailor my CV: the flow and the privacy rules', () => {
 describe('Tailor my CV: error states keep the text and say what still works', () => {
   async function failWith(
     reply: Setup['reply'],
-    after?: (setUsage: ReturnType<typeof install>['setUsage']) => void,
+    after?: (setUsage: ReturnType<typeof install>['setUsage'], failUsage: () => void) => void,
   ) {
-    const { setUsage } = install({ reply });
+    const { setUsage, failUsage } = install({ reply });
     await open();
     await toStep4();
     await tick();
     const text = (cvBox() as HTMLTextAreaElement).value;
-    if (after) after(setUsage);
+    if (after) after(setUsage, failUsage);
     await click('Send to AI');
     return { text };
   }
@@ -389,6 +424,51 @@ describe('Tailor my CV: error states keep the text and say what still works', ()
     );
   });
 
+  it('503 with the count at the cap still says the text may have reached the providers', async () => {
+    await failWith(
+      () => apiError(503, 'ai_unavailable', 'x'),
+      (setUsage) => setUsage({ used: 3 }),
+    );
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('may have reached Cloudflare');
+    expect(alert.textContent).not.toMatch(/You used today/);
+  });
+
+  it('a failed count refetch says we cannot tell, never nothing was sent', async () => {
+    const { text } = await failWith(
+      () => apiError(503, 'ai_unavailable', 'x'),
+      (_setUsage, failUsage) => failUsage(),
+    );
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('can’t tell whether your text reached an AI provider');
+    expect(alert.textContent).not.toMatch(/not available right now|nothing was sent/i);
+    // The failed background read must not replace the page or the text.
+    expect((cvBox() as HTMLTextAreaElement).value).toBe(text);
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible();
+  });
+
+  it('offers the way back to the keyword list, Copy list and Copy prompt after a failure', async () => {
+    const { api } = install({ reply: () => apiError(503, 'ai_unavailable', 'x') });
+    await open();
+    await toStep4();
+    await tick();
+    await click('Send to AI');
+    await screen.findByRole('alert');
+    await click('Copy list');
+    expect(await screen.findByText('Keyword list copied.')).toBeVisible();
+    expect(await navigator.clipboard.readText()).toMatch(/In the job post, not in your CV/);
+    await click('Copy prompt');
+    expect(await screen.findByText(/Nothing was sent/)).toBeVisible();
+    expect(tailorCalls(api)).toHaveLength(1);
+    await click('Back to keyword list');
+    await screen.findByRole('heading', { name: 'Keyword list', level: 2 });
+  });
+
+  it('shows a specific message when the server has the feature switched off', async () => {
+    await failWith(() => apiError(404, 'not_found', 'x'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('switched off on the server');
+  });
+
   it('429 user cap names the cap and offers the keyword list', async () => {
     await failWith(() => apiError(429, 'ai_user_cap', 'x'));
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -399,6 +479,19 @@ describe('Tailor my CV: error states keep the text and say what still works', ()
   it('429 rate limit asks to try again in a minute', async () => {
     await failWith(() => apiError(429, 'rate_limited', 'x'));
     expect(await screen.findByRole('alert')).toHaveTextContent('Try again in a minute.');
+  });
+
+  it('un-ticks the checkbox when either text is edited, also after a 422', async () => {
+    await failWith(() => apiError(422, 'pii_blocked', 'x'));
+    await screen.findByRole('alert');
+    expect(box().checked).toBe(true);
+    await user.type(cvBox(), ' more');
+    expect(box().checked).toBe(false);
+    await tick();
+    expect(box().checked).toBe(true);
+    await user.type(screen.getByRole('textbox', { name: 'The job post, as it will be sent' }), 'x');
+    expect(box().checked).toBe(false);
+    expect(screen.getByRole('button', { name: 'Send to AI' })).toBeDisabled();
   });
 
   it('422 pii_blocked keeps the text on the preview', async () => {
@@ -443,6 +536,158 @@ describe('Tailor my CV: error states keep the text and say what still works', ()
     release();
     await screen.findByRole('heading', { name: 'Result', level: 2 });
   });
+});
+
+describe('Tailor my CV: what is sent and what is kept', () => {
+  it('posts exactly the trimmed previewed texts', async () => {
+    const { api } = install();
+    await open();
+    await toStep4();
+    const jobBox = screen.getByRole('textbox', { name: 'The job post, as it will be sent' });
+    await user.type(cvBox(), '\n\n   ');
+    await user.type(jobBox, '   \n');
+    await tick();
+    const cv = (cvBox() as HTMLTextAreaElement).value;
+    const job = (jobBox as HTMLTextAreaElement).value;
+    expect(cv).not.toBe(cv.trim());
+    expect(job).not.toBe(job.trim());
+    await click('Send to AI');
+    await screen.findByRole('heading', { name: 'Result', level: 2 });
+    const body = JSON.parse(await tailorCalls(api)[0]!.clone().text()) as Record<string, string>;
+    expect(body.cvText).toBe(cv.trim());
+    expect(body.jobText).toBe(job.trim());
+  });
+
+  it('the in-flight guard alone stops a second send in the same tick', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => (release = r));
+    const { api } = install({
+      reply: async () => {
+        await gate;
+        return json(answer());
+      },
+    });
+    await open();
+    await toStep4();
+    await tick();
+    const send = screen.getByRole('button', { name: 'Send to AI' });
+    // Two native clicks before React re-renders: the button is not disabled yet.
+    act(() => {
+      send.click();
+      send.click();
+    });
+    await waitFor(() => expect(tailorCalls(api)).toHaveLength(1));
+    release();
+    await screen.findByRole('heading', { name: 'Result', level: 2 });
+    expect(tailorCalls(api)).toHaveLength(1);
+  });
+
+  it('names the providers with their data pages and the Groq line, only those available', async () => {
+    install();
+    await open();
+    await toStep4();
+    const cf = screen.getByRole('link', { name: 'How Cloudflare Workers AI handles data' });
+    expect(cf).toHaveAttribute(
+      'href',
+      'https://developers.cloudflare.com/workers-ai/platform/data-usage/',
+    );
+    const groq = screen.getByRole('link', { name: 'How Groq handles data' });
+    expect(groq).toHaveAttribute('href', 'https://console.groq.com/docs/your-data');
+    expect(screen.getByText('Groq is used with Zero Data Retention on.')).toBeVisible();
+    expect(screen.getByText(/it may then also go to Groq as a backup/)).toBeVisible();
+  });
+
+  it('names no provider that is not available', async () => {
+    const api = installApi({
+      'GET /api/v1/me': () => json(meBody({ displayName: 'Dana Q Example' })),
+      'GET /api/v1/ai/usage': () => {
+        const u = usageBody();
+        u.providers = u.providers.map((p) => (p.id === 'groq' ? { ...p, available: false } : p));
+        return json(u);
+      },
+      [TAILOR]: () => json(answer()),
+    });
+    expect(api).toBeTruthy();
+    await open();
+    await toStep4();
+    expect(screen.queryByRole('link', { name: /Groq/ })).toBeNull();
+    expect(screen.queryByText(/Groq/)).toBeNull();
+    expect(screen.getByRole('link', { name: /Cloudflare/ })).toBeVisible();
+  });
+
+  it('turns Send off with a stated reason when today’s runs are used', async () => {
+    const { api } = install({ usage: { used: 3 } });
+    await open();
+    await toStep4();
+    await tick();
+    const send = screen.getByRole('button', { name: 'Send to AI' });
+    expect(send).toBeDisabled();
+    expect(
+      screen.getByText(/You used today’s 3 tailoring runs, so Send to AI is off/),
+    ).toBeVisible();
+    await user.click(send);
+    expect(tailorCalls(api)).toHaveLength(0);
+  });
+
+  it('states why Send is off when AI is unavailable', async () => {
+    install({ usage: { ai: false } });
+    await open();
+    await toStep3();
+    await click('Copy prompt');
+    await screen.findByRole('heading', { name: 'Preview and send', level: 2 });
+    expect(screen.getByText('AI is not available right now, so Send to AI is off.')).toBeVisible();
+  });
+
+  async function toResult() {
+    install();
+    await open();
+    await toStep4();
+    await tick();
+    await click('Send to AI');
+    await screen.findByRole('heading', { name: 'Result', level: 2 });
+  }
+
+  it('shows the job post that was sent on the result', async () => {
+    await toResult();
+    expect(screen.getByRole('heading', { name: 'The job post that was sent' })).toBeVisible();
+  });
+
+  it('Start again drops the answer and the texts', async () => {
+    await toResult();
+    resetSpy.mockClear();
+    await click('Start again');
+    expect(resetSpy).toHaveBeenCalled();
+    expect(screen.queryByText(/Analyst with Excel and SQL/)).toBeNull();
+    expect(document.body.textContent).not.toContain('CANARY');
+  });
+
+  it('Forget my CV text drops the result, the sent text and the page’s copies', async () => {
+    await toResult();
+    resetSpy.mockClear();
+    await click('Forget my CV text');
+    expect(resetSpy).toHaveBeenCalled();
+    expect(screen.getByRole('heading', { name: 'Your CV', level: 2 })).toBeVisible();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'removed from this tab and from this page',
+    );
+    expect(document.body.textContent).not.toContain('CANARY');
+    expect(document.body.textContent).not.toContain('Analyst with Excel');
+    expect(cvTextSession.has()).toBe(false);
+  });
+
+  it('drops the mutation’s copy of the answer when the page closes', async () => {
+    const view = await toStep4Mounted();
+    resetSpy.mockClear();
+    view.unmount();
+    expect(resetSpy).toHaveBeenCalled();
+  });
+
+  async function toStep4Mounted() {
+    install();
+    const view = await open();
+    await toStep4();
+    return view;
+  }
 });
 
 describe('Tailor my CV: limits and accessibility', () => {

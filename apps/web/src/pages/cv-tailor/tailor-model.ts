@@ -11,6 +11,7 @@ import { isApiError } from '../../api/errors';
 export const CHECK_LINE =
   'Check every line. Only keep what is true. You may be asked about any of it in an interview.';
 export const PLACEHOLDER = '[number?]';
+export const CONFIRM_LABEL = 'I checked the text and removed my name and address';
 
 export function countPlaceholders(text: string): number {
   return text.split(PLACEHOLDER).length - 1;
@@ -65,38 +66,65 @@ export function tailorProviders(usage: AiUsage): ProviderInfo[] {
   });
 }
 
-export function aiAvailable(usage: AiUsage): boolean {
-  return usage.configured && tailorProviders(usage).some((p) => p.available);
+/** Providers that may receive the text right now, in the order the gateway tries them. */
+export function recipients(usage: AiUsage): ProviderInfo[] {
+  return usage.configured ? tailorProviders(usage).filter((p) => p.available) : [];
 }
 
-export type ErrorOffer = 'retry' | 'list' | 'edit';
+export function aiAvailable(usage: AiUsage): boolean {
+  return recipients(usage).length > 0;
+}
+
+/** Each provider's own page on how it handles the data (docs/setup/ai-providers.md, verified). */
+export const PROVIDER_DATA_PAGE: Record<string, string> = {
+  'cloudflare-ai': 'https://developers.cloudflare.com/workers-ai/platform/data-usage/',
+  groq: 'https://console.groq.com/docs/your-data',
+};
+
+/** What the person can do next after a failure (ADR 016 section 6). */
+export type Offer = 'list' | 'prompt' | 'retry';
 export interface TailorProblem {
   message: string;
-  offer: ErrorOffer;
+  /** `list`: back to the keyword list and copy it; `prompt`: Copy prompt; `retry`: send again. */
+  offers: readonly Offer[];
 }
+
+const CANT_TELL =
+  'We did not get an answer, so we can’t tell whether your text reached an AI provider. Check today’s count before trying again.';
 
 /**
  * Plain-text message for a failed tailoring call (ADR 016 section 6). `countRose` says whether
- * today's run count went up during the request: it does only when a provider was attempted.
+ * today's run count went up during the request (it does only when a provider was attempted), or
+ * `null` when the count could not be read afterwards: then nothing is claimed about what was sent.
  */
 export function tailorProblem(
   error: unknown,
-  ctx: { countRose: boolean; cap: number; used?: number; resetsAt?: string },
+  ctx: { countRose: boolean | null; cap: number; used?: number; resetsAt?: string },
 ): TailorProblem {
   if (isApiError(error) && error.kind === 'http') {
     const { status, code } = error;
+    if (status === 404)
+      return {
+        message:
+          'Tailoring is switched off on the server right now. Your keyword list still works.',
+        offers: ['list', 'prompt'],
+      };
     if (status === 422 && code === 'pii_blocked')
       return {
         message: 'The server found personal details in the text. Remove them and send again.',
-        offer: 'edit',
+        offers: [],
       };
     if (status === 422 && code === 'too_long')
-      return { message: 'The text is too long.', offer: 'edit' };
+      return { message: 'The text is too long.', offers: [] };
+    if (status === 422)
+      return {
+        message:
+          'The text has a character the server cannot accept. Remove unusual characters and send again.',
+        offers: [],
+      };
     if (status === 400)
-      return { message: 'Something in the request was not accepted.', offer: 'edit' };
-    // The server answers 503 (not 429) to a user at the cap whose turn deadline has passed.
-    const atCap = ctx.used !== undefined && ctx.used >= ctx.cap;
-    if ((status === 429 && code === 'ai_user_cap') || (status === 503 && atCap)) {
+      return { message: 'Something in the request was not accepted.', offers: [] };
+    const capProblem = (): TailorProblem => {
       const d = ctx.resetsAt ? new Date(ctx.resetsAt) : null;
       const time =
         d && !Number.isNaN(d.getTime())
@@ -104,27 +132,28 @@ export function tailorProblem(
           : 'midnight UTC';
       return {
         message: `You used today’s ${ctx.cap} tailoring runs. They reset at ${time}. Your keyword list and Copy prompt still work.`,
-        offer: 'list',
+        offers: ['list', 'prompt'],
+      };
+    };
+    if (status === 429 && code === 'ai_user_cap') return capProblem();
+    if (status === 429)
+      return { message: 'Too many requests right now. Try again in a minute.', offers: ['retry'] };
+    if (status === 503 && code === 'ai_unavailable') {
+      // The count can only have risen if a provider was attempted: that always wins.
+      if (ctx.countRose === null) return { message: CANT_TELL, offers: ['retry', 'list'] };
+      if (ctx.countRose)
+        return {
+          message:
+            'The AI did not answer. Your text may have reached Cloudflare, and Groq if Cloudflare failed, and this run counted. Your keyword list still works.',
+          offers: ['list', 'prompt'],
+        };
+      // The server answers 503 (not 429) to a user at the cap whose turn deadline has passed.
+      if (ctx.used !== undefined && ctx.used >= ctx.cap) return capProblem();
+      return {
+        message: 'AI is not available right now. Your keyword list still works.',
+        offers: ['list', 'prompt'],
       };
     }
-    if (status === 429)
-      return { message: 'Too many requests right now. Try again in a minute.', offer: 'retry' };
-    if (status === 503 && code === 'ai_unavailable') {
-      return ctx.countRose
-        ? {
-            message:
-              'The AI did not answer. Your text may have reached Cloudflare, and Groq if Cloudflare failed, and this run counted. Your keyword list still works.',
-            offer: 'list',
-          }
-        : {
-            message: 'AI is not available right now. Your keyword list still works.',
-            offer: 'list',
-          };
-    }
   }
-  return {
-    message:
-      'We did not get an answer, so we can’t tell whether your text reached an AI provider. Check today’s count before trying again.',
-    offer: 'retry',
-  };
+  return { message: CANT_TELL, offers: ['retry', 'list'] };
 }
