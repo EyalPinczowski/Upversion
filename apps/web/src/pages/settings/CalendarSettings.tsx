@@ -181,8 +181,8 @@ function Connected({ status }: { status: CalendarStatus }) {
 }
 
 /**
- * Settings > Calendar (spec 3.8). Renders nothing at all when the server has the feature off
- * (the status answers 404), so the section never shows up half-working.
+ * Settings > Calendar (spec 3.8). Renders nothing when the server has the feature off (the
+ * status answers 404); the Settings page then shows a plain "not available yet" line instead.
  */
 export function CalendarSettings() {
   const query = useCalendarStatus();

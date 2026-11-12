@@ -566,9 +566,12 @@ export const MAX_TERMS_PER_SKILL = 3;
 class TermCounter {
   private readonly seen = new Map<string, { text: string; count: number }>();
 
-  /** `raw` is the matched span as written. Whitespace is collapsed; case is kept. */
+  /** `raw` is the matched span as written. Invisible format characters (bidi overrides) are removed, whitespace is collapsed; case is kept. */
   add(raw: string): void {
-    const text = raw.replace(/\s+/gu, ' ').trim();
+    const text = raw
+      .replace(/\p{Cf}/gu, '')
+      .replace(/\s+/gu, ' ')
+      .trim();
     if (text === '' || text.length > MAX_TERM_LENGTH) return;
     const key = text.toLowerCase();
     const prev = this.seen.get(key);

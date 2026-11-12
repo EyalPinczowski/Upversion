@@ -107,15 +107,24 @@ describe("keywordGaps terms (the texts' own wording)", () => {
   });
 
   it('collapses duplicates case-insensitively, most frequent first, capped at three', () => {
-    const job = 'dbt dbt DBT data build tool\ndata build tool\ndata build tool';
+    const job = 'dbt dbt\ndata build tool\nDATA build tool\ndata build tool\ndata build tool';
     const hit = matchSkillsInText(job, { taxonomy: tax }).find((h) => h.skillId === 'dbt')!;
-    expect(hit.terms).toEqual(['dbt', 'data build tool']);
+    expect(hit.terms).toEqual(['data build tool', 'dbt']);
     const many: MatchTaxonomy = {
       skills: [{ id: 'x', name: 'X', keywords: ['aa1', 'bb2', 'cc3', 'dd4', 'ee5'] }],
       roles: [],
     };
     const capped = matchSkillsInText('aa1 bb2 cc3 dd4 ee5', { taxonomy: many })[0]!;
     expect(capped.terms).toHaveLength(3);
+  });
+
+  it('removes invisible format characters such as bidi overrides from terms', () => {
+    const t: MatchTaxonomy = {
+      skills: [{ id: 'k', name: 'K', keywords: ['alpha beta'] }],
+      roles: [],
+    };
+    const hit = matchSkillsInText('alpha\u202E beta', { taxonomy: t })[0]!;
+    expect(hit.terms).toEqual(['alpha beta']);
   });
 
   it('collapses whitespace inside a term and skips terms longer than the cap', () => {
@@ -136,10 +145,9 @@ describe("keywordGaps terms (the texts' own wording)", () => {
     const only = run('Experience\nx', 'jane@example.com jane@example.com').missing.find(
       (i) => i.skillId === 'mail',
     );
-    if (only) {
-      expect(only.terms).toEqual([]);
-      expect(only.label).toBe('Mail tools');
-    }
+    expect(only).toBeDefined();
+    expect(only!.terms).toEqual([]);
+    expect(only!.label).toBe('Mail tools');
   });
 
   it('has no terms for a skill that comes only from the picked role', () => {
