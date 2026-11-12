@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { redirectTo } from '../lib/navigate';
-import { unwrap } from './client';
+import { recordCalendarUpdate } from '../calendar/auto-sync-state';
+import { unwrap, type ApiClient } from './client';
 import { useApi } from './context';
 import { isApiError } from './errors';
 import type { paths } from './schema';
@@ -97,17 +98,33 @@ export function useFinishCalendarConnect() {
   });
 }
 
+export const calendarSyncKey = [...calendarKey, 'sync'] as const;
+
+/** One sync call. Only the manual "Sync now" asks for `force`; automatic runs never do. */
+export const requestCalendarSync = (api: ApiClient, force: boolean): Promise<CalendarSyncResult> =>
+  unwrap(api.raw.POST('/api/v1/calendar/sync', { body: force ? { force: true } : null }));
+
+/** What a finished sync means for the screen: refresh the plan when the calendar changed it. */
+export function applyCalendarSync(
+  queryClient: QueryClient,
+  result: CalendarSyncResult | undefined,
+) {
+  // A sync can move tasks, so what the plan shows may be stale.
+  if (result && (result.movedTaskIds.length > 0 || result.finishChanged)) {
+    void queryClient.invalidateQueries();
+  } else void queryClient.invalidateQueries({ queryKey: calendarKey });
+  if (result) recordCalendarUpdate(result.syncedAt ?? new Date().toISOString());
+}
+
 export function useSyncCalendar() {
   const api = useApi();
   const queryClient = useQueryClient();
   return useMutation({
     ...mutationDefaults,
-    mutationFn: () => unwrap(api.raw.POST('/api/v1/calendar/sync', { body: null })),
-    onSettled: (result) => {
-      // A sync can move tasks, so what the plan shows may be stale.
-      if (result && result.movedTaskIds.length > 0) void queryClient.invalidateQueries();
-      else void queryClient.invalidateQueries({ queryKey: calendarKey });
-    },
+    mutationKey: calendarSyncKey,
+    mutationFn: (options?: { force?: boolean }) =>
+      requestCalendarSync(api, options?.force === true),
+    onSettled: (result) => applyCalendarSync(queryClient, result),
   });
 }
 

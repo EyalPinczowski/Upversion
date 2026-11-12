@@ -1,31 +1,24 @@
-import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router';
-import { useCalendarStatus, useSyncCalendar } from '../api/calendar-hooks';
+import { useCalendarStatus } from '../api/calendar-hooks';
+import { useAuth } from '../auth/AuthProvider';
+import { useAutoCalendarSync } from '../calendar/useAutoCalendarSync';
 import { ConnectButton } from '../pages/settings/CalendarSettings';
 import { AlertIcon } from './icons';
 
 /**
  * Two small jobs for the optional calendar link, both silent when the feature is off (the status
  * answers 404) or when nothing is connected:
- * - once per session, when the status says "connected", ask for a sync (fire and forget; a failure
- *   changes nothing and shows nothing, the schedule never depends on the calendar);
+ * - keep the calendar up to date while the app is open (`useAutoCalendarSync`; a failure changes
+ *   nothing and shows nothing, the schedule never depends on the calendar);
  * - show the "Reconnect calendar" banner when Google no longer accepts the connection. The app
  *   keeps working on its own data meanwhile.
  */
 export function CalendarWatcher() {
+  const { state: auth } = useAuth();
   const status = useCalendarStatus();
-  const sync = useSyncCalendar();
-  const synced = useRef(false);
   const state = status.data?.status;
   const { pathname } = useLocation();
-
-  useEffect(() => {
-    if (state !== 'connected' || synced.current) return;
-    synced.current = true;
-    sync.mutate(undefined, { onError: () => undefined });
-    // `sync.mutate` is stable; the ref makes this once per session.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
+  useAutoCalendarSync(auth.status === 'signedIn' ? auth.session.userId : '');
 
   // Those two pages carry the same controls themselves.
   if (

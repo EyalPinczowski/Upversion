@@ -1,6 +1,6 @@
 import createClient from 'openapi-fetch';
 import { combineSignals, REQUEST_TIMEOUT_MS } from '../lib/abort';
-import { ApiError } from './errors';
+import { ApiError, retryAfterMs } from './errors';
 import type { paths } from './schema';
 
 export type Me = paths['/api/v1/me']['get']['responses'][200]['content']['application/json'];
@@ -59,7 +59,11 @@ type Result<T> = { data?: T; error?: unknown; response: Response };
 /** Turns an openapi-fetch result into the data, or throws the one ApiError shape. */
 export async function unwrap<T>(pending: Promise<Result<T>>): Promise<T> {
   const { data, error, response } = await pending;
-  if (!response.ok) throw ApiError.fromBody(response.status, error);
+  if (!response.ok) {
+    const failure = ApiError.fromBody(response.status, error);
+    failure.retryAfterMs = retryAfterMs(response.headers.get('retry-after'));
+    throw failure;
+  }
   return data as T;
 }
 

@@ -171,6 +171,21 @@ describe('calendar settings', () => {
     );
   });
 
+  it('with auto-update off nothing syncs by itself, and Sync now still works and forces', async () => {
+    window.localStorage.setItem(`upversion.calendar-auto-sync.${SESSION.userId}`, 'off');
+    const api = open(CONNECTED);
+    const user = userEvent.setup();
+    const section = within(await region());
+    expect(
+      section.getByRole('checkbox', { name: 'Update my calendar automatically' }),
+    ).not.toBeChecked();
+    expect(api.count('POST /api/v1/calendar/sync')).toBe(0);
+    await user.click(section.getByRole('button', { name: 'Sync now' }));
+    await waitFor(() => expect(api.count('POST /api/v1/calendar/sync')).toBe(1));
+    const call = api.calls.find((c) => c.url.endsWith('/calendar/sync'));
+    expect(await bodyOf(call)).toEqual({ force: true });
+  });
+
   it('saving a calendar choice sends the whole list with PUT', async () => {
     let body: unknown;
     const api = open(CONNECTED, {
@@ -234,6 +249,23 @@ describe('calendar settings', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
+  it('shows the automatic-update checkbox (default on, per device) and its honest limit', async () => {
+    open(CONNECTED);
+    const section = within(await region());
+    const box = section.getByRole('checkbox', { name: 'Update my calendar automatically' });
+    expect(box).toBeChecked();
+    expect(
+      section.getByText(/updates about every 5 minutes while Upversion is open in a browser tab/),
+    ).toBeInTheDocument();
+    expect(section.getByText(/cannot update when the app is closed/)).toBeInTheDocument();
+    expect(section.getByText(/saved on this device only/)).toBeInTheDocument();
+    await userEvent.setup().click(box);
+    expect(box).not.toBeChecked();
+    expect(window.localStorage.getItem(`upversion.calendar-auto-sync.${SESSION.userId}`)).toBe(
+      'off',
+    );
+  });
+
   it('has no accessibility violations when connected', async () => {
     open(CONNECTED);
     await region();
@@ -251,7 +283,7 @@ describe('calendar on app open', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('syncs only once per session even when the status changes and comes back', async () => {
+  it('syncs again when the connection comes back, but not while it needs reconnecting', async () => {
     const answers = [CONNECTED, { ...CONNECTED, status: 'needs_reconnect' as const }, CONNECTED];
     let n = 0;
     const api = open(CONNECTED, {
@@ -268,8 +300,7 @@ describe('calendar on app open', () => {
     );
     // Disconnect refetches the status: connected again.
     await section.findByText(/Connected\./);
-    expect(api.count('GET /api/v1/calendar')).toBe(3);
-    expect(api.count('POST /api/v1/calendar/sync')).toBe(1);
+    await waitFor(() => expect(api.count('POST /api/v1/calendar/sync')).toBe(2));
   });
 
   it('does not sync when disconnected', async () => {
