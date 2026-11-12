@@ -11,6 +11,9 @@ import { isApiError } from '../../api/errors';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Button, ErrorText } from '../../components/ui';
 import { clearSetupReturn, rememberSetupReturn } from '../../lib/setup-return';
+import { useAuth } from '../../auth/AuthProvider';
+import { useAutoSyncEnabled } from '../../calendar/auto-sync-state';
+import { CalendarUpdatedStatus } from '../../calendar/CalendarUpdatedStatus';
 import { lastErrorText, STATUS_TEXT } from './calendar-text';
 
 const TITLE_ID = 'calendar-heading';
@@ -123,6 +126,30 @@ function Sources({ status }: { status: CalendarStatus }) {
   );
 }
 
+function AutoSync() {
+  const { state } = useAuth();
+  const userId = state.status === 'signedIn' ? state.session.userId : '';
+  const [enabled, setEnabled] = useAutoSyncEnabled(userId);
+  return (
+    <div className="space-y-1">
+      <label className="flex min-h-11 items-center gap-3">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(event) => setEnabled(event.target.checked)}
+          aria-describedby="auto-sync-help"
+          className="size-5 accent-accent"
+        />
+        <span>Update my calendar automatically</span>
+      </label>
+      <p id="auto-sync-help" className="text-muted">
+        The calendar updates about every 5 minutes while Upversion is open in a browser tab. It
+        cannot update when the app is closed. This choice is saved on this device only.
+      </p>
+    </div>
+  );
+}
+
 function Connected({ status }: { status: CalendarStatus }) {
   const sync = useSyncCalendar();
   const disconnect = useDisconnectCalendar();
@@ -132,7 +159,7 @@ function Connected({ status }: { status: CalendarStatus }) {
     <>
       <div className="flex flex-wrap gap-3">
         {status.status === 'connected' ? (
-          <Button onClick={() => sync.mutate()} disabled={sync.isPending}>
+          <Button onClick={() => sync.mutate({ force: true })} disabled={sync.isPending}>
             {sync.isPending ? 'Syncing…' : 'Sync now'}
           </Button>
         ) : null}
@@ -151,15 +178,22 @@ function Connected({ status }: { status: CalendarStatus }) {
         ) : null}
       </div>
       {sync.error ? (
-        <ErrorText>
-          {problem(sync.error, 'The sync did not finish. Your plan was not changed.')}
-        </ErrorText>
+        isApiError(sync.error) &&
+        sync.error.status === 409 &&
+        sync.error.code === 'sync_in_progress' ? (
+          <p className="text-muted">Already updating, try again in a moment.</p>
+        ) : (
+          <ErrorText>
+            {problem(sync.error, 'The sync did not finish. Your plan was not changed.')}
+          </ErrorText>
+        )
       ) : null}
       {disconnect.error ? (
         <ErrorText>
           {problem(disconnect.error, 'We couldn’t disconnect. Nothing was changed. Try again.')}
         </ErrorText>
       ) : null}
+      <AutoSync />
       <Sources status={status} />
       {confirming ? (
         <ConfirmDialog
@@ -213,6 +247,7 @@ export function CalendarSettings() {
         <strong>Status:</strong> {STATUS_TEXT[status.status]}
         {status.lastSyncedAt ? ` Last synced ${formatDateTime(status.lastSyncedAt)}.` : null}
       </p>
+      <CalendarUpdatedStatus />
       {error && status.status !== 'disconnected' ? <p className="text-warn">{error}</p> : null}
       {status.status === 'disconnected' ? (
         <ConnectButton label="Connect Google Calendar" primary />
