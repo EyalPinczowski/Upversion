@@ -121,3 +121,65 @@ export function ErrorText({ children, id }: { children: string; id?: string }) {
     </p>
   );
 }
+
+interface ProgressBarProps {
+  value: number;
+  max: number;
+  /** Accessible name, or the id of the element that names the bar. */
+  label?: string;
+  labelledBy?: string;
+  className?: string;
+}
+
+/** A Blocks progress bar: accent fill on a surface track. Text beside it carries the numbers. */
+export function ProgressBar({ value, max, label, labelledBy, className = '' }: ProgressBarProps) {
+  const top = Math.max(1, max);
+  const now = max > 0 ? Math.max(0, Math.min(value, max)) : 0;
+  const pct = Math.round((now / top) * 100);
+  return (
+    <div
+      role="progressbar"
+      aria-label={label}
+      aria-labelledby={labelledBy}
+      aria-valuemin={0}
+      aria-valuemax={top}
+      aria-valuenow={now}
+      className={`h-3 w-full overflow-hidden rounded-full bg-surface-2 ${className}`}
+    >
+      <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+type FilePickerProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'className'> & {
+  /** Text on the visible button. */
+  buttonLabel: string;
+};
+
+/**
+ * A file input styled as a Blocks button. The real input stays in the page, transparent and laid
+ * over the button, so clicks, the keyboard, screen readers and `label htmlFor` keep working. The
+ * button shows the focus ring when the input has focus.
+ */
+export const FilePicker = forwardRef<HTMLInputElement, FilePickerProps>(function FilePicker(
+  { buttonLabel, disabled, ...props },
+  ref,
+) {
+  return (
+    <span className="relative inline-flex">
+      <input
+        ref={ref}
+        type="file"
+        disabled={disabled}
+        className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+        {...props}
+      />
+      <span
+        aria-hidden="true"
+        className={`${base} ${variants.secondary} pointer-events-none peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-hover:border-accent peer-focus-visible:outline-accent ${disabled ? 'opacity-60' : ''}`}
+      >
+        {buttonLabel}
+      </span>
+    </span>
+  );
+});

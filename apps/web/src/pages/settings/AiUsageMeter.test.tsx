@@ -89,7 +89,7 @@ describe('Settings: AI usage meter', () => {
     expect(screen.getByText('Active provider: Groq.')).toBeInTheDocument();
     expect(screen.getByText(/The count resets at/)).toBeInTheDocument();
     expect(screen.getByRole('progressbar', { name: 'AI calls used today' })).toHaveAttribute(
-      'value',
+      'aria-valuenow',
       '27',
     );
     // Counts only: no money anywhere.

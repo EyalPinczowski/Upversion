@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type DragEvent } from 'react';
-import { Button, ErrorText, TextAreaField } from '../../components/ui';
+import { Button, ErrorText, FilePicker, TextAreaField } from '../../components/ui';
 import { CV_ERROR_TEXT, CvCancelled, CvReadError, extractCvText } from './cv-extract';
 
 /**
@@ -111,9 +111,9 @@ export function CvStep({
         <p id={`${ids}-file-hint`} className="mb-2 text-muted">
           Up to 5 MB. PDFs up to 10 pages.
         </p>
-        <input
+        <FilePicker
           id={`${ids}-file`}
-          type="file"
+          buttonLabel="Choose file"
           accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           aria-describedby={`${ids}-file-hint`}
           disabled={busy}
@@ -122,7 +122,6 @@ export function CvStep({
             // Forget the pick so the same file can be chosen again after an error.
             e.target.value = '';
           }}
-          className="block min-h-11 w-full text-text"
         />
       </div>
 

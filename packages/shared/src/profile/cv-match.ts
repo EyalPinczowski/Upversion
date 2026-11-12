@@ -419,8 +419,24 @@ function snippet(line: string, needle: string | undefined): string {
   const red = redactPii(line).text.replace(/\s+/g, ' ').trim();
   if (red.length <= MAX_EVIDENCE_LENGTH) return red;
   const idx = needle ? red.toLowerCase().indexOf(needle.toLowerCase()) : -1;
-  const start = idx < 0 ? 0 : Math.max(0, idx - 30);
-  return red.slice(start, start + MAX_EVIDENCE_LENGTH).trim();
+  // Cut on word boundaries and mark each cut with an ellipsis (the whole result stays within
+  // MAX_EVIDENCE_LENGTH, ellipses included).
+  const room = MAX_EVIDENCE_LENGTH - 2;
+  let start = idx < 0 ? 0 : Math.max(0, idx - 30);
+  if (start > 0 && !/\s/u.test(red.charAt(start - 1))) {
+    // Snap forward to a word start, but never past the matched text: when a long token runs
+    // into it, start at the match itself.
+    const space = red.indexOf(' ', start);
+    start = space >= 0 && space < idx ? space + 1 : idx;
+  }
+  let end = Math.min(red.length, start + room);
+  if (end < red.length && !/\s/u.test(red.charAt(end))) {
+    const space = red.lastIndexOf(' ', end);
+    const needleEnd = idx < 0 || !needle ? start : idx + needle.length;
+    if (space > start && space >= needleEnd) end = space;
+  }
+  const body = red.slice(start, end).trim();
+  return `${start > 0 ? '…' : ''}${body}${end < red.length ? '…' : ''}`;
 }
 
 // ---------------------------------------------------------------- education and tools

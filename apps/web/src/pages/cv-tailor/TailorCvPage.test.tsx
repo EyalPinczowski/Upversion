@@ -184,6 +184,11 @@ describe('Tailor my CV: the flow and the privacy rules', () => {
     await click('Next: write a tailored version with AI');
     await screen.findByRole('heading', { name: 'Preview and send', level: 2 });
     expect(tailorCalls(api)).toHaveLength(0);
+    // The two counts say what they count: whole contact lines vs details replaced in the text.
+    expect(screen.getByText(/Removed before sending \(\d+ lines?\)/)).toBeVisible();
+    expect(screen.getByText(/replaced by \[removed\]\./)).toBeVisible();
+    expect(screen.getByText(/or your account name/)).toBeVisible();
+    expect(screen.getByText(/a Contact or Personal details section/)).toBeVisible();
     // The contact block is dropped in the preview.
     expect((cvBox() as HTMLTextAreaElement).value).not.toContain(CONTACT.email);
     expect((cvBox() as HTMLTextAreaElement).value).not.toContain('Fictional Lane');
