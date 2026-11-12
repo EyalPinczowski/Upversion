@@ -19,7 +19,7 @@ import { useAiUsage, useCvTailor, type CvTailorResult } from '../../api/ai-hooks
 import { useMe } from '../../api/hooks';
 import { cvTextSession } from '../../cv/cv-text-session';
 import { Loading, ServerProblem } from '../../components/status';
-import { Button, ErrorText, linkClass, TextAreaField } from '../../components/ui';
+import { Button, ErrorText, linkClass, ProgressBar, TextAreaField } from '../../components/ui';
 import { CvStep } from '../setup/CvStep';
 import { HighlightedText } from './HighlightedText';
 import {
@@ -340,6 +340,7 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
       `In the job post, not in your CV: ${g.missing.map((i) => i.name).join(', ') || 'none'}`,
     ].join('\n');
 
+  const replacedCount = prep ? prep.cv.removed + prep.job.removed : 0;
   const placeholders = sent ? countPlaceholders(sent.result.text) : 0;
   const tabLabelCv = `${ids}-cv`;
   const tabLabelJob = `${ids}-job`;
@@ -349,7 +350,7 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
       <h1>Tailor my CV to a job</h1>
       <div className="space-y-1">
         <p className="font-bold">Step {step} of 5</p>
-        <progress max={5} value={step} aria-label="Progress" className="block h-3 w-full" />
+        <ProgressBar max={5} value={step} label="Progress" />
       </div>
 
       <section aria-labelledby={`${ids}-h`} className="space-y-5">
@@ -494,23 +495,31 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
             <p className="text-muted">
               Numeric dates such as 03/2018 may be removed; write them as Mar 2018 to keep them.
             </p>
-            {prep.cv.dropped.length > 0 ? (
-              <details>
-                <summary className="min-h-11 cursor-pointer font-bold">
-                  Removed before sending ({prep.cv.dropped.length} lines)
-                </summary>
-                <ul className="space-y-1 pt-2 text-muted">
-                  {prep.cv.dropped.map((l, i) => (
-                    <li key={i} dir="auto">
-                      {l}
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            ) : null}
-            <p className="text-muted">
-              Personal details replaced by [removed]: {prep.cv.removed + prep.job.removed}.
-            </p>
+            <div className="space-y-1">
+              {prep.cv.dropped.length > 0 ? (
+                <details>
+                  <summary className="cursor-pointer py-2 font-bold">
+                    Contact lines left out ({prep.cv.dropped.length}{' '}
+                    {prep.cv.dropped.length === 1 ? 'line' : 'lines'})
+                  </summary>
+                  <ul className="space-y-1 pb-2 text-muted">
+                    {prep.cv.dropped.map((l, i) => (
+                      <li key={i} dir="auto">
+                        {l}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
+              <p className="text-muted">
+                {prep.cv.dropped.length === 0
+                  ? 'No contact lines were left out. '
+                  : 'Contact lines are whole lines (your address block or a References section) that are never sent. '}
+                Inside the text that is sent, {replacedCount}{' '}
+                {replacedCount === 1 ? 'detail' : 'details'} (emails, phone numbers or links){' '}
+                {replacedCount === 1 ? 'was' : 'were'} replaced by [removed].
+              </p>
+            </div>
             <div className="space-y-1">
               <TextAreaField
                 label="Your CV, as it will be sent"

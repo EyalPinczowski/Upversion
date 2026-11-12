@@ -116,11 +116,18 @@ function Changer({ profile }: { profile: ProfileView }) {
         : 'CV saved';
 
   const tailorLink = tailorOn ? (
-    <p>
-      <Link to="/settings/tailor-cv" className={linkClass}>
-        Tailor my CV to a job
-      </Link>
-    </p>
+    <section
+      aria-labelledby="change-cv-tailor-heading"
+      className="space-y-2 border-t border-border pt-5"
+    >
+      <h3 id="change-cv-tailor-heading">Applying for a job?</h3>
+      <p>See which keywords of a job post your CV shows, then get a prompt to tailor it.</p>
+      <p>
+        <Link to="/settings/tailor-cv" className={linkClass}>
+          Tailor my CV to a job
+        </Link>
+      </p>
+    </section>
   ) : null;
 
   return (
@@ -162,13 +169,13 @@ function Changer({ profile }: { profile: ProfileView }) {
                 our server. Unticking the box, signing out, reloading or closing the tab removes it.
               </p>
             </div>
-            {tailorLink}
             <CvStep
               onText={readText}
               onSkip={cancel}
               skipLabel="Cancel"
               intro="The file is read on this device only and is never uploaded. Its text is not saved anywhere, unless you tick the box above, and then only in this tab’s memory until you close the tab or sign out. You confirm every item before anything is saved. Your name and contact details are never used."
             />
+            {tailorLink}
           </>
         ) : null}
 

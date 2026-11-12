@@ -11,7 +11,7 @@ import { Navigate, useNavigate } from 'react-router';
 import type { ProfileView } from '../../api/client';
 import { useProfile, useImportProfile, useSaveAnswers, useSetSetup } from '../../api/profile-hooks';
 import { Loading, ServerProblem } from '../../components/status';
-import { Button, ErrorText } from '../../components/ui';
+import { Button, ErrorText, ProgressBar } from '../../components/ui';
 import { CalendarStep } from './CalendarStep';
 import { CvReviewStep } from './CvReviewStep';
 import { CvStep } from './CvStep';
@@ -214,7 +214,7 @@ function Wizard({ profile }: { profile: ProfileView }) {
           <p id={progressId} className="text-muted">
             Step {value} of {total}
           </p>
-          <progress aria-labelledby={progressId} value={value} max={total} className="w-full" />
+          <ProgressBar labelledBy={progressId} value={value} max={total} />
         </div>
       ) : null}
       <section aria-labelledby="setup-step-heading" className="space-y-5">

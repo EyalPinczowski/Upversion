@@ -1,4 +1,5 @@
 import { useAiUsage } from '../../api/ai-hooks';
+import { ProgressBar } from '../../components/ui';
 import { meterModel } from './meter-model';
 
 function resetTime(iso: string): string | null {
@@ -25,12 +26,7 @@ export function AiUsageMeter() {
       <p className="font-bold tabular-nums">
         {model.used} of {model.cap} AI calls today
       </p>
-      <progress
-        max={model.cap}
-        value={Math.min(model.used, model.cap)}
-        aria-label="AI calls used today"
-        className="block h-3 w-full"
-      />
+      <ProgressBar max={model.cap} value={model.used} label="AI calls used today" />
       <ul className="space-y-1 text-muted">
         {model.rows.map((row) => (
           <li key={row.label} className="tabular-nums">

@@ -37,7 +37,8 @@ export function DoneStep({
       </ul>
       {profile.skills.length > 0 || profile.rolesHeld.length > 0 ? (
         <p>
-          From your CV: {profile.skills.length} skills and {profile.rolesHeld.length} roles saved.
+          From your CV: {profile.skills.length} {profile.skills.length === 1 ? 'skill' : 'skills'}{' '}
+          and {profile.rolesHeld.length} {profile.rolesHeld.length === 1 ? 'role' : 'roles'} saved.
         </p>
       ) : null}
       <Link className={linkClass} to="/">

@@ -43,7 +43,7 @@ describe('the setup wizard', () => {
     await start();
     expect(screen.getByRole('group', { name: /current situation/i })).toBeInTheDocument();
     expect(screen.getByText('Step 1 of 10')).toBeInTheDocument();
-    expect(screen.getByRole('progressbar')).toHaveAttribute('value', '1');
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '1');
     const calls = await profileCalls(api);
     expect(calls.at(-1)).toEqual({
       method: 'PATCH',

@@ -5,7 +5,7 @@ import { cvTextSession } from '../../cv/cv-text-session';
 import { expectNoAxeViolations } from '../../test/axe';
 import { CV_LINES, CV_TEXT, FORBIDDEN } from '../../test/cv-fixture';
 import { buildDocx } from '../../test/docx-fixture';
-import { fakeAuth, renderApp, SESSION } from '../../test/helpers';
+import { fakeAuth, json, renderApp, SESSION } from '../../test/helpers';
 import {
   everythingSent,
   findLeak,
@@ -240,6 +240,46 @@ describe('Change my CV: privacy (the canary test)', () => {
       expect(cvTextSession.has()).toBe(keep);
     },
   );
+});
+
+describe('Change my CV: the tailor link', () => {
+  it('sits in its own section with a heading, after the file box and not next to the checkbox', async () => {
+    await open({
+      extra: {
+        'GET /api/v1/ai/usage': () =>
+          json({
+            day: '2026-11-10',
+            resetsAt: '2026-11-11T00:00:00.000Z',
+            configured: true,
+            user: {
+              practiceMessages: { used: 0, cap: 30 },
+              practiceFeedback: { used: 0, cap: 10 },
+              dayOverview: { used: 0, cap: 0 },
+              cvTailor: { used: 0, cap: 3 },
+            },
+            features: { cvTailor: true },
+            avoidedToday: 0,
+            providers: [],
+          }),
+      },
+    });
+    const link = await screen.findByRole('link', { name: 'Tailor my CV to a job' });
+    const region = screen.getByRole('region', { name: 'Applying for a job?' });
+    expect(region).toContainElement(link);
+    expect(region).not.toContainElement(screen.getByRole('checkbox', { name: KEEP }));
+    const file = screen.getByLabelText(/Choose a PDF or DOCX file/);
+    expect(file.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe('Change my CV: file button', () => {
+  it('shows a styled button, not the browser default file input', async () => {
+    await open();
+    const input = screen.getByLabelText(/Choose a PDF or DOCX file/);
+    expect(input).toHaveAttribute('type', 'file');
+    expect(input.parentElement).toHaveTextContent('Choose file');
+    expect(input).toHaveClass('opacity-0');
+  });
 });
 
 describe('Change my CV: keeping the text in this tab', () => {
