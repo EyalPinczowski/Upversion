@@ -20,5 +20,6 @@ One short record per significant choice: the context, the options considered, th
 | [014](014-calendar-token-encryption-and-write-guard.md) | Calendar token encryption and write guard | Accepted |
 | [015](015-onboarding-setup-and-cv-import.md) | First-time setup and in-browser CV import | Accepted (owner, 2026-11-08) |
 | [016](016-cv-change-and-ai-tailoring.md) | Changing the CV after setup, and tailoring the CV to a job with AI | Accepted (owner, 2026-11-08), except: the residual-risk acceptance for undetected names and addresses is pending the owner's confirmation in PR #101 |
+| [017](017-plan-builder.md) | Plan builder v1: rule-based, catalog-grounded, optional AI explanations, archive the old active plan | Accepted (owner, 2026-11-12) for AI explanations, archiving, unverified items and the 2 h exam block; other choices are defaults not yet confirmed |
 
 Facts about third-party free plans change often. Anything in these records that has not been confirmed on the provider's own documentation is marked **needs check**.
