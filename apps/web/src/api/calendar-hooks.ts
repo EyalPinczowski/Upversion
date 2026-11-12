@@ -120,6 +120,11 @@ const PLAN_QUERY_ROOTS = new Set([
   'briefing',
 ]);
 
+/**
+ * `movedTaskIds` is the CURRENT set of tasks the calendar displaced, not a list of new moves. So an
+ * already-displaced task that moves to another day leaves the signature unchanged and this dedupe
+ * can skip that reload; the plan queries refresh on their own staleness or the next change.
+ */
 const signatureOf = (result: CalendarSyncResult) =>
   `${[...result.movedTaskIds].sort().join(',')}|${result.finishChanged}`;
 

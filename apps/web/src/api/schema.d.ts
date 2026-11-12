@@ -4,13118 +4,13047 @@
  */
 
 export interface paths {
-  '/api/v1/health': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Liveness check (also reports the database)
-     * @description Always 200 while the process runs. `database` is `ok`, `unavailable` (a `select 1` as the app login failed or took longer than 1.5 seconds) or `not_configured`. The result is cached for a few seconds. Use `/health/ready` to get a 503 when the database is down.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** @enum {string} */
-              status: 'ok';
-              app: string;
-              /** @enum {string} */
-              environment: 'operational' | 'rnd';
-              version: string;
-              /** Format: date-time */
-              time: string;
-              /** @enum {string} */
-              database: 'ok' | 'unavailable' | 'not_configured';
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/health/ready': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Readiness check: 503 when the database is down */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** @enum {string} */
-              status: 'ok';
-              app: string;
-              /** @enum {string} */
-              environment: 'operational' | 'rnd';
-              version: string;
-              /** Format: date-time */
-              time: string;
-              /** @enum {string} */
-              database: 'ok' | 'unavailable' | 'not_configured';
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** @enum {string} */
-              status: 'unavailable';
-              app: string;
-              /** @enum {string} */
-              environment: 'operational' | 'rnd';
-              version: string;
-              /** Format: date-time */
-              time: string;
-              /** @enum {string} */
-              database: 'ok' | 'unavailable' | 'not_configured';
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/me': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** The signed-in user (creates the profile on first call) */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              displayName: string | null;
-              /** @enum {string} */
-              role: 'user' | 'admin';
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              lastSeenAt: string | null;
-              legal: {
-                terms: {
-                  currentVersion: string;
-                  accepted: boolean;
-                };
-                privacy: {
-                  currentVersion: string;
-                  accepted: boolean;
-                };
-                allAccepted: boolean;
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    /**
-     * Delete the account and all its data
-     * @description The body must contain {"confirmation": "delete my account"}. Deletes the Upversion data and, on the operational API, the Supabase Auth user together; if the Auth user cannot be deleted, nothing is deleted (502) and the request can be retried. The R&D API shares the Auth project, so it deletes only its own data and never the Auth user.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            confirmation: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': null;
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        502: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    /** Change the display name */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            displayName: string | null;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              displayName: string | null;
-              /** @enum {string} */
-              role: 'user' | 'admin';
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              lastSeenAt: string | null;
-              legal: {
-                terms: {
-                  currentVersion: string;
-                  accepted: boolean;
-                };
-                privacy: {
-                  currentVersion: string;
-                  accepted: boolean;
-                };
-                allAccepted: boolean;
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  '/api/v1/me/legal-acceptances': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Accept the current Terms or Privacy Policy (idempotent) */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** @enum {string} */
-            document: 'terms' | 'privacy';
-            version: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** Format: uuid */
-              id: string;
-              email: string;
-              displayName: string | null;
-              /** @enum {string} */
-              role: 'user' | 'admin';
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              lastSeenAt: string | null;
-              legal: {
-                terms: {
-                  currentVersion: string;
-                  accepted: boolean;
-                };
-                privacy: {
-                  currentVersion: string;
-                  accepted: boolean;
-                };
-                allAccepted: boolean;
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/me/export': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Download everything the account holds as JSON */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** Format: date-time */
-              exportedAt: string;
-              /** @enum {number} */
-              formatVersion: 1;
-              user: {
-                [key: string]: unknown;
-              };
-              legalAcceptances: {
-                [key: string]: unknown;
-              }[];
-              plans: {
-                [key: string]: unknown;
-              }[];
-              weekPatterns: {
-                [key: string]: unknown;
-              }[];
-              dayOverrides: {
-                [key: string]: unknown;
-              }[];
-              tasks: {
-                [key: string]: unknown;
-              }[];
-              logs: {
-                [key: string]: unknown;
-              }[];
-              events: {
-                [key: string]: unknown;
-              }[];
-              daySessions: {
-                [key: string]: unknown;
-              }[];
-              scheduleDays: {
-                [key: string]: unknown;
-              }[];
-              dayReviews: {
-                [key: string]: unknown;
-              }[];
-              adjustments: {
-                [key: string]: unknown;
-              }[];
-              practiceContexts: {
-                [key: string]: unknown;
-              }[];
-              practiceSessions: {
-                [key: string]: unknown;
-              }[];
-              practiceMessages: {
-                [key: string]: unknown;
-              }[];
-              practiceFeedback: {
-                [key: string]: unknown;
-              }[];
-              aiUsageDaily: {
-                [key: string]: unknown;
-              }[];
-              aiCache: {
-                [key: string]: unknown;
-              }[];
-              calendarConnections: {
-                [key: string]: unknown;
-              }[];
-              calendarEventLinks: {
-                [key: string]: unknown;
-              }[];
-              calendarLockedBlocks: {
-                [key: string]: unknown;
-              }[];
-              calendarBusy: {
-                [key: string]: unknown;
-              }[];
-              calendarSources: {
-                [key: string]: unknown;
-              }[];
-              userProfiles: {
-                [key: string]: unknown;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/calendar': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Calendar connection status and the calendars that block time */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** @enum {string} */
-              status: 'connected' | 'needs_reconnect' | 'disconnected';
-              /** Format: date-time */
-              lastSyncedAt: string | null;
-              lastErrorCode: string | null;
-              sources: {
-                calendarId: string;
-                name: string;
-                blocksTime: boolean;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        502: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    /**
-     * Disconnect Google Calendar
-     * @description Deletes the events the app created (never the calendar itself and never other events), revokes the refresh token at Google (best effort) and deletes the calendar data the app stores. If Google rejects the stored credentials (consent revoked), the events cannot be deleted: the local data is still cleared and the events the app created may remain in Google until the user deletes the calendar there. If Google cannot be reached (502), nothing is deleted and the request can be repeated later.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': null;
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        502: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/calendar/busy': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Busy time from the calendars that block study time
-     * @description Read only. `from` and `to` are local dates (inclusive, at most 14 days). Returns events of the calendars the owner chose to block time, each with a kind (busy, tentative or non_blocking all-day), start and end minutes of the day, an all-day flag and the event title, plus the slots of study blocks the owner deleted in Google for `planId` (default: the newest active plan), in that plan's time zone. This is the owner's own calendar data for display to the owner; it is never sent to an AI model.
-     */
-    get: {
-      parameters: {
-        query: {
-          from: string;
-          to: string;
-          planId?: string;
-        };
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              items: {
-                date: string;
-                startMinute: number;
-                endMinute: number;
-                allDay: boolean;
-                /** @enum {string} */
-                kind: 'busy' | 'tentative' | 'non_blocking';
-                title: string;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        502: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/calendar/connect': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Start connecting Google Calendar
-     * @description Returns the Google consent URL (PKCE S256, single-use state valid for 10 minutes, only the calendar.app.created and calendar.readonly scopes). Redirect the browser there.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** Format: uri */
-              authorizationUrl: string;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        502: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/calendar/callback': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Finish connecting Google Calendar
-     * @description Send the `code` and `state` Google returned to the web app. The state must have been issued to the signed-in user and is single use. If Google granted less than both scopes, nothing is connected and the grant is revoked (400 `scopes_not_granted`).
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            code: string;
-            state: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** @enum {string} */
-              status: 'connected' | 'needs_reconnect' | 'disconnected';
-              /** Format: date-time */
-              lastSyncedAt: string | null;
-              lastErrorCode: string | null;
-              sources: {
-                calendarId: string;
-                name: string;
-                blocksTime: boolean;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        502: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/calendar/sources': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Choose which calendars block study time */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            sources: {
-              calendarId: string;
-              blocksTime: boolean;
-            }[];
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** @enum {string} */
-              status: 'connected' | 'needs_reconnect' | 'disconnected';
-              /** Format: date-time */
-              lastSyncedAt: string | null;
-              lastErrorCode: string | null;
-              sources: {
-                calendarId: string;
-                name: string;
-                blocksTime: boolean;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        502: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/calendar/sync': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Sync the calendar now (also called when the app opens)
-     * @description Reads busy time from the calendars that block time, mirrors the next 14 days of planned blocks into the app calendar, picks up blocks the user moved or deleted there (they become fixed decisions the schedule plans around) and returns what the calendar changed in the plan. Within 5 minutes of the last sync the stored result is returned without calling Google (`status: cached`); `force` skips that but is honoured at most once a minute. 409 `sync_in_progress` when a sync is already running, 409 `calendar_reconnect_required` when Google no longer accepts the connection (nothing is changed), 503 with `Retry-After` when Google cannot be reached (nothing is changed). The schedule works without any of this.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            force?: boolean;
-          } | null;
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** @enum {string} */
-              status: 'synced' | 'cached';
-              /** Format: date-time */
-              syncedAt: string | null;
-              movedTaskIds: string[];
-              finishChanged: boolean;
-              text: string;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        502: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/me/profile': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The signed-in user’s profile and setup state
-     * @description Defaults when nothing is stored yet: `setupStatus: not_started`, empty answers, skills and roles.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              answers: {
-                [key: string]: unknown;
-              };
-              skills: {
-                skillId: string;
-                level: number;
-                /** @enum {string} */
-                source: 'cv' | 'setup' | 'manual';
-              }[];
-              rolesHeld: {
-                roleId: string | null;
-                title: string;
-                years: number | null;
-              }[];
-              yearsExperience: number | null;
-              cvImportedAt: string | null;
-              /** @enum {string} */
-              setupStatus: 'not_started' | 'in_progress' | 'completed' | 'dismissed';
-              setupStep: string | null;
-              setupCompletedAt: string | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    /**
-     * Clear my profile
-     * @description Clears answers, skills, roles held, years and `cvImportedAt`, and sets `setupStatus: dismissed` so clearing never sends the user back into setup. Returns the cleared profile.
-     */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': Record<string, never> | null;
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              answers: {
-                [key: string]: unknown;
-              };
-              skills: {
-                skillId: string;
-                level: number;
-                /** @enum {string} */
-                source: 'cv' | 'setup' | 'manual';
-              }[];
-              rolesHeld: {
-                roleId: string | null;
-                title: string;
-                years: number | null;
-              }[];
-              yearsExperience: number | null;
-              cvImportedAt: string | null;
-              /** @enum {string} */
-              setupStatus: 'not_started' | 'in_progress' | 'completed' | 'dismissed';
-              setupStep: string | null;
-              setupCompletedAt: string | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/me/profile/answers': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Save setup answers (partial merge, idempotent)
-     * @description Keys are ids of the setup questions in `questions.json`; each value is checked against its question (`multi_role` and `multi_skill` take taxonomy ids only, within `max`; "Other" and typed values are refused). An unknown or non-setup id, or an invalid value, answers 400 and nothing is saved. Answers not named in the body are kept.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            answers: {
-              [key: string]: unknown;
-            };
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              answers: {
-                [key: string]: unknown;
-              };
-              skills: {
-                skillId: string;
-                level: number;
-                /** @enum {string} */
-                source: 'cv' | 'setup' | 'manual';
-              }[];
-              rolesHeld: {
-                roleId: string | null;
-                title: string;
-                years: number | null;
-              }[];
-              yearsExperience: number | null;
-              cvImportedAt: string | null;
-              /** @enum {string} */
-              setupStatus: 'not_started' | 'in_progress' | 'completed' | 'dismissed';
-              setupStep: string | null;
-              setupCompletedAt: string | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/me/profile/import': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Save what the user confirmed from a CV read in the browser
-     * @description The body is the allowlist payload only (skills with levels, roles held, years, education, tools): never CV text, evidence or a file name. Replaces all skills with `source: cv` by the confirmed ones; `manual` and `setup` skills are kept, and a confirmed skill the user already has as `manual` or `setup` leaves that item unchanged. Replaces roles held and years of experience, sets `cvImportedAt`, and pre-fills the `education` and `tools_known` answers only where empty. 400 for an unknown skill or role id, a duplicate skill, or a role title that holds an email, link, handle or phone number.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            skills: {
-              skillId: string;
-              level: number;
-            }[];
-            rolesHeld: {
-              roleId: string | null;
-              title: string;
-              years: number | null;
-            }[];
-            yearsExperience: number | null;
-            /** @enum {string|null} */
-            education: 'high_school' | 'some_college' | 'bachelor' | 'master' | null;
-            tools: string[];
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              answers: {
-                [key: string]: unknown;
-              };
-              skills: {
-                skillId: string;
-                level: number;
-                /** @enum {string} */
-                source: 'cv' | 'setup' | 'manual';
-              }[];
-              rolesHeld: {
-                roleId: string | null;
-                title: string;
-                years: number | null;
-              }[];
-              yearsExperience: number | null;
-              cvImportedAt: string | null;
-              /** @enum {string} */
-              setupStatus: 'not_started' | 'in_progress' | 'completed' | 'dismissed';
-              setupStep: string | null;
-              setupCompletedAt: string | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/me/profile/setup': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * Move setup to a status and step
-     * @description `completed` sets `setupCompletedAt` (kept if already set). `step` is optional and is left as it is when omitted. Creates the profile row when none exists.
-     */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** @enum {string} */
-            status: 'not_started' | 'in_progress' | 'completed' | 'dismissed';
-            step?: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              answers: {
-                [key: string]: unknown;
-              };
-              skills: {
-                skillId: string;
-                level: number;
-                /** @enum {string} */
-                source: 'cv' | 'setup' | 'manual';
-              }[];
-              rolesHeld: {
-                roleId: string | null;
-                title: string;
-                years: number | null;
-              }[];
-              yearsExperience: number | null;
-              cvImportedAt: string | null;
-              /** @enum {string} */
-              setupStatus: 'not_started' | 'in_progress' | 'completed' | 'dismissed';
-              setupStep: string | null;
-              setupCompletedAt: string | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  '/api/v1/me/cv/tailor': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Rewrite the CV text for one job post with a free-tier AI model
-     * @description The texts must already be clean: the server checks them as received and answers 422 `pii_blocked` instead of repairing them (nothing is sent to a model then and nothing is counted). Names and street addresses are NOT detected. Only Cloudflare Workers AI, then Groq as a backup, may receive the text; `providers` lists every one that did. 429 `rate_limited` (3 per minute), `ai_user_cap` (3 per day), `ai_feature_cap` (20 per day for everyone). 503 `ai_unavailable` carries no provider information. Nothing is stored or logged: the answer is returned once.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            cvText: string;
-            jobText: string;
-            roleId?: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              text: string;
-              notes: {
-                /** @enum {string} */
-                kind:
-                  | 'missing_keyword'
-                  | 'matched_keyword'
-                  | 'model_note'
-                  | 'check_number'
-                  | 'check_skill'
-                  | 'check_term'
-                  | 'output_redacted';
-                text: string;
-              }[];
-              flags: {
-                /** @enum {string} */
-                kind: 'number' | 'skill' | 'certificate' | 'degree' | 'term' | 'placeholder';
-                text: string;
-              }[];
-              providers: {
-                id: string;
-                label: string;
-              }[];
-              usage: {
-                used: number;
-                cap: number;
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/import': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Import a plan file (idempotent on the client-generated plan id)
-     * @description The body is a plan file (formatVersion 1) plus `id` (a UUID chosen by the client) and an optional `status` of `draft` or `active` (default `active`). Creates the plan, its week pattern, day overrides and tasks in one transaction. 201 on creation; 200 with the stored plan when the same id and content are sent again; 409 when the id exists with different content.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            status?: 'draft' | 'active';
-          } & {
-            [key: string]: unknown;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** Format: uuid */
-              id: string;
-              name: string;
-              /** @enum {string} */
-              status: 'draft' | 'active' | 'archived' | 'done';
-              /** @enum {string} */
-              createdFrom: 'builder' | 'import';
-              startDate: string;
-              endDate: string | null;
-              summary: {
-                [key: string]: unknown;
-              };
-              taskCount: number;
-              createdAt: string;
-              updatedAt: string;
-              weekPattern: {
-                studyWeekdays: number[];
-                defaultHours: number;
-                /** @default {} */
-                hoursByWeekday: {
-                  [key: string]: number;
-                };
-                windowStart: string;
-                windowEnd: string;
-                lunchStart?: string;
-                lunchEnd?: string;
-                /** @default 2 */
-                breakEveryHours: number;
-                /** @default 10 */
-                breakMinutes: number;
-                /** @default 30 */
-                minBlockMinutes: number;
-                timezone: string;
-              } | null;
-              overrides: {
-                date: string;
-                isStudyDay: boolean;
-                capacityHours?: number;
-              }[];
-              tasks: {
-                id: string;
-                title: string;
-                /** @enum {string} */
-                type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                provider?: string;
-                /** Format: uri */
-                url?: string;
-                estHours: number;
-                /** @default 0 */
-                doneHours: number;
-                /**
-                 * @default pending
-                 * @enum {string}
-                 */
-                status: 'pending' | 'in_progress' | 'done' | 'skipped';
-                order: number;
-                /** @default [] */
-                dependsOn: string[];
-                /** @default false */
-                isAnchor: boolean;
-                anchorDate?: string;
-                anchorStartTime?: string;
-                pinnedStart?: {
-                  date: string;
-                  start: string;
-                };
-                notBefore?: string;
-                /** @default true */
-                splittable: boolean;
-                /** @default false */
-                isCertificate: boolean;
-                certificateName?: string;
-                /** @default [] */
-                lessons: {
-                  title: string;
-                  /** Format: uri */
-                  url?: string;
-                  estMinutes?: number;
-                  summary?: string;
-                  /** @default false */
-                  needsCheck: boolean;
-                }[];
-                /** @default [] */
-                howToSteps: string[];
-                promptTemplate?: string;
-                practiceKind?: string;
-                notes?: string;
-                /**
-                 * @default manual
-                 * @enum {string}
-                 */
-                source: 'manual' | 'import' | 'builder' | 'auto';
-                externalRef?: string;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** Format: uuid */
-              id: string;
-              name: string;
-              /** @enum {string} */
-              status: 'draft' | 'active' | 'archived' | 'done';
-              /** @enum {string} */
-              createdFrom: 'builder' | 'import';
-              startDate: string;
-              endDate: string | null;
-              summary: {
-                [key: string]: unknown;
-              };
-              taskCount: number;
-              createdAt: string;
-              updatedAt: string;
-              weekPattern: {
-                studyWeekdays: number[];
-                defaultHours: number;
-                /** @default {} */
-                hoursByWeekday: {
-                  [key: string]: number;
-                };
-                windowStart: string;
-                windowEnd: string;
-                lunchStart?: string;
-                lunchEnd?: string;
-                /** @default 2 */
-                breakEveryHours: number;
-                /** @default 10 */
-                breakMinutes: number;
-                /** @default 30 */
-                minBlockMinutes: number;
-                timezone: string;
-              } | null;
-              overrides: {
-                date: string;
-                isStudyDay: boolean;
-                capacityHours?: number;
-              }[];
-              tasks: {
-                id: string;
-                title: string;
-                /** @enum {string} */
-                type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                provider?: string;
-                /** Format: uri */
-                url?: string;
-                estHours: number;
-                /** @default 0 */
-                doneHours: number;
-                /**
-                 * @default pending
-                 * @enum {string}
-                 */
-                status: 'pending' | 'in_progress' | 'done' | 'skipped';
-                order: number;
-                /** @default [] */
-                dependsOn: string[];
-                /** @default false */
-                isAnchor: boolean;
-                anchorDate?: string;
-                anchorStartTime?: string;
-                pinnedStart?: {
-                  date: string;
-                  start: string;
-                };
-                notBefore?: string;
-                /** @default true */
-                splittable: boolean;
-                /** @default false */
-                isCertificate: boolean;
-                certificateName?: string;
-                /** @default [] */
-                lessons: {
-                  title: string;
-                  /** Format: uri */
-                  url?: string;
-                  estMinutes?: number;
-                  summary?: string;
-                  /** @default false */
-                  needsCheck: boolean;
-                }[];
-                /** @default [] */
-                howToSteps: string[];
-                promptTemplate?: string;
-                practiceKind?: string;
-                notes?: string;
-                /**
-                 * @default manual
-                 * @enum {string}
-                 */
-                source: 'manual' | 'import' | 'builder' | 'auto';
-                externalRef?: string;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        413: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** The signed-in user’s plans (summaries) */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              plans: {
-                /** Format: uuid */
-                id: string;
-                name: string;
-                /** @enum {string} */
-                status: 'draft' | 'active' | 'archived' | 'done';
-                /** @enum {string} */
-                createdFrom: 'builder' | 'import';
-                startDate: string;
-                endDate: string | null;
-                summary: {
-                  [key: string]: unknown;
-                };
-                taskCount: number;
-                createdAt: string;
-                updatedAt: string;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{id}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** A plan with its week pattern, day overrides and tasks */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              /** Format: uuid */
-              id: string;
-              name: string;
-              /** @enum {string} */
-              status: 'draft' | 'active' | 'archived' | 'done';
-              /** @enum {string} */
-              createdFrom: 'builder' | 'import';
-              startDate: string;
-              endDate: string | null;
-              summary: {
-                [key: string]: unknown;
-              };
-              taskCount: number;
-              createdAt: string;
-              updatedAt: string;
-              weekPattern: {
-                studyWeekdays: number[];
-                defaultHours: number;
-                /** @default {} */
-                hoursByWeekday: {
-                  [key: string]: number;
-                };
-                windowStart: string;
-                windowEnd: string;
-                lunchStart?: string;
-                lunchEnd?: string;
-                /** @default 2 */
-                breakEveryHours: number;
-                /** @default 10 */
-                breakMinutes: number;
-                /** @default 30 */
-                minBlockMinutes: number;
-                timezone: string;
-              } | null;
-              overrides: {
-                date: string;
-                isStudyDay: boolean;
-                capacityHours?: number;
-              }[];
-              tasks: {
-                id: string;
-                title: string;
-                /** @enum {string} */
-                type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                provider?: string;
-                /** Format: uri */
-                url?: string;
-                estHours: number;
-                /** @default 0 */
-                doneHours: number;
-                /**
-                 * @default pending
-                 * @enum {string}
-                 */
-                status: 'pending' | 'in_progress' | 'done' | 'skipped';
-                order: number;
-                /** @default [] */
-                dependsOn: string[];
-                /** @default false */
-                isAnchor: boolean;
-                anchorDate?: string;
-                anchorStartTime?: string;
-                pinnedStart?: {
-                  date: string;
-                  start: string;
-                };
-                notBefore?: string;
-                /** @default true */
-                splittable: boolean;
-                /** @default false */
-                isCertificate: boolean;
-                certificateName?: string;
-                /** @default [] */
-                lessons: {
-                  title: string;
-                  /** Format: uri */
-                  url?: string;
-                  estMinutes?: number;
-                  summary?: string;
-                  /** @default false */
-                  needsCheck: boolean;
-                }[];
-                /** @default [] */
-                howToSteps: string[];
-                promptTemplate?: string;
-                practiceKind?: string;
-                notes?: string;
-                /**
-                 * @default manual
-                 * @enum {string}
-                 */
-                source: 'manual' | 'import' | 'builder' | 'auto';
-                externalRef?: string;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    /** Delete a plan and everything it owns */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': null;
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{id}/week-pattern': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Replace the plan’s weekly time settings (spec 3.7)
-     * @description Saves the settings. To see what a change would do first, use POST /plans/{id}/schedule/preview.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            studyWeekdays: number[];
-            defaultHours: number;
-            /** @default {} */
-            hoursByWeekday?: {
-              [key: string]: number;
-            };
-            windowStart: string;
-            windowEnd: string;
-            lunchStart?: string;
-            lunchEnd?: string;
-            /** @default 2 */
-            breakEveryHours?: number;
-            /** @default 10 */
-            breakMinutes?: number;
-            /** @default 30 */
-            minBlockMinutes?: number;
-            timezone: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              studyWeekdays: number[];
-              defaultHours: number;
-              /** @default {} */
-              hoursByWeekday: {
-                [key: string]: number;
-              };
-              windowStart: string;
-              windowEnd: string;
-              lunchStart?: string;
-              lunchEnd?: string;
-              /** @default 2 */
-              breakEveryHours: number;
-              /** @default 10 */
-              breakMinutes: number;
-              /** @default 30 */
-              minBlockMinutes: number;
-              timezone: string;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{id}/start-date': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Change the plan’s start date (moves the whole schedule)
-     * @description Stores the new start date; the schedule then starts from that day. 422 when the date is before today in the plan’s time zone, after the end date, or after the earliest open exam; 409 `day_started` when a day on or before it was already started, ended or frozen. Only the date is stored: how a start date is read by the scheduler does not change.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            startDate: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              startDate: string;
-              endDate: string | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{id}/day-overrides/{date}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Set the exception for one date (day off, extra study day, other hours) */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-          date: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            isStudyDay: boolean;
-            capacityHours?: number;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              date: string;
-              isStudyDay: boolean;
-              capacityHours?: number;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    post?: never;
-    /** Remove the exception for one date (succeeds if there is none) */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-          date: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': null;
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{id}/schedule': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The plan’s computed schedule (blocks, warnings, finish date)
-     * @description `today` defaults to the current date in the plan’s time zone. Days before `today` are not scheduled. Nothing is saved.
-     */
-    get: {
-      parameters: {
-        query?: {
-          today?: string;
-        };
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              today: string;
-              timezone: string;
-              finishDate: string | null;
-              blocks: {
-                taskId: string;
-                date: string;
-                start: string;
-                end: string;
-                minutes: number;
-                /** @enum {string} */
-                kind: 'study' | 'anchor' | 'pinned' | 'locked';
-              }[];
-              warnings: ({
-                kind: string;
-              } & {
-                [key: string]: unknown;
-              })[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{id}/schedule/preview': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * What a pattern or override change would do, without saving it
-     * @description Plan changes are suggestions until the user approves them: this endpoint only computes the change summary and the proposed schedule. Apply a change with the PUT endpoints.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            today?: string;
-            pattern?: {
-              studyWeekdays: number[];
-              defaultHours: number;
-              /** @default {} */
-              hoursByWeekday?: {
-                [key: string]: number;
-              };
-              windowStart: string;
-              windowEnd: string;
-              lunchStart?: string;
-              lunchEnd?: string;
-              /** @default 2 */
-              breakEveryHours?: number;
-              /** @default 10 */
-              breakMinutes?: number;
-              /** @default 30 */
-              minBlockMinutes?: number;
-              timezone: string;
-            };
-            overrides?: {
-              date: string;
-              isStudyDay: boolean;
-              capacityHours?: number;
-            }[];
-            removeOverrideDates?: string[];
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              today: string;
-              summary: {
-                movedTaskIds: string[];
-                finishBefore: string | null;
-                finishAfter: string | null;
-                finishChanged: boolean;
-                finishShiftStudyDays: number;
-                newAnchorRisks: string[];
-                text: string;
-              };
-              current: {
-                finishDate: string | null;
-                warnings: ({
-                  kind: string;
-                } & {
-                  [key: string]: unknown;
-                })[];
-              };
-              proposed: {
-                finishDate: string | null;
-                warnings: ({
-                  kind: string;
-                } & {
-                  [key: string]: unknown;
-                })[];
-                blocks: {
-                  taskId: string;
-                  date: string;
-                  start: string;
-                  end: string;
-                  minutes: number;
-                  /** @enum {string} */
-                  kind: 'study' | 'anchor' | 'pinned' | 'locked';
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{id}/open-tasks': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Open tasks of the week, with the days they were carried over from
-     * @description Tasks that are not done and are either planned this week (Sunday to Saturday in the plan’s time zone, the week that holds `today`) or were planned on an earlier frozen day and are still open. A skipped task appears (status `skipped`) only when it was planned on an earlier frozen day, so it can be reconsidered; reopen it to plan it again. `carriedOverFrom` lists those earlier dates; it is empty for a task that is only planned ahead. `today` defaults to the current date in the plan’s time zone.
-     */
-    get: {
-      parameters: {
-        query?: {
-          today?: string;
-        };
-        header?: never;
-        path: {
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              today: string;
-              weekStart: string;
-              weekEnd: string;
-              tasks: {
-                taskId: string;
-                title: string;
-                type: string;
-                /** @enum {string} */
-                status: 'pending' | 'in_progress' | 'skipped';
-                estHours: number;
-                doneHours: number;
-                remainingHours: number;
-                plannedDates: string[];
-                carriedOverFrom: string[];
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/days/{date}/briefing': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The briefing for a study day (deterministic, no AI)
-     * @description Allowed for today (in the plan’s time zone) or an earlier date of the plan; a future date answers 422. A day that has been frozen (ended, or rolled over) uses its stored blocks, so its briefing does not change when the plan is edited later. `source` is always `template` in v0.2: no AI model is called. Links, providers and lesson titles appear only when the plan’s tasks have them. For practice tasks on today only (plan time zone), `promptTemplate` is the ready-made practice prompt (the one `GET .../practice/prompt` returns) and `practiceSessionId` is the active session, if any; the task’s own template stays if that cannot be built, and on past days. Reading brings every missed past day up to date first; nothing else is written and no event is logged.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          date: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              date: string;
-              overview: string;
-              tasks: {
-                taskId: string;
-                title: string;
-                /** @enum {string} */
-                type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                provider?: string;
-                url?: string;
-                plannedMinutes: number;
-                start: string;
-                end: string;
-                blocks: {
-                  start: string;
-                  end: string;
-                  minutes: number;
-                }[];
-                what: string;
-                lessons: {
-                  title: string;
-                  url?: string;
-                  estMinutes?: number;
-                  summary?: string;
-                  needsCheck: boolean;
-                }[];
-                howToSteps: string[];
-                promptTemplate: string | null;
-                /** Format: uuid */
-                practiceSessionId?: string;
-                successCriteria: string | null;
-                carriedOver: boolean;
-              }[];
-              suggestedOrder: {
-                taskId: string;
-                start: string;
-                end: string;
-              }[];
-              podcast?: {
-                title: string;
-                publisher: string;
-                skillLink: string;
-                oneLine: string | null;
-                spotifyUrl: string;
-              };
-              /** @enum {string} */
-              source: 'template';
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/days/{date}/start': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Start a study day (idempotent)
-     * @description Allowed for today (in the plan’s time zone) or any earlier date of the plan; a future date answers 422. 201 when the day was started now, 200 with the same state when it already was. Writes one `day.started` event.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          date: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              date: string;
-              /** @enum {string} */
-              status: 'not_started' | 'started' | 'ended';
-              startedAt: string | null;
-              endedAt: string | null;
-              frozen: {
-                frozenAt: string;
-                /** @enum {string} */
-                source: 'day_end' | 'auto_rollover';
-                blocks: {
-                  taskId: string;
-                  date: string;
-                  start: string;
-                  end: string;
-                  minutes: number;
-                  /** @enum {string} */
-                  kind: 'study' | 'anchor' | 'pinned' | 'locked';
-                }[];
-              } | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              date: string;
-              /** @enum {string} */
-              status: 'not_started' | 'started' | 'ended';
-              startedAt: string | null;
-              endedAt: string | null;
-              frozen: {
-                frozenAt: string;
-                /** @enum {string} */
-                source: 'day_end' | 'auto_rollover';
-                blocks: {
-                  taskId: string;
-                  date: string;
-                  start: string;
-                  end: string;
-                  minutes: number;
-                  /** @enum {string} */
-                  kind: 'study' | 'anchor' | 'pinned' | 'locked';
-                }[];
-              } | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/days/{date}/end': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * End a study day and freeze its blocks (idempotent)
-     * @description Allowed for today or an earlier date; a future date answers 422. Stores the blocks that were planned for the date as an append-only snapshot, so the day never changes again, and marks the day ended. A retry returns the same state and writes no second `day.ended` event. A past day that was already frozen automatically keeps its snapshot.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          date: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              date: string;
-              /** @enum {string} */
-              status: 'not_started' | 'started' | 'ended';
-              startedAt: string | null;
-              endedAt: string | null;
-              frozen: {
-                frozenAt: string;
-                /** @enum {string} */
-                source: 'day_end' | 'auto_rollover';
-                blocks: {
-                  taskId: string;
-                  date: string;
-                  start: string;
-                  end: string;
-                  minutes: number;
-                  /** @enum {string} */
-                  kind: 'study' | 'anchor' | 'pinned' | 'locked';
-                }[];
-              } | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/days/{date}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Session state of a day and its frozen blocks
-     * @description `frozen` is null until the day is frozen (by ending it, or automatically on the first read after it has passed). Reading brings every missed past day of the plan up to date first.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          date: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              date: string;
-              /** @enum {string} */
-              status: 'not_started' | 'started' | 'ended';
-              startedAt: string | null;
-              endedAt: string | null;
-              frozen: {
-                frozenAt: string;
-                /** @enum {string} */
-                source: 'day_end' | 'auto_rollover';
-                blocks: {
-                  taskId: string;
-                  date: string;
-                  start: string;
-                  end: string;
-                  minutes: number;
-                  /** @enum {string} */
-                  kind: 'study' | 'anchor' | 'pinned' | 'locked';
-                }[];
-              } | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/days/{date}/review': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The review of one day
-     * @description 404 when the day has no review.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          date: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              date: string;
-              difficulty: number;
-              density: number;
-              energy: number;
-              note: string;
-              outcomes: {
-                taskId: string;
-                /** @enum {string} */
-                outcome: 'done' | 'partial' | 'not_done';
-                hours?: number;
-                reason?: string;
-              }[];
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    /**
-     * Submit or re-save the end-of-day review (idempotent)
-     * @description The body is the review (`date` must equal the URL date). Allowed for today (in the plan’s time zone) or an earlier date of the plan that was a study day or has logged work or a started session; a future date answers 422, and so does an outcome that names a task of another plan. 201 when the review was stored now, 200 when it already existed: the same content changes nothing, other content re-saves it, which is allowed only on the review’s day and the day after (409 later). Writes `review.submitted` (first save) or `review.updated` (a real change) events. The review never logs hours and never marks a task done: `missingLogs` and `notMarkedDone` tell the client what the user may still do. `suggestions` are the open adjustment suggestions after this review; nothing is saved for them until the user decides.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          date: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            date: string;
-            difficulty: number;
-            density: number;
-            energy: number;
-            /** @default  */
-            note?: string;
-            /** @default [] */
-            outcomes?: {
-              taskId: string;
-              /** @enum {string} */
-              outcome: 'done' | 'partial' | 'not_done';
-              hours?: number;
-              reason?: string;
-            }[];
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              review: {
-                date: string;
-                difficulty: number;
-                density: number;
-                energy: number;
-                note: string;
-                outcomes: {
-                  taskId: string;
-                  /** @enum {string} */
-                  outcome: 'done' | 'partial' | 'not_done';
-                  hours?: number;
-                  reason?: string;
-                }[];
-                /** Format: date-time */
-                createdAt: string;
-                /** Format: date-time */
-                updatedAt: string;
-              };
-              created: boolean;
-              missingLogs: {
-                taskId: string;
-                reportedHours: number;
-                loggedHours: number;
-                missingHours: number;
-              }[];
-              notMarkedDone: string[];
-              suggestions: {
-                id: string;
-                /** @enum {string} */
-                rule:
-                  'density_too_high' | 'density_too_low' | 'estimate_drift' | 'difficulty_practice';
-                key: string;
-                title: string;
-                explanation: string;
-                proposedChange:
-                  | {
-                      /** @enum {string} */
-                      kind: 'capacityDelta';
-                      scope:
-                        | {
-                            /** @enum {string} */
-                            type: 'weekdays';
-                            weekdays: number[];
-                          }
-                        | {
-                            /** @enum {string} */
-                            type: 'dateRange';
-                            from: string;
-                            to: string;
-                          };
-                      hours: number;
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'estimateUpdate';
-                      /** @enum {string} */
-                      taskType: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                      factor: number;
-                      taskIds: string[];
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'extraPractice';
-                      afterTaskId: string;
-                      hours: number;
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'pullForward';
-                      date: string;
-                      hours: number;
+    "/api/v1/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liveness check (also reports the database)
+         * @description Always 200 while the process runs. `database` is `ok`, `unavailable` (a `select 1` as the app login failed or took longer than 1.5 seconds) or `not_configured`. The result is cached for a few seconds. Use `/health/ready` to get a 503 when the database is down.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
                     };
-                alternatives: (
-                  | {
-                      /** @enum {string} */
-                      kind: 'capacityDelta';
-                      scope:
-                        | {
+                    content: {
+                        "application/json": {
                             /** @enum {string} */
-                            type: 'weekdays';
-                            weekdays: number[];
-                          }
-                        | {
+                            status: "ok";
+                            app: string;
                             /** @enum {string} */
-                            type: 'dateRange';
-                            from: string;
-                            to: string;
-                          };
-                      hours: number;
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'estimateUpdate';
-                      /** @enum {string} */
-                      taskType: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                      factor: number;
-                      taskIds: string[];
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'extraPractice';
-                      afterTaskId: string;
-                      hours: number;
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'pullForward';
-                      date: string;
-                      hours: number;
-                    }
-                )[];
-                evidence: {
-                  reviewDates: string[];
-                  taskIds: string[];
-                };
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              review: {
-                date: string;
-                difficulty: number;
-                density: number;
-                energy: number;
-                note: string;
-                outcomes: {
-                  taskId: string;
-                  /** @enum {string} */
-                  outcome: 'done' | 'partial' | 'not_done';
-                  hours?: number;
-                  reason?: string;
-                }[];
-                /** Format: date-time */
-                createdAt: string;
-                /** Format: date-time */
-                updatedAt: string;
-              };
-              created: boolean;
-              missingLogs: {
-                taskId: string;
-                reportedHours: number;
-                loggedHours: number;
-                missingHours: number;
-              }[];
-              notMarkedDone: string[];
-              suggestions: {
-                id: string;
-                /** @enum {string} */
-                rule:
-                  'density_too_high' | 'density_too_low' | 'estimate_drift' | 'difficulty_practice';
-                key: string;
-                title: string;
-                explanation: string;
-                proposedChange:
-                  | {
-                      /** @enum {string} */
-                      kind: 'capacityDelta';
-                      scope:
-                        | {
+                            environment: "operational" | "rnd";
+                            version: string;
+                            /** Format: date-time */
+                            time: string;
                             /** @enum {string} */
-                            type: 'weekdays';
-                            weekdays: number[];
-                          }
-                        | {
-                            /** @enum {string} */
-                            type: 'dateRange';
-                            from: string;
-                            to: string;
-                          };
-                      hours: number;
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'estimateUpdate';
-                      /** @enum {string} */
-                      taskType: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                      factor: number;
-                      taskIds: string[];
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'extraPractice';
-                      afterTaskId: string;
-                      hours: number;
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'pullForward';
-                      date: string;
-                      hours: number;
-                    };
-                alternatives: (
-                  | {
-                      /** @enum {string} */
-                      kind: 'capacityDelta';
-                      scope:
-                        | {
-                            /** @enum {string} */
-                            type: 'weekdays';
-                            weekdays: number[];
-                          }
-                        | {
-                            /** @enum {string} */
-                            type: 'dateRange';
-                            from: string;
-                            to: string;
-                          };
-                      hours: number;
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'estimateUpdate';
-                      /** @enum {string} */
-                      taskType: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                      factor: number;
-                      taskIds: string[];
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'extraPractice';
-                      afterTaskId: string;
-                      hours: number;
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'pullForward';
-                      date: string;
-                      hours: number;
-                    }
-                )[];
-                evidence: {
-                  reviewDates: string[];
-                  taskIds: string[];
-                };
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/reviews': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Rating history for the trend charts (difficulty, density, energy per day)
-     * @description Oldest first, optionally limited to `from`..`to` (inclusive). At most the latest 366 days. Notes and outcomes are not part of the history; read one day for those.
-     */
-    get: {
-      parameters: {
-        query?: {
-          from?: string;
-          to?: string;
-        };
-        header?: never;
-        path: {
-          planId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              reviews: {
-                date: string;
-                difficulty: number;
-                density: number;
-                energy: number;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/suggestions': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The open adjustment suggestions, recomputed from the plan’s current state
-     * @description Transparent rules (spec 3.4) applied to reviews, logs and tasks. Nothing is stored for a suggestion until it is accepted or rejected; ids are stable for the same evidence, and new evidence gives a new id.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              today: string;
-              suggestions: {
-                id: string;
-                /** @enum {string} */
-                rule:
-                  'density_too_high' | 'density_too_low' | 'estimate_drift' | 'difficulty_practice';
-                key: string;
-                title: string;
-                explanation: string;
-                proposedChange:
-                  | {
-                      /** @enum {string} */
-                      kind: 'capacityDelta';
-                      scope:
-                        | {
-                            /** @enum {string} */
-                            type: 'weekdays';
-                            weekdays: number[];
-                          }
-                        | {
-                            /** @enum {string} */
-                            type: 'dateRange';
-                            from: string;
-                            to: string;
-                          };
-                      hours: number;
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'estimateUpdate';
-                      /** @enum {string} */
-                      taskType: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                      factor: number;
-                      taskIds: string[];
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'extraPractice';
-                      afterTaskId: string;
-                      hours: number;
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'pullForward';
-                      date: string;
-                      hours: number;
-                    };
-                alternatives: (
-                  | {
-                      /** @enum {string} */
-                      kind: 'capacityDelta';
-                      scope:
-                        | {
-                            /** @enum {string} */
-                            type: 'weekdays';
-                            weekdays: number[];
-                          }
-                        | {
-                            /** @enum {string} */
-                            type: 'dateRange';
-                            from: string;
-                            to: string;
-                          };
-                      hours: number;
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'estimateUpdate';
-                      /** @enum {string} */
-                      taskType: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                      factor: number;
-                      taskIds: string[];
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'extraPractice';
-                      afterTaskId: string;
-                      hours: number;
-                    }
-                  | {
-                      /** @enum {string} */
-                      kind: 'pullForward';
-                      date: string;
-                      hours: number;
-                    }
-                )[];
-                evidence: {
-                  reviewDates: string[];
-                  taskIds: string[];
-                };
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/suggestions/{id}/preview': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * What accepting a suggestion option would do, without saving it
-     * @description Applies option `option` (0 = the recommended change) to a copy of the plan, schedules both and returns the change summary and the new finish date. 409 when the suggestion is not open any more; 422 for an option it does not have.
-     */
-    post: {
-      parameters: {
-        query?: {
-          option?: number;
-        };
-        header?: never;
-        path: {
-          planId: string;
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              suggestionId: string;
-              option: number;
-              change:
-                | {
-                    /** @enum {string} */
-                    kind: 'capacityDelta';
-                    scope:
-                      | {
-                          /** @enum {string} */
-                          type: 'weekdays';
-                          weekdays: number[];
-                        }
-                      | {
-                          /** @enum {string} */
-                          type: 'dateRange';
-                          from: string;
-                          to: string;
+                            database: "ok" | "unavailable" | "not_configured";
                         };
-                    hours: number;
-                  }
-                | {
-                    /** @enum {string} */
-                    kind: 'estimateUpdate';
-                    /** @enum {string} */
-                    taskType: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                    factor: number;
-                    taskIds: string[];
-                  }
-                | {
-                    /** @enum {string} */
-                    kind: 'extraPractice';
-                    afterTaskId: string;
-                    hours: number;
-                  }
-                | {
-                    /** @enum {string} */
-                    kind: 'pullForward';
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Readiness check: 503 when the database is down */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "ok";
+                            app: string;
+                            /** @enum {string} */
+                            environment: "operational" | "rnd";
+                            version: string;
+                            /** Format: date-time */
+                            time: string;
+                            /** @enum {string} */
+                            database: "ok" | "unavailable" | "not_configured";
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "unavailable";
+                            app: string;
+                            /** @enum {string} */
+                            environment: "operational" | "rnd";
+                            version: string;
+                            /** Format: date-time */
+                            time: string;
+                            /** @enum {string} */
+                            database: "ok" | "unavailable" | "not_configured";
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user (creates the profile on first call) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            email: string;
+                            displayName: string | null;
+                            /** @enum {string} */
+                            role: "user" | "admin";
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            lastSeenAt: string | null;
+                            legal: {
+                                terms: {
+                                    currentVersion: string;
+                                    accepted: boolean;
+                                };
+                                privacy: {
+                                    currentVersion: string;
+                                    accepted: boolean;
+                                };
+                                allAccepted: boolean;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Delete the account and all its data
+         * @description The body must contain {"confirmation": "delete my account"}. Deletes the Upversion data and, on the operational API, the Supabase Auth user together; if the Auth user cannot be deleted, nothing is deleted (502) and the request can be retried. The R&D API shares the Auth project, so it deletes only its own data and never the Auth user.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        confirmation: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": null;
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Change the display name */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        displayName: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            email: string;
+                            displayName: string | null;
+                            /** @enum {string} */
+                            role: "user" | "admin";
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            lastSeenAt: string | null;
+                            legal: {
+                                terms: {
+                                    currentVersion: string;
+                                    accepted: boolean;
+                                };
+                                privacy: {
+                                    currentVersion: string;
+                                    accepted: boolean;
+                                };
+                                allAccepted: boolean;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/me/legal-acceptances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept the current Terms or Privacy Policy (idempotent) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        document: "terms" | "privacy";
+                        version: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            email: string;
+                            displayName: string | null;
+                            /** @enum {string} */
+                            role: "user" | "admin";
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            lastSeenAt: string | null;
+                            legal: {
+                                terms: {
+                                    currentVersion: string;
+                                    accepted: boolean;
+                                };
+                                privacy: {
+                                    currentVersion: string;
+                                    accepted: boolean;
+                                };
+                                allAccepted: boolean;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download everything the account holds as JSON */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: date-time */
+                            exportedAt: string;
+                            /** @enum {number} */
+                            formatVersion: 1;
+                            user: {
+                                [key: string]: unknown;
+                            };
+                            legalAcceptances: {
+                                [key: string]: unknown;
+                            }[];
+                            plans: {
+                                [key: string]: unknown;
+                            }[];
+                            weekPatterns: {
+                                [key: string]: unknown;
+                            }[];
+                            dayOverrides: {
+                                [key: string]: unknown;
+                            }[];
+                            tasks: {
+                                [key: string]: unknown;
+                            }[];
+                            logs: {
+                                [key: string]: unknown;
+                            }[];
+                            events: {
+                                [key: string]: unknown;
+                            }[];
+                            daySessions: {
+                                [key: string]: unknown;
+                            }[];
+                            scheduleDays: {
+                                [key: string]: unknown;
+                            }[];
+                            dayReviews: {
+                                [key: string]: unknown;
+                            }[];
+                            adjustments: {
+                                [key: string]: unknown;
+                            }[];
+                            practiceContexts: {
+                                [key: string]: unknown;
+                            }[];
+                            practiceSessions: {
+                                [key: string]: unknown;
+                            }[];
+                            practiceMessages: {
+                                [key: string]: unknown;
+                            }[];
+                            practiceFeedback: {
+                                [key: string]: unknown;
+                            }[];
+                            aiUsageDaily: {
+                                [key: string]: unknown;
+                            }[];
+                            aiCache: {
+                                [key: string]: unknown;
+                            }[];
+                            calendarConnections: {
+                                [key: string]: unknown;
+                            }[];
+                            calendarEventLinks: {
+                                [key: string]: unknown;
+                            }[];
+                            calendarLockedBlocks: {
+                                [key: string]: unknown;
+                            }[];
+                            calendarBusy: {
+                                [key: string]: unknown;
+                            }[];
+                            calendarSources: {
+                                [key: string]: unknown;
+                            }[];
+                            userProfiles: {
+                                [key: string]: unknown;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Calendar connection status and the calendars that block time */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "connected" | "needs_reconnect" | "disconnected";
+                            /** Format: date-time */
+                            lastSyncedAt: string | null;
+                            lastErrorCode: string | null;
+                            sources: {
+                                calendarId: string;
+                                name: string;
+                                blocksTime: boolean;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Disconnect Google Calendar
+         * @description Deletes the events the app created (never the calendar itself and never other events), revokes the refresh token at Google (best effort) and deletes the calendar data the app stores. If Google rejects the stored credentials (consent revoked), the events cannot be deleted: the local data is still cleared and the events the app created may remain in Google until the user deletes the calendar there. If Google cannot be reached (502), nothing is deleted and the request can be repeated later.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": null;
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar/busy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Busy time from the calendars that block study time
+         * @description Read only. `from` and `to` are local dates (inclusive, at most 14 days). Returns events of the calendars the owner chose to block time, each with a kind (busy, tentative or non_blocking all-day), start and end minutes of the day, an all-day flag and the event title, plus the slots of study blocks the owner deleted in Google for `planId` (default: the newest active plan), in that plan's time zone. This is the owner's own calendar data for display to the owner; it is never sent to an AI model.
+         */
+        get: {
+            parameters: {
+                query: {
+                    from: string;
+                    to: string;
+                    planId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: {
+                                date: string;
+                                startMinute: number;
+                                endMinute: number;
+                                allDay: boolean;
+                                /** @enum {string} */
+                                kind: "busy" | "tentative" | "non_blocking";
+                                title: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start connecting Google Calendar
+         * @description Returns the Google consent URL (PKCE S256, single-use state valid for 10 minutes, only the calendar.app.created and calendar.readonly scopes). Redirect the browser there.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uri */
+                            authorizationUrl: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish connecting Google Calendar
+         * @description Send the `code` and `state` Google returned to the web app. The state must have been issued to the signed-in user and is single use. If Google granted less than both scopes, nothing is connected and the grant is revoked (400 `scopes_not_granted`).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        code: string;
+                        state: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "connected" | "needs_reconnect" | "disconnected";
+                            /** Format: date-time */
+                            lastSyncedAt: string | null;
+                            lastErrorCode: string | null;
+                            sources: {
+                                calendarId: string;
+                                name: string;
+                                blocksTime: boolean;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Choose which calendars block study time */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        sources: {
+                            calendarId: string;
+                            blocksTime: boolean;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "connected" | "needs_reconnect" | "disconnected";
+                            /** Format: date-time */
+                            lastSyncedAt: string | null;
+                            lastErrorCode: string | null;
+                            sources: {
+                                calendarId: string;
+                                name: string;
+                                blocksTime: boolean;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync the calendar now (also called when the app opens)
+         * @description Reads busy time from the calendars that block time, mirrors the next 14 days of planned blocks into the app calendar, picks up blocks the user moved or deleted there (they become fixed decisions the schedule plans around) and returns what the calendar changed in the plan. Within 5 minutes of the last sync the stored result is returned without calling Google (`status: cached`); `force` skips that but is honoured at most once a minute. 409 `sync_in_progress` when a sync is already running, 409 `calendar_reconnect_required` when Google no longer accepts the connection (nothing is changed), 503 with `Retry-After` when Google cannot be reached (nothing is changed). The schedule works without any of this.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        force?: boolean;
+                    } | null;
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "synced" | "cached";
+                            /** Format: date-time */
+                            syncedAt: string | null;
+                            movedTaskIds: string[];
+                            finishChanged: boolean;
+                            text: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The signed-in user’s profile and setup state
+         * @description Defaults when nothing is stored yet: `setupStatus: not_started`, empty answers, skills and roles.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            answers: {
+                                [key: string]: unknown;
+                            };
+                            skills: {
+                                skillId: string;
+                                level: number;
+                                /** @enum {string} */
+                                source: "cv" | "setup" | "manual";
+                            }[];
+                            rolesHeld: {
+                                roleId: string | null;
+                                title: string;
+                                years: number | null;
+                            }[];
+                            yearsExperience: number | null;
+                            cvImportedAt: string | null;
+                            /** @enum {string} */
+                            setupStatus: "not_started" | "in_progress" | "completed" | "dismissed";
+                            setupStep: string | null;
+                            setupCompletedAt: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Clear my profile
+         * @description Clears answers, skills, roles held, years and `cvImportedAt`, and sets `setupStatus: dismissed` so clearing never sends the user back into setup. Returns the cleared profile.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | null;
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            answers: {
+                                [key: string]: unknown;
+                            };
+                            skills: {
+                                skillId: string;
+                                level: number;
+                                /** @enum {string} */
+                                source: "cv" | "setup" | "manual";
+                            }[];
+                            rolesHeld: {
+                                roleId: string | null;
+                                title: string;
+                                years: number | null;
+                            }[];
+                            yearsExperience: number | null;
+                            cvImportedAt: string | null;
+                            /** @enum {string} */
+                            setupStatus: "not_started" | "in_progress" | "completed" | "dismissed";
+                            setupStep: string | null;
+                            setupCompletedAt: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/profile/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save setup answers (partial merge, idempotent)
+         * @description Keys are ids of the setup questions in `questions.json`; each value is checked against its question (`multi_role` and `multi_skill` take taxonomy ids only, within `max`; "Other" and typed values are refused). An unknown or non-setup id, or an invalid value, answers 400 and nothing is saved. Answers not named in the body are kept.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        answers: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            answers: {
+                                [key: string]: unknown;
+                            };
+                            skills: {
+                                skillId: string;
+                                level: number;
+                                /** @enum {string} */
+                                source: "cv" | "setup" | "manual";
+                            }[];
+                            rolesHeld: {
+                                roleId: string | null;
+                                title: string;
+                                years: number | null;
+                            }[];
+                            yearsExperience: number | null;
+                            cvImportedAt: string | null;
+                            /** @enum {string} */
+                            setupStatus: "not_started" | "in_progress" | "completed" | "dismissed";
+                            setupStep: string | null;
+                            setupCompletedAt: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/profile/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save what the user confirmed from a CV read in the browser
+         * @description The body is the allowlist payload only (skills with levels, roles held, years, education, tools): never CV text, evidence or a file name. Replaces all skills with `source: cv` by the confirmed ones; `manual` and `setup` skills are kept, and a confirmed skill the user already has as `manual` or `setup` leaves that item unchanged. Replaces roles held and years of experience, sets `cvImportedAt`, and pre-fills the `education` and `tools_known` answers only where empty. 400 for an unknown skill or role id, a duplicate skill, or a role title that holds an email, link, handle or phone number.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        skills: {
+                            skillId: string;
+                            level: number;
+                        }[];
+                        rolesHeld: {
+                            roleId: string | null;
+                            title: string;
+                            years: number | null;
+                        }[];
+                        yearsExperience: number | null;
+                        /** @enum {string|null} */
+                        education: "high_school" | "some_college" | "bachelor" | "master" | null;
+                        tools: string[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            answers: {
+                                [key: string]: unknown;
+                            };
+                            skills: {
+                                skillId: string;
+                                level: number;
+                                /** @enum {string} */
+                                source: "cv" | "setup" | "manual";
+                            }[];
+                            rolesHeld: {
+                                roleId: string | null;
+                                title: string;
+                                years: number | null;
+                            }[];
+                            yearsExperience: number | null;
+                            cvImportedAt: string | null;
+                            /** @enum {string} */
+                            setupStatus: "not_started" | "in_progress" | "completed" | "dismissed";
+                            setupStep: string | null;
+                            setupCompletedAt: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/profile/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Move setup to a status and step
+         * @description `completed` sets `setupCompletedAt` (kept if already set). `step` is optional and is left as it is when omitted. Creates the profile row when none exists.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "not_started" | "in_progress" | "completed" | "dismissed";
+                        step?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            answers: {
+                                [key: string]: unknown;
+                            };
+                            skills: {
+                                skillId: string;
+                                level: number;
+                                /** @enum {string} */
+                                source: "cv" | "setup" | "manual";
+                            }[];
+                            rolesHeld: {
+                                roleId: string | null;
+                                title: string;
+                                years: number | null;
+                            }[];
+                            yearsExperience: number | null;
+                            cvImportedAt: string | null;
+                            /** @enum {string} */
+                            setupStatus: "not_started" | "in_progress" | "completed" | "dismissed";
+                            setupStep: string | null;
+                            setupCompletedAt: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/me/cv/tailor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rewrite the CV text for one job post with a free-tier AI model
+         * @description The texts must already be clean: the server checks them as received and answers 422 `pii_blocked` instead of repairing them (nothing is sent to a model then and nothing is counted). Names and street addresses are NOT detected. Only Cloudflare Workers AI, then Groq as a backup, may receive the text; `providers` lists every one that did. 429 `rate_limited` (3 per minute), `ai_user_cap` (3 per day), `ai_feature_cap` (20 per day for everyone). 503 `ai_unavailable` carries no provider information. Nothing is stored or logged: the answer is returned once.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        cvText: string;
+                        jobText: string;
+                        roleId?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            text: string;
+                            notes: {
+                                /** @enum {string} */
+                                kind: "missing_keyword" | "matched_keyword" | "model_note" | "check_number" | "check_skill" | "check_term" | "output_redacted";
+                                text: string;
+                            }[];
+                            flags: {
+                                /** @enum {string} */
+                                kind: "number" | "skill" | "certificate" | "degree" | "term" | "placeholder";
+                                text: string;
+                            }[];
+                            providers: {
+                                id: string;
+                                label: string;
+                            }[];
+                            usage: {
+                                used: number;
+                                cap: number;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a plan file (idempotent on the client-generated plan id)
+         * @description The body is a plan file (formatVersion 1) plus `id` (a UUID chosen by the client) and an optional `status` of `draft` or `active` (default `active`). Creates the plan, its week pattern, day overrides and tasks in one transaction. 201 on creation; 200 with the stored plan when the same id and content are sent again; 409 when the id exists with different content.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {string} */
+                        status?: "draft" | "active";
+                    } & {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            status: "draft" | "active" | "archived" | "done";
+                            /** @enum {string} */
+                            createdFrom: "builder" | "import";
+                            startDate: string;
+                            endDate: string | null;
+                            summary: {
+                                [key: string]: unknown;
+                            };
+                            taskCount: number;
+                            createdAt: string;
+                            updatedAt: string;
+                            weekPattern: {
+                                studyWeekdays: number[];
+                                defaultHours: number;
+                                /** @default {} */
+                                hoursByWeekday: {
+                                    [key: string]: number;
+                                };
+                                windowStart: string;
+                                windowEnd: string;
+                                lunchStart?: string;
+                                lunchEnd?: string;
+                                /** @default 2 */
+                                breakEveryHours: number;
+                                /** @default 10 */
+                                breakMinutes: number;
+                                /** @default 30 */
+                                minBlockMinutes: number;
+                                timezone: string;
+                            } | null;
+                            overrides: {
+                                date: string;
+                                isStudyDay: boolean;
+                                capacityHours?: number;
+                            }[];
+                            tasks: {
+                                id: string;
+                                title: string;
+                                /** @enum {string} */
+                                type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                provider?: string;
+                                /** Format: uri */
+                                url?: string;
+                                estHours: number;
+                                /** @default 0 */
+                                doneHours: number;
+                                /**
+                                 * @default pending
+                                 * @enum {string}
+                                 */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                order: number;
+                                /** @default [] */
+                                dependsOn: string[];
+                                /** @default false */
+                                isAnchor: boolean;
+                                anchorDate?: string;
+                                anchorStartTime?: string;
+                                pinnedStart?: {
+                                    date: string;
+                                    start: string;
+                                };
+                                notBefore?: string;
+                                /** @default true */
+                                splittable: boolean;
+                                /** @default false */
+                                isCertificate: boolean;
+                                certificateName?: string;
+                                /** @default [] */
+                                lessons: {
+                                    title: string;
+                                    /** Format: uri */
+                                    url?: string;
+                                    estMinutes?: number;
+                                    summary?: string;
+                                    /** @default false */
+                                    needsCheck: boolean;
+                                }[];
+                                /** @default [] */
+                                howToSteps: string[];
+                                promptTemplate?: string;
+                                practiceKind?: string;
+                                notes?: string;
+                                /**
+                                 * @default manual
+                                 * @enum {string}
+                                 */
+                                source: "manual" | "import" | "builder" | "auto";
+                                externalRef?: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            status: "draft" | "active" | "archived" | "done";
+                            /** @enum {string} */
+                            createdFrom: "builder" | "import";
+                            startDate: string;
+                            endDate: string | null;
+                            summary: {
+                                [key: string]: unknown;
+                            };
+                            taskCount: number;
+                            createdAt: string;
+                            updatedAt: string;
+                            weekPattern: {
+                                studyWeekdays: number[];
+                                defaultHours: number;
+                                /** @default {} */
+                                hoursByWeekday: {
+                                    [key: string]: number;
+                                };
+                                windowStart: string;
+                                windowEnd: string;
+                                lunchStart?: string;
+                                lunchEnd?: string;
+                                /** @default 2 */
+                                breakEveryHours: number;
+                                /** @default 10 */
+                                breakMinutes: number;
+                                /** @default 30 */
+                                minBlockMinutes: number;
+                                timezone: string;
+                            } | null;
+                            overrides: {
+                                date: string;
+                                isStudyDay: boolean;
+                                capacityHours?: number;
+                            }[];
+                            tasks: {
+                                id: string;
+                                title: string;
+                                /** @enum {string} */
+                                type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                provider?: string;
+                                /** Format: uri */
+                                url?: string;
+                                estHours: number;
+                                /** @default 0 */
+                                doneHours: number;
+                                /**
+                                 * @default pending
+                                 * @enum {string}
+                                 */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                order: number;
+                                /** @default [] */
+                                dependsOn: string[];
+                                /** @default false */
+                                isAnchor: boolean;
+                                anchorDate?: string;
+                                anchorStartTime?: string;
+                                pinnedStart?: {
+                                    date: string;
+                                    start: string;
+                                };
+                                notBefore?: string;
+                                /** @default true */
+                                splittable: boolean;
+                                /** @default false */
+                                isCertificate: boolean;
+                                certificateName?: string;
+                                /** @default [] */
+                                lessons: {
+                                    title: string;
+                                    /** Format: uri */
+                                    url?: string;
+                                    estMinutes?: number;
+                                    summary?: string;
+                                    /** @default false */
+                                    needsCheck: boolean;
+                                }[];
+                                /** @default [] */
+                                howToSteps: string[];
+                                promptTemplate?: string;
+                                practiceKind?: string;
+                                notes?: string;
+                                /**
+                                 * @default manual
+                                 * @enum {string}
+                                 */
+                                source: "manual" | "import" | "builder" | "auto";
+                                externalRef?: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user’s plans (summaries) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            plans: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                                /** @enum {string} */
+                                status: "draft" | "active" | "archived" | "done";
+                                /** @enum {string} */
+                                createdFrom: "builder" | "import";
+                                startDate: string;
+                                endDate: string | null;
+                                summary: {
+                                    [key: string]: unknown;
+                                };
+                                taskCount: number;
+                                createdAt: string;
+                                updatedAt: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A plan with its week pattern, day overrides and tasks */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            status: "draft" | "active" | "archived" | "done";
+                            /** @enum {string} */
+                            createdFrom: "builder" | "import";
+                            startDate: string;
+                            endDate: string | null;
+                            summary: {
+                                [key: string]: unknown;
+                            };
+                            taskCount: number;
+                            createdAt: string;
+                            updatedAt: string;
+                            weekPattern: {
+                                studyWeekdays: number[];
+                                defaultHours: number;
+                                /** @default {} */
+                                hoursByWeekday: {
+                                    [key: string]: number;
+                                };
+                                windowStart: string;
+                                windowEnd: string;
+                                lunchStart?: string;
+                                lunchEnd?: string;
+                                /** @default 2 */
+                                breakEveryHours: number;
+                                /** @default 10 */
+                                breakMinutes: number;
+                                /** @default 30 */
+                                minBlockMinutes: number;
+                                timezone: string;
+                            } | null;
+                            overrides: {
+                                date: string;
+                                isStudyDay: boolean;
+                                capacityHours?: number;
+                            }[];
+                            tasks: {
+                                id: string;
+                                title: string;
+                                /** @enum {string} */
+                                type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                provider?: string;
+                                /** Format: uri */
+                                url?: string;
+                                estHours: number;
+                                /** @default 0 */
+                                doneHours: number;
+                                /**
+                                 * @default pending
+                                 * @enum {string}
+                                 */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                order: number;
+                                /** @default [] */
+                                dependsOn: string[];
+                                /** @default false */
+                                isAnchor: boolean;
+                                anchorDate?: string;
+                                anchorStartTime?: string;
+                                pinnedStart?: {
+                                    date: string;
+                                    start: string;
+                                };
+                                notBefore?: string;
+                                /** @default true */
+                                splittable: boolean;
+                                /** @default false */
+                                isCertificate: boolean;
+                                certificateName?: string;
+                                /** @default [] */
+                                lessons: {
+                                    title: string;
+                                    /** Format: uri */
+                                    url?: string;
+                                    estMinutes?: number;
+                                    summary?: string;
+                                    /** @default false */
+                                    needsCheck: boolean;
+                                }[];
+                                /** @default [] */
+                                howToSteps: string[];
+                                promptTemplate?: string;
+                                practiceKind?: string;
+                                notes?: string;
+                                /**
+                                 * @default manual
+                                 * @enum {string}
+                                 */
+                                source: "manual" | "import" | "builder" | "auto";
+                                externalRef?: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Delete a plan and everything it owns */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": null;
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{id}/week-pattern": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace the plan’s weekly time settings (spec 3.7)
+         * @description Saves the settings. To see what a change would do first, use POST /plans/{id}/schedule/preview.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        studyWeekdays: number[];
+                        defaultHours: number;
+                        /** @default {} */
+                        hoursByWeekday?: {
+                            [key: string]: number;
+                        };
+                        windowStart: string;
+                        windowEnd: string;
+                        lunchStart?: string;
+                        lunchEnd?: string;
+                        /** @default 2 */
+                        breakEveryHours?: number;
+                        /** @default 10 */
+                        breakMinutes?: number;
+                        /** @default 30 */
+                        minBlockMinutes?: number;
+                        timezone: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            studyWeekdays: number[];
+                            defaultHours: number;
+                            /** @default {} */
+                            hoursByWeekday: {
+                                [key: string]: number;
+                            };
+                            windowStart: string;
+                            windowEnd: string;
+                            lunchStart?: string;
+                            lunchEnd?: string;
+                            /** @default 2 */
+                            breakEveryHours: number;
+                            /** @default 10 */
+                            breakMinutes: number;
+                            /** @default 30 */
+                            minBlockMinutes: number;
+                            timezone: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{id}/start-date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change the plan’s start date (moves the whole schedule)
+         * @description Stores the new start date; the schedule then starts from that day. 422 when the date is before today in the plan’s time zone, after the end date, or after the earliest open exam; 409 `day_started` when a day on or before it was already started, ended or frozen. Only the date is stored: how a start date is read by the scheduler does not change.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        startDate: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            startDate: string;
+                            endDate: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{id}/day-overrides/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set the exception for one date (day off, extra study day, other hours) */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
                     date: string;
-                    hours: number;
-                  };
-              summary: {
-                movedTaskIds: string[];
-                finishBefore: string | null;
-                finishAfter: string | null;
-                finishChanged: boolean;
-                finishShiftStudyDays: number;
-                newAnchorRisks: string[];
-                text: string;
-              };
-              currentFinishDate: string | null;
-              proposedFinishDate: string | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/suggestions/{id}/accept': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Accept a suggestion option (idempotent on the suggestion id)
-     * @description The body holds only `option` (default 0); a proposed change is never accepted from the client (400 for any other key). The suggestion is recomputed from the stored state, applied in one transaction (week pattern, day overrides, task estimates or a new practice task), stored as an adjustment with its evidence, and a `schedule.changed` event is written. 201 when applied now; 200 with the stored result when this id was already accepted with the same option; 409 when it was rejected, accepted with another option, or is not open any more (stale evidence or unknown id).
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** @default 0 */
-            option?: number;
-          } | null;
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              adjustment: {
-                suggestionId: string;
-                /** @enum {string} */
-                rule:
-                  'density_too_high' | 'density_too_low' | 'estimate_drift' | 'difficulty_practice';
-                /** @enum {string} */
-                status: 'accepted' | 'rejected';
-                option: number | null;
-                /** Format: date-time */
-                decidedAt: string;
-              };
-              summary: {
-                movedTaskIds: string[];
-                finishBefore: string | null;
-                finishAfter: string | null;
-                finishChanged: boolean;
-                finishShiftStudyDays: number;
-                newAnchorRisks: string[];
-                text: string;
-              } | null;
-              replayed: boolean;
-            };
-          };
-        };
-        /** @description Default Response */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              adjustment: {
-                suggestionId: string;
-                /** @enum {string} */
-                rule:
-                  'density_too_high' | 'density_too_low' | 'estimate_drift' | 'difficulty_practice';
-                /** @enum {string} */
-                status: 'accepted' | 'rejected';
-                option: number | null;
-                /** Format: date-time */
-                decidedAt: string;
-              };
-              summary: {
-                movedTaskIds: string[];
-                finishBefore: string | null;
-                finishAfter: string | null;
-                finishChanged: boolean;
-                finishShiftStudyDays: number;
-                newAnchorRisks: string[];
-                text: string;
-              } | null;
-              replayed: boolean;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/suggestions/{id}/reject': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Reject a suggestion so it is not offered again (idempotent)
-     * @description Stores the rejection with its evidence. The same evidence is not offered again; new evidence gives a new suggestion. 201 when stored now, 200 when it was already rejected, 409 when it was accepted or is not open any more.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          id: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': Record<string, never> | null;
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              adjustment: {
-                suggestionId: string;
-                /** @enum {string} */
-                rule:
-                  'density_too_high' | 'density_too_low' | 'estimate_drift' | 'difficulty_practice';
-                /** @enum {string} */
-                status: 'accepted' | 'rejected';
-                option: number | null;
-                /** Format: date-time */
-                decidedAt: string;
-              };
-              summary: {
-                movedTaskIds: string[];
-                finishBefore: string | null;
-                finishAfter: string | null;
-                finishChanged: boolean;
-                finishShiftStudyDays: number;
-                newAnchorRisks: string[];
-                text: string;
-              } | null;
-              replayed: boolean;
-            };
-          };
-        };
-        /** @description Default Response */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              adjustment: {
-                suggestionId: string;
-                /** @enum {string} */
-                rule:
-                  'density_too_high' | 'density_too_low' | 'estimate_drift' | 'difficulty_practice';
-                /** @enum {string} */
-                status: 'accepted' | 'rejected';
-                option: number | null;
-                /** Format: date-time */
-                decidedAt: string;
-              };
-              summary: {
-                movedTaskIds: string[];
-                finishBefore: string | null;
-                finishAfter: string | null;
-                finishChanged: boolean;
-                finishShiftStudyDays: number;
-                newAnchorRisks: string[];
-                text: string;
-              } | null;
-              replayed: boolean;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/practice/context': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The job description saved for the plan (Tier 2)
-     * @description An empty string and `updatedAt: null` until one is saved. It is personal content: never logged, never in events, and removed of contact details before any model would see it.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              jobDescription: string;
-              /** Format: date-time */
-              updatedAt: string | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    /**
-     * Save the job description (an empty string clears it)
-     * @description `redactionsPreview` is how many personal details (emails, phone numbers, links, your own name) are removed from the text before a model could see it.
-     */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            jobDescription: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              jobDescription: string;
-              /** Format: date-time */
-              updatedAt: string;
-              redactionsPreview: number;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/tasks/{taskId}/practice/prompt': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * The ready-made prompt for a practice task
-     * @description Built from the task, the job description, the `next_focus` of the last finished session of the same kind in this plan that left one, and the other tasks worked on in the last 7 days. Personal details are removed. 422 when the task is not a practice. Nothing is saved.
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          taskId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              persona: {
-                id: string;
-                label: string;
-              };
-              prompt: string;
-              inputs: {
-                nextFocus: string | null;
-                /** Format: uuid */
-                nextFocusFrom: string | null;
-                topics: string[];
-                jobDescriptionIncluded: boolean;
-                redactions: number;
-              };
-              feedbackFormat: string;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/tasks/{taskId}/practice/sessions': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Start a practice session (idempotent on the client-generated id)
-     * @description Channels `external` (copy the prompt to another assistant, paste the feedback back), `self` (rubric) and `in_app` (chat with a model here; the answer carries the fixed opener as the first message, and is 503 `ai_unavailable` with `fallbacks` when no model is available). 201 when created; 200 with the stored session for a retry of the same id, task and channel; 409 when the id was used for other data or the task already has an active session (the error body carries its id as `sessionId`). 422 when the task is not a practice. The stored prompt never contains the job description. Writes a `practice.started` event.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          taskId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            /** @enum {string} */
-            channel: 'in_app' | 'external' | 'self';
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              session: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                planId: string;
-                taskId: string;
-                kind: string;
-                persona: string;
-                /** @enum {string} */
-                channel: 'in_app' | 'external' | 'self';
-                /** @enum {string} */
-                status: 'active' | 'finished' | 'abandoned';
-                plannedMinutes: number;
-                /** Format: date-time */
-                startedAt: string;
-                /** Format: date-time */
-                endedAt: string | null;
-                prompt: string;
-                inputs: {
-                  /** Format: uuid */
-                  nextFocusFromSession: string | null;
-                  topicTaskIds: string[];
-                  jobDescriptionIncluded: boolean;
-                  redactions: number;
                 };
-              };
-              messages: {
-                /** Format: uuid */
-                id: string;
-                seq: number;
-                /** @enum {string} */
-                role: 'user' | 'assistant' | 'note';
-                content: string;
-                providerId: string | null;
-                model: string | null;
-                redacted: boolean;
-                /** Format: date-time */
-                createdAt: string;
-              }[];
+                cookie?: never;
             };
-          };
-        };
-        /** @description Default Response */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              session: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                planId: string;
-                taskId: string;
-                kind: string;
-                persona: string;
-                /** @enum {string} */
-                channel: 'in_app' | 'external' | 'self';
-                /** @enum {string} */
-                status: 'active' | 'finished' | 'abandoned';
-                plannedMinutes: number;
-                /** Format: date-time */
-                startedAt: string;
-                /** Format: date-time */
-                endedAt: string | null;
-                prompt: string;
-                inputs: {
-                  /** Format: uuid */
-                  nextFocusFromSession: string | null;
-                  topicTaskIds: string[];
-                  jobDescriptionIncluded: boolean;
-                  redactions: number;
+            requestBody: {
+                content: {
+                    "application/json": {
+                        isStudyDay: boolean;
+                        capacityHours?: number;
+                    };
                 };
-              };
-              messages: {
-                /** Format: uuid */
-                id: string;
-                seq: number;
-                /** @enum {string} */
-                role: 'user' | 'assistant' | 'note';
-                content: string;
-                providerId: string | null;
-                model: string | null;
-                redacted: boolean;
-                /** Format: date-time */
-                createdAt: string;
-              }[];
             };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/practice/sessions/{sessionId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** One practice session with its messages and feedback */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          sessionId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              session: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                planId: string;
-                taskId: string;
-                kind: string;
-                persona: string;
-                /** @enum {string} */
-                channel: 'in_app' | 'external' | 'self';
-                /** @enum {string} */
-                status: 'active' | 'finished' | 'abandoned';
-                plannedMinutes: number;
-                /** Format: date-time */
-                startedAt: string;
-                /** Format: date-time */
-                endedAt: string | null;
-                prompt: string;
-                inputs: {
-                  /** Format: uuid */
-                  nextFocusFromSession: string | null;
-                  topicTaskIds: string[];
-                  jobDescriptionIncluded: boolean;
-                  redactions: number;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            date: string;
+                            isStudyDay: boolean;
+                            capacityHours?: number;
+                        };
+                    };
                 };
-              };
-              messages: {
-                /** Format: uuid */
-                id: string;
-                seq: number;
-                /** @enum {string} */
-                role: 'user' | 'assistant' | 'note';
-                content: string;
-                providerId: string | null;
-                model: string | null;
-                redacted: boolean;
-                /** Format: date-time */
-                createdAt: string;
-              }[];
-              feedback: {
-                /** @enum {string} */
-                source:
-                  'model_json' | 'model_repaired' | 'pasted_block' | 'free_text' | 'self_rubric';
-                score: number | null;
-                strengths: string;
-                improve: string;
-                nextFocus: string;
-                raw: string | null;
-                /** Format: date-time */
-                createdAt: string;
-              } | null;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/practice/sessions/{sessionId}/messages': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Send one chat turn in an in-app session and get the model’s reply
-     * @description The id is chosen by the client: sending the same id again returns the stored pair with no second model call (200, `replayed: true`). Personal details are removed from the text before it is stored or sent (`userMessage.redacted`). The whole earlier conversation is sent each turn, so a provider switch (`switched`) continues from the same point. 429 `ai_user_cap` or `rate_limited`; 503 `ai_unavailable` (your message is kept; send the same id to retry; `fallbacks` lists what to do instead); 409 `turn_in_progress` while another turn is being answered; 422 `pii_blocked`.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          sessionId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            content: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              userMessage: {
-                /** Format: uuid */
-                id: string;
-                seq: number;
-                /** @enum {string} */
-                role: 'user' | 'assistant' | 'note';
-                content: string;
-                providerId: string | null;
-                model: string | null;
-                redacted: boolean;
-                /** Format: date-time */
-                createdAt: string;
-              };
-              reply: {
-                /** Format: uuid */
-                id: string;
-                content: string;
-                providerId: string | null;
-                model: string | null;
-              };
-              switched: {
-                from: string;
-                fromLabel: string;
-                to: string;
-                toLabel: string;
-                /** @enum {string} */
-                reason: 'quota' | 'error' | 'timeout';
-              } | null;
-              usage: {
-                used: number;
-                cap: number;
-              };
-              replayed: boolean;
-            };
-          };
-        };
-        /** @description Default Response */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              userMessage: {
-                /** Format: uuid */
-                id: string;
-                seq: number;
-                /** @enum {string} */
-                role: 'user' | 'assistant' | 'note';
-                content: string;
-                providerId: string | null;
-                model: string | null;
-                redacted: boolean;
-                /** Format: date-time */
-                createdAt: string;
-              };
-              reply: {
-                /** Format: uuid */
-                id: string;
-                content: string;
-                providerId: string | null;
-                model: string | null;
-              };
-              switched: {
-                from: string;
-                fromLabel: string;
-                to: string;
-                toLabel: string;
-                /** @enum {string} */
-                reason: 'quota' | 'error' | 'timeout';
-              } | null;
-              usage: {
-                used: number;
-                cap: number;
-              };
-              replayed: boolean;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/practice/sessions/{sessionId}/feedback': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Paste the feedback block and finish the session
-     * @description A `===FEEDBACK===` block is parsed (`parsed: true`, source `pasted_block`); any other text is saved as plain text without an error (`parsed: false`, source `free_text`, no score). The call also finishes the session: `markDone` (default false) is the only way it marks the task done, and `logHours` (0 to 12) logs time on it. Pasted feedback replaces a self-check, so there is no rubric here. 201 when finished now; 200 for a retry with the same text and options; 409 for other text or options, or an abandoned session.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          sessionId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            text: string;
-            /** @default false */
-            markDone?: boolean;
-            /** @default null */
-            logHours?: number | null;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              session: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                planId: string;
-                taskId: string;
-                kind: string;
-                persona: string;
-                /** @enum {string} */
-                channel: 'in_app' | 'external' | 'self';
-                /** @enum {string} */
-                status: 'active' | 'finished' | 'abandoned';
-                plannedMinutes: number;
-                /** Format: date-time */
-                startedAt: string;
-                /** Format: date-time */
-                endedAt: string | null;
-                prompt: string;
-                inputs: {
-                  /** Format: uuid */
-                  nextFocusFromSession: string | null;
-                  topicTaskIds: string[];
-                  jobDescriptionIncluded: boolean;
-                  redactions: number;
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
                 };
-              };
-              feedback: {
-                /** @enum {string} */
-                source:
-                  'model_json' | 'model_repaired' | 'pasted_block' | 'free_text' | 'self_rubric';
-                score: number | null;
-                strengths: string;
-                improve: string;
-                nextFocus: string;
-                raw: string | null;
-                /** Format: date-time */
-                createdAt: string;
-              } | null;
-              loggedHours: number | null;
-              task: {
-                /** @enum {string} */
-                status: 'pending' | 'in_progress' | 'done' | 'skipped';
-                doneHours: number;
-              };
-              replayed: boolean;
-              parsed: boolean;
-            };
-          };
-        };
-        /** @description Default Response */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              session: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                planId: string;
-                taskId: string;
-                kind: string;
-                persona: string;
-                /** @enum {string} */
-                channel: 'in_app' | 'external' | 'self';
-                /** @enum {string} */
-                status: 'active' | 'finished' | 'abandoned';
-                plannedMinutes: number;
-                /** Format: date-time */
-                startedAt: string;
-                /** Format: date-time */
-                endedAt: string | null;
-                prompt: string;
-                inputs: {
-                  /** Format: uuid */
-                  nextFocusFromSession: string | null;
-                  topicTaskIds: string[];
-                  jobDescriptionIncluded: boolean;
-                  redactions: number;
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
                 };
-              };
-              feedback: {
-                /** @enum {string} */
-                source:
-                  'model_json' | 'model_repaired' | 'pasted_block' | 'free_text' | 'self_rubric';
-                score: number | null;
-                strengths: string;
-                improve: string;
-                nextFocus: string;
-                raw: string | null;
-                /** Format: date-time */
-                createdAt: string;
-              } | null;
-              loggedHours: number | null;
-              task: {
-                /** @enum {string} */
-                status: 'pending' | 'in_progress' | 'done' | 'skipped';
-                doneHours: number;
-              };
-              replayed: boolean;
-              parsed: boolean;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/practice/sessions/{sessionId}/finish': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Finish a session with a self-check, an entered score or no feedback
-     * @description `markDone` is required: the task is marked done only when it is true, through the tasks service, and is otherwise left as it is (logging hours still moves a pending task to in progress, as everywhere). `rubric.checkedSteps` ticks steps of the task (or four generic steps when it has none) and is scored as 10 x ticked / total; `enteredScore` is a score you got elsewhere, normalised to 0 to 10; send at most one of them. Without either, no feedback is saved. In-app sessions can send `aiFeedback: true` instead: the model writes the feedback (valid JSON is saved as `model_json`, JSON repaired locally as `model_repaired`, anything else gets one retry and is then kept as plain text, `free_text`); it never marks the task done, `markDone` does. 503 `ai_unavailable` and 429 `ai_user_cap` carry `fallbacks`, and the session stays open. 201 when finished now; 200 for a retry with the same feedback and options; 409 otherwise, for an abandoned session, or to mark a skipped task done.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          sessionId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            markDone: boolean;
-            /** @default null */
-            logHours?: number | null;
-            rubric?: {
-              checkedSteps: number[];
-            };
-            /** @default false */
-            aiFeedback?: boolean;
-            enteredScore?: {
-              score: number;
-              max: number;
-            };
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              session: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                planId: string;
-                taskId: string;
-                kind: string;
-                persona: string;
-                /** @enum {string} */
-                channel: 'in_app' | 'external' | 'self';
-                /** @enum {string} */
-                status: 'active' | 'finished' | 'abandoned';
-                plannedMinutes: number;
-                /** Format: date-time */
-                startedAt: string;
-                /** Format: date-time */
-                endedAt: string | null;
-                prompt: string;
-                inputs: {
-                  /** Format: uuid */
-                  nextFocusFromSession: string | null;
-                  topicTaskIds: string[];
-                  jobDescriptionIncluded: boolean;
-                  redactions: number;
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
                 };
-              };
-              feedback: {
-                /** @enum {string} */
-                source:
-                  'model_json' | 'model_repaired' | 'pasted_block' | 'free_text' | 'self_rubric';
-                score: number | null;
-                strengths: string;
-                improve: string;
-                nextFocus: string;
-                raw: string | null;
-                /** Format: date-time */
-                createdAt: string;
-              } | null;
-              loggedHours: number | null;
-              task: {
-                /** @enum {string} */
-                status: 'pending' | 'in_progress' | 'done' | 'skipped';
-                doneHours: number;
-              };
-              replayed: boolean;
-            };
-          };
-        };
-        /** @description Default Response */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              session: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                planId: string;
-                taskId: string;
-                kind: string;
-                persona: string;
-                /** @enum {string} */
-                channel: 'in_app' | 'external' | 'self';
-                /** @enum {string} */
-                status: 'active' | 'finished' | 'abandoned';
-                plannedMinutes: number;
-                /** Format: date-time */
-                startedAt: string;
-                /** Format: date-time */
-                endedAt: string | null;
-                prompt: string;
-                inputs: {
-                  /** Format: uuid */
-                  nextFocusFromSession: string | null;
-                  topicTaskIds: string[];
-                  jobDescriptionIncluded: boolean;
-                  redactions: number;
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
                 };
-              };
-              feedback: {
-                /** @enum {string} */
-                source:
-                  'model_json' | 'model_repaired' | 'pasted_block' | 'free_text' | 'self_rubric';
-                score: number | null;
-                strengths: string;
-                improve: string;
-                nextFocus: string;
-                raw: string | null;
-                /** Format: date-time */
-                createdAt: string;
-              } | null;
-              loggedHours: number | null;
-              task: {
-                /** @enum {string} */
-                status: 'pending' | 'in_progress' | 'done' | 'skipped';
-                doneHours: number;
-              };
-              replayed: boolean;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/practice/sessions/{sessionId}/abandon': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Give up a session: nothing is logged and the task is untouched
-     * @description Idempotent. 409 for a session that is already finished.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          sessionId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              session: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                planId: string;
-                taskId: string;
-                kind: string;
-                persona: string;
-                /** @enum {string} */
-                channel: 'in_app' | 'external' | 'self';
-                /** @enum {string} */
-                status: 'active' | 'finished' | 'abandoned';
-                plannedMinutes: number;
-                /** Format: date-time */
-                startedAt: string;
-                /** Format: date-time */
-                endedAt: string | null;
-                prompt: string;
-                inputs: {
-                  /** Format: uuid */
-                  nextFocusFromSession: string | null;
-                  topicTaskIds: string[];
-                  jobDescriptionIncluded: boolean;
-                  redactions: number;
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
                 };
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/practice/history': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Finished practice sessions, newest first (no text)
-     * @description Optionally one `kind` and a plan-local date range (by the day the session started). `limit` defaults to 50, at most 200.
-     */
-    get: {
-      parameters: {
-        query?: {
-          kind?: string;
-          from?: string;
-          to?: string;
-          limit?: number;
-        };
-        header?: never;
-        path: {
-          planId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              sessions: {
-                /** Format: uuid */
-                id: string;
-                taskId: string;
-                kind: string;
-                /** @enum {string} */
-                channel: 'in_app' | 'external' | 'self';
-                /** Format: date-time */
-                startedAt: string;
-                minutes: number;
-                score: number | null;
-                /** @enum {string|null} */
-                source:
-                  | 'model_json'
-                  | 'model_repaired'
-                  | 'pasted_block'
-                  | 'free_text'
-                  | 'self_rubric'
-                  | null;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/practice/trends': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Score trend per practice kind
-     * @description Scored sessions only (free text has no score), oldest first, from the newest 1000 in the range. `last`, `average` and `delta` are computed in the shared package.
-     */
-    get: {
-      parameters: {
-        query?: {
-          from?: string;
-          to?: string;
-        };
-        header?: never;
-        path: {
-          planId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              kinds: {
-                kind: string;
-                points: {
-                  date: string;
-                  score: number;
-                  /** @enum {string} */
-                  source:
-                    'model_json' | 'model_repaired' | 'pasted_block' | 'free_text' | 'self_rubric';
-                }[];
-                last: number;
-                average: number;
-                delta: number | null;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/tasks': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** The tasks of a plan, in plan order */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              tasks: {
-                id: string;
-                title: string;
-                /** @enum {string} */
-                type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                provider?: string;
-                url?: string;
-                estHours: number;
-                doneHours: number;
-                /**
-                 * @default pending
-                 * @enum {string}
-                 */
-                status: 'pending' | 'in_progress' | 'done' | 'skipped';
-                order: number;
-                dependsOn: string[];
-                isAnchor: boolean;
-                anchorDate?: string;
-                anchorStartTime?: string;
-                pinnedStart?: {
-                  date: string;
-                  start: string;
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
                 };
-                notBefore?: string;
-                splittable: boolean;
-                isCertificate: boolean;
-                certificateName?: string;
-                lessons: {
-                  title: string;
-                  /** Format: uri */
-                  url?: string;
-                  estMinutes?: number;
-                  summary?: string;
-                  /** @default false */
-                  needsCheck: boolean;
-                }[];
-                howToSteps: string[];
-                promptTemplate?: string;
-                practiceKind?: string;
-                notes?: string;
-                /**
-                 * @default manual
-                 * @enum {string}
-                 */
-                source: 'manual' | 'import' | 'builder' | 'auto';
-                externalRef?: string;
-                /** Format: date-time */
-                createdAt: string;
-                /** Format: date-time */
-                updatedAt: string;
-              }[];
             };
-          };
         };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/tasks/{taskId}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** One task */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          taskId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              id: string;
-              title: string;
-              /** @enum {string} */
-              type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-              provider?: string;
-              url?: string;
-              estHours: number;
-              doneHours: number;
-              /**
-               * @default pending
-               * @enum {string}
-               */
-              status: 'pending' | 'in_progress' | 'done' | 'skipped';
-              order: number;
-              dependsOn: string[];
-              isAnchor: boolean;
-              anchorDate?: string;
-              anchorStartTime?: string;
-              pinnedStart?: {
-                date: string;
-                start: string;
-              };
-              notBefore?: string;
-              splittable: boolean;
-              isCertificate: boolean;
-              certificateName?: string;
-              lessons: {
-                title: string;
-                /** Format: uri */
-                url?: string;
-                estMinutes?: number;
-                summary?: string;
-                /** @default false */
-                needsCheck: boolean;
-              }[];
-              howToSteps: string[];
-              promptTemplate?: string;
-              practiceKind?: string;
-              notes?: string;
-              /**
-               * @default manual
-               * @enum {string}
-               */
-              source: 'manual' | 'import' | 'builder' | 'auto';
-              externalRef?: string;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    /**
-     * Delete a task (the user’s explicit action)
-     * @description Answers 409 `has_dependents` (with the dependents’ ids and titles) when other tasks depend on it, unless `removeDependencies=true`, which removes the id from their dependsOn in the same transaction. The task’s logs and practice sessions are deleted with it. The schedule is recomputed from the remaining tasks and the calendar sync runs afterwards.
-     */
-    delete: {
-      parameters: {
-        query?: {
-          removeDependencies?: 'true' | 'false';
-        };
-        header?: never;
-        path: {
-          planId: string;
-          taskId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        204: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': null;
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    options?: never;
-    head?: never;
-    /**
-     * Edit a task's own fields (the user's explicit edit)
-     * @description Title, notes, estimate, order, dependencies, not-before date, splittable, link, provider, lessons and steps only. Status and done hours change only through logs, complete, reopen and skip. Unknown fields are rejected. Dependencies must be tasks of the same plan and must not form a loop (422).
-     */
-    patch: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          taskId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            title?: string;
-            provider?: string | null;
-            /** Format: uri */
-            url?: string | null;
-            estHours?: number;
-            order?: number;
-            dependsOn?: string[];
-            notBefore?: string | null;
-            splittable?: boolean;
-            certificateName?: string | null;
-            lessons?: {
-              title: string;
-              /** Format: uri */
-              url?: string;
-              estMinutes?: number;
-              summary?: string;
-              /** @default false */
-              needsCheck?: boolean;
-            }[];
-            howToSteps?: string[];
-            promptTemplate?: string | null;
-            practiceKind?: string | null;
-            notes?: string | null;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              id: string;
-              title: string;
-              /** @enum {string} */
-              type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-              provider?: string;
-              url?: string;
-              estHours: number;
-              doneHours: number;
-              /**
-               * @default pending
-               * @enum {string}
-               */
-              status: 'pending' | 'in_progress' | 'done' | 'skipped';
-              order: number;
-              dependsOn: string[];
-              isAnchor: boolean;
-              anchorDate?: string;
-              anchorStartTime?: string;
-              pinnedStart?: {
-                date: string;
-                start: string;
-              };
-              notBefore?: string;
-              splittable: boolean;
-              isCertificate: boolean;
-              certificateName?: string;
-              lessons: {
-                title: string;
-                /** Format: uri */
-                url?: string;
-                estMinutes?: number;
-                summary?: string;
-                /** @default false */
-                needsCheck: boolean;
-              }[];
-              howToSteps: string[];
-              promptTemplate?: string;
-              practiceKind?: string;
-              notes?: string;
-              /**
-               * @default manual
-               * @enum {string}
-               */
-              source: 'manual' | 'import' | 'builder' | 'auto';
-              externalRef?: string;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        422: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/tasks/{taskId}/logs': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Log hours worked on a task (idempotent by the client-generated log id)
-     * @description Creates the log (201) or, for a retry with the same id and data, returns it (200). The same id with different data answers 409. done_hours goes up by the logged hours (it keeps hours that came with an imported plan); the first log moves a pending task to in_progress. The task is never closed here: when the hours reach the estimate the response sets suggestDone and the user completes it explicitly.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          taskId: string;
-        };
-        cookie?: never;
-      };
-      requestBody: {
-        content: {
-          'application/json': {
-            /** Format: uuid */
-            id: string;
-            date: string;
-            hours: number;
-            result?: string;
-            score?: number;
-            note?: string;
-          };
-        };
-      };
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              log: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                planId: string;
-                taskId: string;
-                date: string;
-                hours: number;
-                result?: string;
-                score?: number;
-                note?: string;
-                /** Format: date-time */
-                createdAt: string;
-              };
-              task: {
-                id: string;
-                title: string;
-                /** @enum {string} */
-                type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                provider?: string;
-                url?: string;
-                estHours: number;
-                doneHours: number;
-                /**
-                 * @default pending
-                 * @enum {string}
-                 */
-                status: 'pending' | 'in_progress' | 'done' | 'skipped';
-                order: number;
-                dependsOn: string[];
-                isAnchor: boolean;
-                anchorDate?: string;
-                anchorStartTime?: string;
-                pinnedStart?: {
-                  date: string;
-                  start: string;
+        post?: never;
+        /** Remove the exception for one date (succeeds if there is none) */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    date: string;
                 };
-                notBefore?: string;
-                splittable: boolean;
-                isCertificate: boolean;
-                certificateName?: string;
-                lessons: {
-                  title: string;
-                  /** Format: uri */
-                  url?: string;
-                  estMinutes?: number;
-                  summary?: string;
-                  /** @default false */
-                  needsCheck: boolean;
-                }[];
-                howToSteps: string[];
-                promptTemplate?: string;
-                practiceKind?: string;
-                notes?: string;
-                /**
-                 * @default manual
-                 * @enum {string}
-                 */
-                source: 'manual' | 'import' | 'builder' | 'auto';
-                externalRef?: string;
-                /** Format: date-time */
-                createdAt: string;
-                /** Format: date-time */
-                updatedAt: string;
-              };
-              suggestDone: boolean;
+                cookie?: never;
             };
-          };
-        };
-        /** @description Default Response */
-        201: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              log: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                planId: string;
-                taskId: string;
-                date: string;
-                hours: number;
-                result?: string;
-                score?: number;
-                note?: string;
-                /** Format: date-time */
-                createdAt: string;
-              };
-              task: {
-                id: string;
-                title: string;
-                /** @enum {string} */
-                type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                provider?: string;
-                url?: string;
-                estHours: number;
-                doneHours: number;
-                /**
-                 * @default pending
-                 * @enum {string}
-                 */
-                status: 'pending' | 'in_progress' | 'done' | 'skipped';
-                order: number;
-                dependsOn: string[];
-                isAnchor: boolean;
-                anchorDate?: string;
-                anchorStartTime?: string;
-                pinnedStart?: {
-                  date: string;
-                  start: string;
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": null;
+                    };
                 };
-                notBefore?: string;
-                splittable: boolean;
-                isCertificate: boolean;
-                certificateName?: string;
-                lessons: {
-                  title: string;
-                  /** Format: uri */
-                  url?: string;
-                  estMinutes?: number;
-                  summary?: string;
-                  /** @default false */
-                  needsCheck: boolean;
-                }[];
-                howToSteps: string[];
-                promptTemplate?: string;
-                practiceKind?: string;
-                notes?: string;
-                /**
-                 * @default manual
-                 * @enum {string}
-                 */
-                source: 'manual' | 'import' | 'builder' | 'auto';
-                externalRef?: string;
-                /** Format: date-time */
-                createdAt: string;
-                /** Format: date-time */
-                updatedAt: string;
-              };
-              suggestDone: boolean;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/tasks/{taskId}/complete': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Mark a task done (done hours stay as logged)
-     * @description An explicit user action. Idempotent.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          taskId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              id: string;
-              title: string;
-              /** @enum {string} */
-              type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-              provider?: string;
-              url?: string;
-              estHours: number;
-              doneHours: number;
-              /**
-               * @default pending
-               * @enum {string}
-               */
-              status: 'pending' | 'in_progress' | 'done' | 'skipped';
-              order: number;
-              dependsOn: string[];
-              isAnchor: boolean;
-              anchorDate?: string;
-              anchorStartTime?: string;
-              pinnedStart?: {
-                date: string;
-                start: string;
-              };
-              notBefore?: string;
-              splittable: boolean;
-              isCertificate: boolean;
-              certificateName?: string;
-              lessons: {
-                title: string;
-                /** Format: uri */
-                url?: string;
-                estMinutes?: number;
-                summary?: string;
-                /** @default false */
-                needsCheck: boolean;
-              }[];
-              howToSteps: string[];
-              promptTemplate?: string;
-              practiceKind?: string;
-              notes?: string;
-              /**
-               * @default manual
-               * @enum {string}
-               */
-              source: 'manual' | 'import' | 'builder' | 'auto';
-              externalRef?: string;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/tasks/{taskId}/reopen': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Reopen a done or skipped task
-     * @description An explicit user action. Idempotent.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          taskId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              id: string;
-              title: string;
-              /** @enum {string} */
-              type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-              provider?: string;
-              url?: string;
-              estHours: number;
-              doneHours: number;
-              /**
-               * @default pending
-               * @enum {string}
-               */
-              status: 'pending' | 'in_progress' | 'done' | 'skipped';
-              order: number;
-              dependsOn: string[];
-              isAnchor: boolean;
-              anchorDate?: string;
-              anchorStartTime?: string;
-              pinnedStart?: {
-                date: string;
-                start: string;
-              };
-              notBefore?: string;
-              splittable: boolean;
-              isCertificate: boolean;
-              certificateName?: string;
-              lessons: {
-                title: string;
-                /** Format: uri */
-                url?: string;
-                estMinutes?: number;
-                summary?: string;
-                /** @default false */
-                needsCheck: boolean;
-              }[];
-              howToSteps: string[];
-              promptTemplate?: string;
-              practiceKind?: string;
-              notes?: string;
-              /**
-               * @default manual
-               * @enum {string}
-               */
-              source: 'manual' | 'import' | 'builder' | 'auto';
-              externalRef?: string;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/tasks/{taskId}/skip': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Skip a task
-     * @description An explicit user action. Idempotent.
-     */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-          taskId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              id: string;
-              title: string;
-              /** @enum {string} */
-              type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-              provider?: string;
-              url?: string;
-              estHours: number;
-              doneHours: number;
-              /**
-               * @default pending
-               * @enum {string}
-               */
-              status: 'pending' | 'in_progress' | 'done' | 'skipped';
-              order: number;
-              dependsOn: string[];
-              isAnchor: boolean;
-              anchorDate?: string;
-              anchorStartTime?: string;
-              pinnedStart?: {
-                date: string;
-                start: string;
-              };
-              notBefore?: string;
-              splittable: boolean;
-              isCertificate: boolean;
-              certificateName?: string;
-              lessons: {
-                title: string;
-                /** Format: uri */
-                url?: string;
-                estMinutes?: number;
-                summary?: string;
-                /** @default false */
-                needsCheck: boolean;
-              }[];
-              howToSteps: string[];
-              promptTemplate?: string;
-              practiceKind?: string;
-              notes?: string;
-              /**
-               * @default manual
-               * @enum {string}
-               */
-              source: 'manual' | 'import' | 'builder' | 'auto';
-              externalRef?: string;
-              /** Format: date-time */
-              createdAt: string;
-              /** Format: date-time */
-              updatedAt: string;
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        409: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/progress': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Hours, tasks, certificates, per-type and per-day totals of a plan */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          planId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              hours: {
-                planned: number;
-                done: number;
-              };
-              tasks: {
-                total: number;
-                done: number;
-                skipped: number;
-              };
-              certificatesEarned: number;
-              certificates: {
-                taskId: string;
-                name: string | null;
-              }[];
-              byType: {
-                /** @enum {string} */
-                type: 'course' | 'cert_exam' | 'practice' | 'admin' | 'cv_update';
-                plannedHours: number;
-                doneHours: number;
-                tasksTotal: number;
-                tasksDone: number;
-              }[];
-              byDay: {
-                date: string;
-                hours: number;
-                entries: number;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/plans/{planId}/logs': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Logs of a plan, optionally between two local dates (inclusive) */
-    get: {
-      parameters: {
-        query?: {
-          from?: string;
-          to?: string;
-        };
-        header?: never;
-        path: {
-          planId: string;
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              logs: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                planId: string;
-                taskId: string;
-                date: string;
-                hours: number;
-                result?: string;
-                score?: number;
-                note?: string;
-                /** Format: date-time */
-                createdAt: string;
-              }[];
-            };
-          };
-        };
-        /** @description Default Response */
-        400: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        404: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
-    };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/ai/usage': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Today’s AI usage for the signed-in user and for this environment
-     * @description Shows this environment’s own budget per provider (calls reserved today, UTC), not a quota claimed by the provider. With no provider configured, `configured` is false and the lists are empty. `avoidedToday` counts calls that were not needed (cache, template, rubric).
-     */
-    get: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        /** @description Default Response */
-        200: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              day: string;
-              resetsAt: string;
-              configured: boolean;
-              user: {
-                practiceMessages: {
-                  used: number;
-                  cap: number;
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
                 };
-                practiceFeedback: {
-                  used: number;
-                  cap: number;
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
                 };
-                dayOverview: {
-                  used: number;
-                  cap: number;
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
                 };
-                cvTailor: {
-                  used: number;
-                  cap: number;
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
                 };
-              };
-              features: {
-                cvTailor: boolean;
-              };
-              avoidedToday: number;
-              providers: {
-                id: string;
-                label: string;
-                configured: boolean;
-                available: boolean;
-                cooldownUntil: string | null;
-                usedToday: number;
-                budget: number | null;
-              }[];
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
             };
-          };
         };
-        /** @description Default Response */
-        401: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        403: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        429: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-        /** @description Default Response */
-        503: {
-          headers: {
-            [name: string]: unknown;
-          };
-          content: {
-            'application/json': {
-              error: {
-                code: string;
-                message: string;
-                requestId: string;
-                fallbacks?: string[];
-                sessionId?: string;
-                dependents?: {
-                  id: string;
-                  title: string;
-                }[];
-              };
-            };
-          };
-        };
-      };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/api/v1/plans/{id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The plan’s computed schedule (blocks, warnings, finish date)
+         * @description `today` defaults to the current date in the plan’s time zone. Days before `today` are not scheduled. Nothing is saved.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    today?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            today: string;
+                            timezone: string;
+                            finishDate: string | null;
+                            blocks: {
+                                taskId: string;
+                                date: string;
+                                start: string;
+                                end: string;
+                                minutes: number;
+                                /** @enum {string} */
+                                kind: "study" | "anchor" | "pinned" | "locked";
+                            }[];
+                            warnings: ({
+                                kind: string;
+                            } & {
+                                [key: string]: unknown;
+                            })[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{id}/schedule/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * What a pattern or override change would do, without saving it
+         * @description Plan changes are suggestions until the user approves them: this endpoint only computes the change summary and the proposed schedule. Apply a change with the PUT endpoints.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        today?: string;
+                        pattern?: {
+                            studyWeekdays: number[];
+                            defaultHours: number;
+                            /** @default {} */
+                            hoursByWeekday?: {
+                                [key: string]: number;
+                            };
+                            windowStart: string;
+                            windowEnd: string;
+                            lunchStart?: string;
+                            lunchEnd?: string;
+                            /** @default 2 */
+                            breakEveryHours?: number;
+                            /** @default 10 */
+                            breakMinutes?: number;
+                            /** @default 30 */
+                            minBlockMinutes?: number;
+                            timezone: string;
+                        };
+                        overrides?: {
+                            date: string;
+                            isStudyDay: boolean;
+                            capacityHours?: number;
+                        }[];
+                        removeOverrideDates?: string[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            today: string;
+                            summary: {
+                                movedTaskIds: string[];
+                                finishBefore: string | null;
+                                finishAfter: string | null;
+                                finishChanged: boolean;
+                                finishShiftStudyDays: number;
+                                newAnchorRisks: string[];
+                                text: string;
+                            };
+                            current: {
+                                finishDate: string | null;
+                                warnings: ({
+                                    kind: string;
+                                } & {
+                                    [key: string]: unknown;
+                                })[];
+                            };
+                            proposed: {
+                                finishDate: string | null;
+                                warnings: ({
+                                    kind: string;
+                                } & {
+                                    [key: string]: unknown;
+                                })[];
+                                blocks: {
+                                    taskId: string;
+                                    date: string;
+                                    start: string;
+                                    end: string;
+                                    minutes: number;
+                                    /** @enum {string} */
+                                    kind: "study" | "anchor" | "pinned" | "locked";
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{id}/open-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open tasks of the week, with the days they were carried over from
+         * @description Tasks that are not done and are either planned this week (Sunday to Saturday in the plan’s time zone, the week that holds `today`) or were planned on an earlier frozen day and are still open. A skipped task appears (status `skipped`) only when it was planned on an earlier frozen day, so it can be reconsidered; reopen it to plan it again. `carriedOverFrom` lists those earlier dates; it is empty for a task that is only planned ahead. `today` defaults to the current date in the plan’s time zone.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    today?: string;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            today: string;
+                            weekStart: string;
+                            weekEnd: string;
+                            tasks: {
+                                taskId: string;
+                                title: string;
+                                type: string;
+                                /** @enum {string} */
+                                status: "pending" | "in_progress" | "skipped";
+                                estHours: number;
+                                doneHours: number;
+                                remainingHours: number;
+                                plannedDates: string[];
+                                carriedOverFrom: string[];
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/days/{date}/briefing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The briefing for a study day (deterministic, no AI)
+         * @description Allowed for today (in the plan’s time zone) or an earlier date of the plan; a future date answers 422. A day that has been frozen (ended, or rolled over) uses its stored blocks, so its briefing does not change when the plan is edited later. `source` is always `template` in v0.2: no AI model is called. Links, providers and lesson titles appear only when the plan’s tasks have them. For practice tasks on today only (plan time zone), `promptTemplate` is the ready-made practice prompt (the one `GET .../practice/prompt` returns) and `practiceSessionId` is the active session, if any; the task’s own template stays if that cannot be built, and on past days. Reading brings every missed past day up to date first; nothing else is written and no event is logged.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    date: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            date: string;
+                            overview: string;
+                            tasks: {
+                                taskId: string;
+                                title: string;
+                                /** @enum {string} */
+                                type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                provider?: string;
+                                url?: string;
+                                plannedMinutes: number;
+                                start: string;
+                                end: string;
+                                blocks: {
+                                    start: string;
+                                    end: string;
+                                    minutes: number;
+                                }[];
+                                what: string;
+                                lessons: {
+                                    title: string;
+                                    url?: string;
+                                    estMinutes?: number;
+                                    summary?: string;
+                                    needsCheck: boolean;
+                                }[];
+                                howToSteps: string[];
+                                promptTemplate: string | null;
+                                /** Format: uuid */
+                                practiceSessionId?: string;
+                                successCriteria: string | null;
+                                carriedOver: boolean;
+                            }[];
+                            suggestedOrder: {
+                                taskId: string;
+                                start: string;
+                                end: string;
+                            }[];
+                            podcast?: {
+                                title: string;
+                                publisher: string;
+                                skillLink: string;
+                                oneLine: string | null;
+                                spotifyUrl: string;
+                            };
+                            /** @enum {string} */
+                            source: "template";
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/days/{date}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a study day (idempotent)
+         * @description Allowed for today (in the plan’s time zone) or any earlier date of the plan; a future date answers 422. 201 when the day was started now, 200 with the same state when it already was. Writes one `day.started` event.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    date: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            date: string;
+                            /** @enum {string} */
+                            status: "not_started" | "started" | "ended";
+                            startedAt: string | null;
+                            endedAt: string | null;
+                            frozen: {
+                                frozenAt: string;
+                                /** @enum {string} */
+                                source: "day_end" | "auto_rollover";
+                                blocks: {
+                                    taskId: string;
+                                    date: string;
+                                    start: string;
+                                    end: string;
+                                    minutes: number;
+                                    /** @enum {string} */
+                                    kind: "study" | "anchor" | "pinned" | "locked";
+                                }[];
+                            } | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            date: string;
+                            /** @enum {string} */
+                            status: "not_started" | "started" | "ended";
+                            startedAt: string | null;
+                            endedAt: string | null;
+                            frozen: {
+                                frozenAt: string;
+                                /** @enum {string} */
+                                source: "day_end" | "auto_rollover";
+                                blocks: {
+                                    taskId: string;
+                                    date: string;
+                                    start: string;
+                                    end: string;
+                                    minutes: number;
+                                    /** @enum {string} */
+                                    kind: "study" | "anchor" | "pinned" | "locked";
+                                }[];
+                            } | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/days/{date}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End a study day and freeze its blocks (idempotent)
+         * @description Allowed for today or an earlier date; a future date answers 422. Stores the blocks that were planned for the date as an append-only snapshot, so the day never changes again, and marks the day ended. A retry returns the same state and writes no second `day.ended` event. A past day that was already frozen automatically keeps its snapshot.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    date: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            date: string;
+                            /** @enum {string} */
+                            status: "not_started" | "started" | "ended";
+                            startedAt: string | null;
+                            endedAt: string | null;
+                            frozen: {
+                                frozenAt: string;
+                                /** @enum {string} */
+                                source: "day_end" | "auto_rollover";
+                                blocks: {
+                                    taskId: string;
+                                    date: string;
+                                    start: string;
+                                    end: string;
+                                    minutes: number;
+                                    /** @enum {string} */
+                                    kind: "study" | "anchor" | "pinned" | "locked";
+                                }[];
+                            } | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/days/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Session state of a day and its frozen blocks
+         * @description `frozen` is null until the day is frozen (by ending it, or automatically on the first read after it has passed). Reading brings every missed past day of the plan up to date first.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    date: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            date: string;
+                            /** @enum {string} */
+                            status: "not_started" | "started" | "ended";
+                            startedAt: string | null;
+                            endedAt: string | null;
+                            frozen: {
+                                frozenAt: string;
+                                /** @enum {string} */
+                                source: "day_end" | "auto_rollover";
+                                blocks: {
+                                    taskId: string;
+                                    date: string;
+                                    start: string;
+                                    end: string;
+                                    minutes: number;
+                                    /** @enum {string} */
+                                    kind: "study" | "anchor" | "pinned" | "locked";
+                                }[];
+                            } | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/days/{date}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The review of one day
+         * @description 404 when the day has no review.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    date: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            date: string;
+                            difficulty: number;
+                            density: number;
+                            energy: number;
+                            note: string;
+                            outcomes: {
+                                taskId: string;
+                                /** @enum {string} */
+                                outcome: "done" | "partial" | "not_done";
+                                hours?: number;
+                                reason?: string;
+                            }[];
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        /**
+         * Submit or re-save the end-of-day review (idempotent)
+         * @description The body is the review (`date` must equal the URL date). Allowed for today (in the plan’s time zone) or an earlier date of the plan that was a study day or has logged work or a started session; a future date answers 422, and so does an outcome that names a task of another plan. 201 when the review was stored now, 200 when it already existed: the same content changes nothing, other content re-saves it, which is allowed only on the review’s day and the day after (409 later). Writes `review.submitted` (first save) or `review.updated` (a real change) events. The review never logs hours and never marks a task done: `missingLogs` and `notMarkedDone` tell the client what the user may still do. `suggestions` are the open adjustment suggestions after this review; nothing is saved for them until the user decides.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    date: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        date: string;
+                        difficulty: number;
+                        density: number;
+                        energy: number;
+                        /** @default  */
+                        note?: string;
+                        /** @default [] */
+                        outcomes?: {
+                            taskId: string;
+                            /** @enum {string} */
+                            outcome: "done" | "partial" | "not_done";
+                            hours?: number;
+                            reason?: string;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            review: {
+                                date: string;
+                                difficulty: number;
+                                density: number;
+                                energy: number;
+                                note: string;
+                                outcomes: {
+                                    taskId: string;
+                                    /** @enum {string} */
+                                    outcome: "done" | "partial" | "not_done";
+                                    hours?: number;
+                                    reason?: string;
+                                }[];
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                            created: boolean;
+                            missingLogs: {
+                                taskId: string;
+                                reportedHours: number;
+                                loggedHours: number;
+                                missingHours: number;
+                            }[];
+                            notMarkedDone: string[];
+                            suggestions: {
+                                id: string;
+                                /** @enum {string} */
+                                rule: "density_too_high" | "density_too_low" | "estimate_drift" | "difficulty_practice";
+                                key: string;
+                                title: string;
+                                explanation: string;
+                                proposedChange: {
+                                    /** @enum {string} */
+                                    kind: "capacityDelta";
+                                    scope: {
+                                        /** @enum {string} */
+                                        type: "weekdays";
+                                        weekdays: number[];
+                                    } | {
+                                        /** @enum {string} */
+                                        type: "dateRange";
+                                        from: string;
+                                        to: string;
+                                    };
+                                    hours: number;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "estimateUpdate";
+                                    /** @enum {string} */
+                                    taskType: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                    factor: number;
+                                    taskIds: string[];
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "extraPractice";
+                                    afterTaskId: string;
+                                    hours: number;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "pullForward";
+                                    date: string;
+                                    hours: number;
+                                };
+                                alternatives: ({
+                                    /** @enum {string} */
+                                    kind: "capacityDelta";
+                                    scope: {
+                                        /** @enum {string} */
+                                        type: "weekdays";
+                                        weekdays: number[];
+                                    } | {
+                                        /** @enum {string} */
+                                        type: "dateRange";
+                                        from: string;
+                                        to: string;
+                                    };
+                                    hours: number;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "estimateUpdate";
+                                    /** @enum {string} */
+                                    taskType: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                    factor: number;
+                                    taskIds: string[];
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "extraPractice";
+                                    afterTaskId: string;
+                                    hours: number;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "pullForward";
+                                    date: string;
+                                    hours: number;
+                                })[];
+                                evidence: {
+                                    reviewDates: string[];
+                                    taskIds: string[];
+                                };
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            review: {
+                                date: string;
+                                difficulty: number;
+                                density: number;
+                                energy: number;
+                                note: string;
+                                outcomes: {
+                                    taskId: string;
+                                    /** @enum {string} */
+                                    outcome: "done" | "partial" | "not_done";
+                                    hours?: number;
+                                    reason?: string;
+                                }[];
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                            created: boolean;
+                            missingLogs: {
+                                taskId: string;
+                                reportedHours: number;
+                                loggedHours: number;
+                                missingHours: number;
+                            }[];
+                            notMarkedDone: string[];
+                            suggestions: {
+                                id: string;
+                                /** @enum {string} */
+                                rule: "density_too_high" | "density_too_low" | "estimate_drift" | "difficulty_practice";
+                                key: string;
+                                title: string;
+                                explanation: string;
+                                proposedChange: {
+                                    /** @enum {string} */
+                                    kind: "capacityDelta";
+                                    scope: {
+                                        /** @enum {string} */
+                                        type: "weekdays";
+                                        weekdays: number[];
+                                    } | {
+                                        /** @enum {string} */
+                                        type: "dateRange";
+                                        from: string;
+                                        to: string;
+                                    };
+                                    hours: number;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "estimateUpdate";
+                                    /** @enum {string} */
+                                    taskType: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                    factor: number;
+                                    taskIds: string[];
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "extraPractice";
+                                    afterTaskId: string;
+                                    hours: number;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "pullForward";
+                                    date: string;
+                                    hours: number;
+                                };
+                                alternatives: ({
+                                    /** @enum {string} */
+                                    kind: "capacityDelta";
+                                    scope: {
+                                        /** @enum {string} */
+                                        type: "weekdays";
+                                        weekdays: number[];
+                                    } | {
+                                        /** @enum {string} */
+                                        type: "dateRange";
+                                        from: string;
+                                        to: string;
+                                    };
+                                    hours: number;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "estimateUpdate";
+                                    /** @enum {string} */
+                                    taskType: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                    factor: number;
+                                    taskIds: string[];
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "extraPractice";
+                                    afterTaskId: string;
+                                    hours: number;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "pullForward";
+                                    date: string;
+                                    hours: number;
+                                })[];
+                                evidence: {
+                                    reviewDates: string[];
+                                    taskIds: string[];
+                                };
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rating history for the trend charts (difficulty, density, energy per day)
+         * @description Oldest first, optionally limited to `from`..`to` (inclusive). At most the latest 366 days. Notes and outcomes are not part of the history; read one day for those.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    from?: string;
+                    to?: string;
+                };
+                header?: never;
+                path: {
+                    planId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            reviews: {
+                                date: string;
+                                difficulty: number;
+                                density: number;
+                                energy: number;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The open adjustment suggestions, recomputed from the plan’s current state
+         * @description Transparent rules (spec 3.4) applied to reviews, logs and tasks. Nothing is stored for a suggestion until it is accepted or rejected; ids are stable for the same evidence, and new evidence gives a new id.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            today: string;
+                            suggestions: {
+                                id: string;
+                                /** @enum {string} */
+                                rule: "density_too_high" | "density_too_low" | "estimate_drift" | "difficulty_practice";
+                                key: string;
+                                title: string;
+                                explanation: string;
+                                proposedChange: {
+                                    /** @enum {string} */
+                                    kind: "capacityDelta";
+                                    scope: {
+                                        /** @enum {string} */
+                                        type: "weekdays";
+                                        weekdays: number[];
+                                    } | {
+                                        /** @enum {string} */
+                                        type: "dateRange";
+                                        from: string;
+                                        to: string;
+                                    };
+                                    hours: number;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "estimateUpdate";
+                                    /** @enum {string} */
+                                    taskType: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                    factor: number;
+                                    taskIds: string[];
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "extraPractice";
+                                    afterTaskId: string;
+                                    hours: number;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "pullForward";
+                                    date: string;
+                                    hours: number;
+                                };
+                                alternatives: ({
+                                    /** @enum {string} */
+                                    kind: "capacityDelta";
+                                    scope: {
+                                        /** @enum {string} */
+                                        type: "weekdays";
+                                        weekdays: number[];
+                                    } | {
+                                        /** @enum {string} */
+                                        type: "dateRange";
+                                        from: string;
+                                        to: string;
+                                    };
+                                    hours: number;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "estimateUpdate";
+                                    /** @enum {string} */
+                                    taskType: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                    factor: number;
+                                    taskIds: string[];
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "extraPractice";
+                                    afterTaskId: string;
+                                    hours: number;
+                                } | {
+                                    /** @enum {string} */
+                                    kind: "pullForward";
+                                    date: string;
+                                    hours: number;
+                                })[];
+                                evidence: {
+                                    reviewDates: string[];
+                                    taskIds: string[];
+                                };
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/suggestions/{id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * What accepting a suggestion option would do, without saving it
+         * @description Applies option `option` (0 = the recommended change) to a copy of the plan, schedules both and returns the change summary and the new finish date. 409 when the suggestion is not open any more; 422 for an option it does not have.
+         */
+        post: {
+            parameters: {
+                query?: {
+                    option?: number;
+                };
+                header?: never;
+                path: {
+                    planId: string;
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            suggestionId: string;
+                            option: number;
+                            change: {
+                                /** @enum {string} */
+                                kind: "capacityDelta";
+                                scope: {
+                                    /** @enum {string} */
+                                    type: "weekdays";
+                                    weekdays: number[];
+                                } | {
+                                    /** @enum {string} */
+                                    type: "dateRange";
+                                    from: string;
+                                    to: string;
+                                };
+                                hours: number;
+                            } | {
+                                /** @enum {string} */
+                                kind: "estimateUpdate";
+                                /** @enum {string} */
+                                taskType: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                factor: number;
+                                taskIds: string[];
+                            } | {
+                                /** @enum {string} */
+                                kind: "extraPractice";
+                                afterTaskId: string;
+                                hours: number;
+                            } | {
+                                /** @enum {string} */
+                                kind: "pullForward";
+                                date: string;
+                                hours: number;
+                            };
+                            summary: {
+                                movedTaskIds: string[];
+                                finishBefore: string | null;
+                                finishAfter: string | null;
+                                finishChanged: boolean;
+                                finishShiftStudyDays: number;
+                                newAnchorRisks: string[];
+                                text: string;
+                            };
+                            currentFinishDate: string | null;
+                            proposedFinishDate: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/suggestions/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a suggestion option (idempotent on the suggestion id)
+         * @description The body holds only `option` (default 0); a proposed change is never accepted from the client (400 for any other key). The suggestion is recomputed from the stored state, applied in one transaction (week pattern, day overrides, task estimates or a new practice task), stored as an adjustment with its evidence, and a `schedule.changed` event is written. 201 when applied now; 200 with the stored result when this id was already accepted with the same option; 409 when it was rejected, accepted with another option, or is not open any more (stale evidence or unknown id).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @default 0 */
+                        option?: number;
+                    } | null;
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            adjustment: {
+                                suggestionId: string;
+                                /** @enum {string} */
+                                rule: "density_too_high" | "density_too_low" | "estimate_drift" | "difficulty_practice";
+                                /** @enum {string} */
+                                status: "accepted" | "rejected";
+                                option: number | null;
+                                /** Format: date-time */
+                                decidedAt: string;
+                            };
+                            summary: {
+                                movedTaskIds: string[];
+                                finishBefore: string | null;
+                                finishAfter: string | null;
+                                finishChanged: boolean;
+                                finishShiftStudyDays: number;
+                                newAnchorRisks: string[];
+                                text: string;
+                            } | null;
+                            replayed: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            adjustment: {
+                                suggestionId: string;
+                                /** @enum {string} */
+                                rule: "density_too_high" | "density_too_low" | "estimate_drift" | "difficulty_practice";
+                                /** @enum {string} */
+                                status: "accepted" | "rejected";
+                                option: number | null;
+                                /** Format: date-time */
+                                decidedAt: string;
+                            };
+                            summary: {
+                                movedTaskIds: string[];
+                                finishBefore: string | null;
+                                finishAfter: string | null;
+                                finishChanged: boolean;
+                                finishShiftStudyDays: number;
+                                newAnchorRisks: string[];
+                                text: string;
+                            } | null;
+                            replayed: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/suggestions/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a suggestion so it is not offered again (idempotent)
+         * @description Stores the rejection with its evidence. The same evidence is not offered again; new evidence gives a new suggestion. 201 when stored now, 200 when it was already rejected, 409 when it was accepted or is not open any more.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never> | null;
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            adjustment: {
+                                suggestionId: string;
+                                /** @enum {string} */
+                                rule: "density_too_high" | "density_too_low" | "estimate_drift" | "difficulty_practice";
+                                /** @enum {string} */
+                                status: "accepted" | "rejected";
+                                option: number | null;
+                                /** Format: date-time */
+                                decidedAt: string;
+                            };
+                            summary: {
+                                movedTaskIds: string[];
+                                finishBefore: string | null;
+                                finishAfter: string | null;
+                                finishChanged: boolean;
+                                finishShiftStudyDays: number;
+                                newAnchorRisks: string[];
+                                text: string;
+                            } | null;
+                            replayed: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            adjustment: {
+                                suggestionId: string;
+                                /** @enum {string} */
+                                rule: "density_too_high" | "density_too_low" | "estimate_drift" | "difficulty_practice";
+                                /** @enum {string} */
+                                status: "accepted" | "rejected";
+                                option: number | null;
+                                /** Format: date-time */
+                                decidedAt: string;
+                            };
+                            summary: {
+                                movedTaskIds: string[];
+                                finishBefore: string | null;
+                                finishAfter: string | null;
+                                finishChanged: boolean;
+                                finishShiftStudyDays: number;
+                                newAnchorRisks: string[];
+                                text: string;
+                            } | null;
+                            replayed: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/practice/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The job description saved for the plan (Tier 2)
+         * @description An empty string and `updatedAt: null` until one is saved. It is personal content: never logged, never in events, and removed of contact details before any model would see it.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            jobDescription: string;
+                            /** Format: date-time */
+                            updatedAt: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        /**
+         * Save the job description (an empty string clears it)
+         * @description `redactionsPreview` is how many personal details (emails, phone numbers, links, your own name) are removed from the text before a model could see it.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        jobDescription: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            jobDescription: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            redactionsPreview: number;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/tasks/{taskId}/practice/prompt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The ready-made prompt for a practice task
+         * @description Built from the task, the job description, the `next_focus` of the last finished session of the same kind in this plan that left one, and the other tasks worked on in the last 7 days. Personal details are removed. 422 when the task is not a practice. Nothing is saved.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    taskId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            persona: {
+                                id: string;
+                                label: string;
+                            };
+                            prompt: string;
+                            inputs: {
+                                nextFocus: string | null;
+                                /** Format: uuid */
+                                nextFocusFrom: string | null;
+                                topics: string[];
+                                jobDescriptionIncluded: boolean;
+                                redactions: number;
+                            };
+                            feedbackFormat: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/tasks/{taskId}/practice/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a practice session (idempotent on the client-generated id)
+         * @description Channels `external` (copy the prompt to another assistant, paste the feedback back), `self` (rubric) and `in_app` (chat with a model here; the answer carries the fixed opener as the first message, and is 503 `ai_unavailable` with `fallbacks` when no model is available). 201 when created; 200 with the stored session for a retry of the same id, task and channel; 409 when the id was used for other data or the task already has an active session (the error body carries its id as `sessionId`). 422 when the task is not a practice. The stored prompt never contains the job description. Writes a `practice.started` event.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    taskId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {string} */
+                        channel: "in_app" | "external" | "self";
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            session: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                planId: string;
+                                taskId: string;
+                                kind: string;
+                                persona: string;
+                                /** @enum {string} */
+                                channel: "in_app" | "external" | "self";
+                                /** @enum {string} */
+                                status: "active" | "finished" | "abandoned";
+                                plannedMinutes: number;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                prompt: string;
+                                inputs: {
+                                    /** Format: uuid */
+                                    nextFocusFromSession: string | null;
+                                    topicTaskIds: string[];
+                                    jobDescriptionIncluded: boolean;
+                                    redactions: number;
+                                };
+                            };
+                            messages: {
+                                /** Format: uuid */
+                                id: string;
+                                seq: number;
+                                /** @enum {string} */
+                                role: "user" | "assistant" | "note";
+                                content: string;
+                                providerId: string | null;
+                                model: string | null;
+                                redacted: boolean;
+                                /** Format: date-time */
+                                createdAt: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            session: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                planId: string;
+                                taskId: string;
+                                kind: string;
+                                persona: string;
+                                /** @enum {string} */
+                                channel: "in_app" | "external" | "self";
+                                /** @enum {string} */
+                                status: "active" | "finished" | "abandoned";
+                                plannedMinutes: number;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                prompt: string;
+                                inputs: {
+                                    /** Format: uuid */
+                                    nextFocusFromSession: string | null;
+                                    topicTaskIds: string[];
+                                    jobDescriptionIncluded: boolean;
+                                    redactions: number;
+                                };
+                            };
+                            messages: {
+                                /** Format: uuid */
+                                id: string;
+                                seq: number;
+                                /** @enum {string} */
+                                role: "user" | "assistant" | "note";
+                                content: string;
+                                providerId: string | null;
+                                model: string | null;
+                                redacted: boolean;
+                                /** Format: date-time */
+                                createdAt: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/practice/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One practice session with its messages and feedback */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            session: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                planId: string;
+                                taskId: string;
+                                kind: string;
+                                persona: string;
+                                /** @enum {string} */
+                                channel: "in_app" | "external" | "self";
+                                /** @enum {string} */
+                                status: "active" | "finished" | "abandoned";
+                                plannedMinutes: number;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                prompt: string;
+                                inputs: {
+                                    /** Format: uuid */
+                                    nextFocusFromSession: string | null;
+                                    topicTaskIds: string[];
+                                    jobDescriptionIncluded: boolean;
+                                    redactions: number;
+                                };
+                            };
+                            messages: {
+                                /** Format: uuid */
+                                id: string;
+                                seq: number;
+                                /** @enum {string} */
+                                role: "user" | "assistant" | "note";
+                                content: string;
+                                providerId: string | null;
+                                model: string | null;
+                                redacted: boolean;
+                                /** Format: date-time */
+                                createdAt: string;
+                            }[];
+                            feedback: {
+                                /** @enum {string} */
+                                source: "model_json" | "model_repaired" | "pasted_block" | "free_text" | "self_rubric";
+                                score: number | null;
+                                strengths: string;
+                                improve: string;
+                                nextFocus: string;
+                                raw: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                            } | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/practice/sessions/{sessionId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send one chat turn in an in-app session and get the model’s reply
+         * @description The id is chosen by the client: sending the same id again returns the stored pair with no second model call (200, `replayed: true`). Personal details are removed from the text before it is stored or sent (`userMessage.redacted`). The whole earlier conversation is sent each turn, so a provider switch (`switched`) continues from the same point. 429 `ai_user_cap` or `rate_limited`; 503 `ai_unavailable` (your message is kept; send the same id to retry; `fallbacks` lists what to do instead); 409 `turn_in_progress` while another turn is being answered; 422 `pii_blocked`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        content: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            userMessage: {
+                                /** Format: uuid */
+                                id: string;
+                                seq: number;
+                                /** @enum {string} */
+                                role: "user" | "assistant" | "note";
+                                content: string;
+                                providerId: string | null;
+                                model: string | null;
+                                redacted: boolean;
+                                /** Format: date-time */
+                                createdAt: string;
+                            };
+                            reply: {
+                                /** Format: uuid */
+                                id: string;
+                                content: string;
+                                providerId: string | null;
+                                model: string | null;
+                            };
+                            switched: {
+                                from: string;
+                                fromLabel: string;
+                                to: string;
+                                toLabel: string;
+                                /** @enum {string} */
+                                reason: "quota" | "error" | "timeout";
+                            } | null;
+                            usage: {
+                                used: number;
+                                cap: number;
+                            };
+                            replayed: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            userMessage: {
+                                /** Format: uuid */
+                                id: string;
+                                seq: number;
+                                /** @enum {string} */
+                                role: "user" | "assistant" | "note";
+                                content: string;
+                                providerId: string | null;
+                                model: string | null;
+                                redacted: boolean;
+                                /** Format: date-time */
+                                createdAt: string;
+                            };
+                            reply: {
+                                /** Format: uuid */
+                                id: string;
+                                content: string;
+                                providerId: string | null;
+                                model: string | null;
+                            };
+                            switched: {
+                                from: string;
+                                fromLabel: string;
+                                to: string;
+                                toLabel: string;
+                                /** @enum {string} */
+                                reason: "quota" | "error" | "timeout";
+                            } | null;
+                            usage: {
+                                used: number;
+                                cap: number;
+                            };
+                            replayed: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/practice/sessions/{sessionId}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Paste the feedback block and finish the session
+         * @description A `===FEEDBACK===` block is parsed (`parsed: true`, source `pasted_block`); any other text is saved as plain text without an error (`parsed: false`, source `free_text`, no score). The call also finishes the session: `markDone` (default false) is the only way it marks the task done, and `logHours` (0 to 12) logs time on it. Pasted feedback replaces a self-check, so there is no rubric here. 201 when finished now; 200 for a retry with the same text and options; 409 for other text or options, or an abandoned session.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        text: string;
+                        /** @default false */
+                        markDone?: boolean;
+                        /** @default null */
+                        logHours?: number | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            session: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                planId: string;
+                                taskId: string;
+                                kind: string;
+                                persona: string;
+                                /** @enum {string} */
+                                channel: "in_app" | "external" | "self";
+                                /** @enum {string} */
+                                status: "active" | "finished" | "abandoned";
+                                plannedMinutes: number;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                prompt: string;
+                                inputs: {
+                                    /** Format: uuid */
+                                    nextFocusFromSession: string | null;
+                                    topicTaskIds: string[];
+                                    jobDescriptionIncluded: boolean;
+                                    redactions: number;
+                                };
+                            };
+                            feedback: {
+                                /** @enum {string} */
+                                source: "model_json" | "model_repaired" | "pasted_block" | "free_text" | "self_rubric";
+                                score: number | null;
+                                strengths: string;
+                                improve: string;
+                                nextFocus: string;
+                                raw: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                            } | null;
+                            loggedHours: number | null;
+                            task: {
+                                /** @enum {string} */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                doneHours: number;
+                            };
+                            replayed: boolean;
+                            parsed: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            session: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                planId: string;
+                                taskId: string;
+                                kind: string;
+                                persona: string;
+                                /** @enum {string} */
+                                channel: "in_app" | "external" | "self";
+                                /** @enum {string} */
+                                status: "active" | "finished" | "abandoned";
+                                plannedMinutes: number;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                prompt: string;
+                                inputs: {
+                                    /** Format: uuid */
+                                    nextFocusFromSession: string | null;
+                                    topicTaskIds: string[];
+                                    jobDescriptionIncluded: boolean;
+                                    redactions: number;
+                                };
+                            };
+                            feedback: {
+                                /** @enum {string} */
+                                source: "model_json" | "model_repaired" | "pasted_block" | "free_text" | "self_rubric";
+                                score: number | null;
+                                strengths: string;
+                                improve: string;
+                                nextFocus: string;
+                                raw: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                            } | null;
+                            loggedHours: number | null;
+                            task: {
+                                /** @enum {string} */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                doneHours: number;
+                            };
+                            replayed: boolean;
+                            parsed: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/practice/sessions/{sessionId}/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish a session with a self-check, an entered score or no feedback
+         * @description `markDone` is required: the task is marked done only when it is true, through the tasks service, and is otherwise left as it is (logging hours still moves a pending task to in progress, as everywhere). `rubric.checkedSteps` ticks steps of the task (or four generic steps when it has none) and is scored as 10 x ticked / total; `enteredScore` is a score you got elsewhere, normalised to 0 to 10; send at most one of them. Without either, no feedback is saved. In-app sessions can send `aiFeedback: true` instead: the model writes the feedback (valid JSON is saved as `model_json`, JSON repaired locally as `model_repaired`, anything else gets one retry and is then kept as plain text, `free_text`); it never marks the task done, `markDone` does. 503 `ai_unavailable` and 429 `ai_user_cap` carry `fallbacks`, and the session stays open. 201 when finished now; 200 for a retry with the same feedback and options; 409 otherwise, for an abandoned session, or to mark a skipped task done.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        markDone: boolean;
+                        /** @default null */
+                        logHours?: number | null;
+                        rubric?: {
+                            checkedSteps: number[];
+                        };
+                        /** @default false */
+                        aiFeedback?: boolean;
+                        enteredScore?: {
+                            score: number;
+                            max: number;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            session: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                planId: string;
+                                taskId: string;
+                                kind: string;
+                                persona: string;
+                                /** @enum {string} */
+                                channel: "in_app" | "external" | "self";
+                                /** @enum {string} */
+                                status: "active" | "finished" | "abandoned";
+                                plannedMinutes: number;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                prompt: string;
+                                inputs: {
+                                    /** Format: uuid */
+                                    nextFocusFromSession: string | null;
+                                    topicTaskIds: string[];
+                                    jobDescriptionIncluded: boolean;
+                                    redactions: number;
+                                };
+                            };
+                            feedback: {
+                                /** @enum {string} */
+                                source: "model_json" | "model_repaired" | "pasted_block" | "free_text" | "self_rubric";
+                                score: number | null;
+                                strengths: string;
+                                improve: string;
+                                nextFocus: string;
+                                raw: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                            } | null;
+                            loggedHours: number | null;
+                            task: {
+                                /** @enum {string} */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                doneHours: number;
+                            };
+                            replayed: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            session: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                planId: string;
+                                taskId: string;
+                                kind: string;
+                                persona: string;
+                                /** @enum {string} */
+                                channel: "in_app" | "external" | "self";
+                                /** @enum {string} */
+                                status: "active" | "finished" | "abandoned";
+                                plannedMinutes: number;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                prompt: string;
+                                inputs: {
+                                    /** Format: uuid */
+                                    nextFocusFromSession: string | null;
+                                    topicTaskIds: string[];
+                                    jobDescriptionIncluded: boolean;
+                                    redactions: number;
+                                };
+                            };
+                            feedback: {
+                                /** @enum {string} */
+                                source: "model_json" | "model_repaired" | "pasted_block" | "free_text" | "self_rubric";
+                                score: number | null;
+                                strengths: string;
+                                improve: string;
+                                nextFocus: string;
+                                raw: string | null;
+                                /** Format: date-time */
+                                createdAt: string;
+                            } | null;
+                            loggedHours: number | null;
+                            task: {
+                                /** @enum {string} */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                doneHours: number;
+                            };
+                            replayed: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/practice/sessions/{sessionId}/abandon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give up a session: nothing is logged and the task is untouched
+         * @description Idempotent. 409 for a session that is already finished.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    sessionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            session: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                planId: string;
+                                taskId: string;
+                                kind: string;
+                                persona: string;
+                                /** @enum {string} */
+                                channel: "in_app" | "external" | "self";
+                                /** @enum {string} */
+                                status: "active" | "finished" | "abandoned";
+                                plannedMinutes: number;
+                                /** Format: date-time */
+                                startedAt: string;
+                                /** Format: date-time */
+                                endedAt: string | null;
+                                prompt: string;
+                                inputs: {
+                                    /** Format: uuid */
+                                    nextFocusFromSession: string | null;
+                                    topicTaskIds: string[];
+                                    jobDescriptionIncluded: boolean;
+                                    redactions: number;
+                                };
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/practice/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Finished practice sessions, newest first (no text)
+         * @description Optionally one `kind` and a plan-local date range (by the day the session started). `limit` defaults to 50, at most 200.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    kind?: string;
+                    from?: string;
+                    to?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    planId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            sessions: {
+                                /** Format: uuid */
+                                id: string;
+                                taskId: string;
+                                kind: string;
+                                /** @enum {string} */
+                                channel: "in_app" | "external" | "self";
+                                /** Format: date-time */
+                                startedAt: string;
+                                minutes: number;
+                                score: number | null;
+                                /** @enum {string|null} */
+                                source: "model_json" | "model_repaired" | "pasted_block" | "free_text" | "self_rubric" | null;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/practice/trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Score trend per practice kind
+         * @description Scored sessions only (free text has no score), oldest first, from the newest 1000 in the range. `last`, `average` and `delta` are computed in the shared package.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    from?: string;
+                    to?: string;
+                };
+                header?: never;
+                path: {
+                    planId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            kinds: {
+                                kind: string;
+                                points: {
+                                    date: string;
+                                    score: number;
+                                    /** @enum {string} */
+                                    source: "model_json" | "model_repaired" | "pasted_block" | "free_text" | "self_rubric";
+                                }[];
+                                last: number;
+                                average: number;
+                                delta: number | null;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tasks of a plan, in plan order */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            tasks: {
+                                id: string;
+                                title: string;
+                                /** @enum {string} */
+                                type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                provider?: string;
+                                url?: string;
+                                estHours: number;
+                                doneHours: number;
+                                /**
+                                 * @default pending
+                                 * @enum {string}
+                                 */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                order: number;
+                                dependsOn: string[];
+                                isAnchor: boolean;
+                                anchorDate?: string;
+                                anchorStartTime?: string;
+                                pinnedStart?: {
+                                    date: string;
+                                    start: string;
+                                };
+                                notBefore?: string;
+                                splittable: boolean;
+                                isCertificate: boolean;
+                                certificateName?: string;
+                                lessons: {
+                                    title: string;
+                                    /** Format: uri */
+                                    url?: string;
+                                    estMinutes?: number;
+                                    summary?: string;
+                                    /** @default false */
+                                    needsCheck: boolean;
+                                }[];
+                                howToSteps: string[];
+                                promptTemplate?: string;
+                                practiceKind?: string;
+                                notes?: string;
+                                /**
+                                 * @default manual
+                                 * @enum {string}
+                                 */
+                                source: "manual" | "import" | "builder" | "auto";
+                                externalRef?: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/tasks/{taskId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One task */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    taskId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            title: string;
+                            /** @enum {string} */
+                            type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                            provider?: string;
+                            url?: string;
+                            estHours: number;
+                            doneHours: number;
+                            /**
+                             * @default pending
+                             * @enum {string}
+                             */
+                            status: "pending" | "in_progress" | "done" | "skipped";
+                            order: number;
+                            dependsOn: string[];
+                            isAnchor: boolean;
+                            anchorDate?: string;
+                            anchorStartTime?: string;
+                            pinnedStart?: {
+                                date: string;
+                                start: string;
+                            };
+                            notBefore?: string;
+                            splittable: boolean;
+                            isCertificate: boolean;
+                            certificateName?: string;
+                            lessons: {
+                                title: string;
+                                /** Format: uri */
+                                url?: string;
+                                estMinutes?: number;
+                                summary?: string;
+                                /** @default false */
+                                needsCheck: boolean;
+                            }[];
+                            howToSteps: string[];
+                            promptTemplate?: string;
+                            practiceKind?: string;
+                            notes?: string;
+                            /**
+                             * @default manual
+                             * @enum {string}
+                             */
+                            source: "manual" | "import" | "builder" | "auto";
+                            externalRef?: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Delete a task (the user’s explicit action)
+         * @description Answers 409 `has_dependents` (with the dependents’ ids and titles) when other tasks depend on it, unless `removeDependencies=true`, which removes the id from their dependsOn in the same transaction. The task’s logs and practice sessions are deleted with it. The schedule is recomputed from the remaining tasks and the calendar sync runs afterwards.
+         */
+        delete: {
+            parameters: {
+                query?: {
+                    removeDependencies?: "true" | "false";
+                };
+                header?: never;
+                path: {
+                    planId: string;
+                    taskId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": null;
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Edit a task's own fields (the user's explicit edit)
+         * @description Title, notes, estimate, order, dependencies, not-before date, splittable, link, provider, lessons and steps only. Status and done hours change only through logs, complete, reopen and skip. Unknown fields are rejected. Dependencies must be tasks of the same plan and must not form a loop (422).
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    taskId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        title?: string;
+                        provider?: string | null;
+                        /** Format: uri */
+                        url?: string | null;
+                        estHours?: number;
+                        order?: number;
+                        dependsOn?: string[];
+                        notBefore?: string | null;
+                        splittable?: boolean;
+                        certificateName?: string | null;
+                        lessons?: {
+                            title: string;
+                            /** Format: uri */
+                            url?: string;
+                            estMinutes?: number;
+                            summary?: string;
+                            /** @default false */
+                            needsCheck?: boolean;
+                        }[];
+                        howToSteps?: string[];
+                        promptTemplate?: string | null;
+                        practiceKind?: string | null;
+                        notes?: string | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            title: string;
+                            /** @enum {string} */
+                            type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                            provider?: string;
+                            url?: string;
+                            estHours: number;
+                            doneHours: number;
+                            /**
+                             * @default pending
+                             * @enum {string}
+                             */
+                            status: "pending" | "in_progress" | "done" | "skipped";
+                            order: number;
+                            dependsOn: string[];
+                            isAnchor: boolean;
+                            anchorDate?: string;
+                            anchorStartTime?: string;
+                            pinnedStart?: {
+                                date: string;
+                                start: string;
+                            };
+                            notBefore?: string;
+                            splittable: boolean;
+                            isCertificate: boolean;
+                            certificateName?: string;
+                            lessons: {
+                                title: string;
+                                /** Format: uri */
+                                url?: string;
+                                estMinutes?: number;
+                                summary?: string;
+                                /** @default false */
+                                needsCheck: boolean;
+                            }[];
+                            howToSteps: string[];
+                            promptTemplate?: string;
+                            practiceKind?: string;
+                            notes?: string;
+                            /**
+                             * @default manual
+                             * @enum {string}
+                             */
+                            source: "manual" | "import" | "builder" | "auto";
+                            externalRef?: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/tasks/{taskId}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log hours worked on a task (idempotent by the client-generated log id)
+         * @description Creates the log (201) or, for a retry with the same id and data, returns it (200). The same id with different data answers 409. done_hours goes up by the logged hours (it keeps hours that came with an imported plan); the first log moves a pending task to in_progress. The task is never closed here: when the hours reach the estimate the response sets suggestDone and the user completes it explicitly.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    taskId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        date: string;
+                        hours: number;
+                        result?: string;
+                        score?: number;
+                        note?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            log: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                planId: string;
+                                taskId: string;
+                                date: string;
+                                hours: number;
+                                result?: string;
+                                score?: number;
+                                note?: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                            };
+                            task: {
+                                id: string;
+                                title: string;
+                                /** @enum {string} */
+                                type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                provider?: string;
+                                url?: string;
+                                estHours: number;
+                                doneHours: number;
+                                /**
+                                 * @default pending
+                                 * @enum {string}
+                                 */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                order: number;
+                                dependsOn: string[];
+                                isAnchor: boolean;
+                                anchorDate?: string;
+                                anchorStartTime?: string;
+                                pinnedStart?: {
+                                    date: string;
+                                    start: string;
+                                };
+                                notBefore?: string;
+                                splittable: boolean;
+                                isCertificate: boolean;
+                                certificateName?: string;
+                                lessons: {
+                                    title: string;
+                                    /** Format: uri */
+                                    url?: string;
+                                    estMinutes?: number;
+                                    summary?: string;
+                                    /** @default false */
+                                    needsCheck: boolean;
+                                }[];
+                                howToSteps: string[];
+                                promptTemplate?: string;
+                                practiceKind?: string;
+                                notes?: string;
+                                /**
+                                 * @default manual
+                                 * @enum {string}
+                                 */
+                                source: "manual" | "import" | "builder" | "auto";
+                                externalRef?: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                            suggestDone: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            log: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                planId: string;
+                                taskId: string;
+                                date: string;
+                                hours: number;
+                                result?: string;
+                                score?: number;
+                                note?: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                            };
+                            task: {
+                                id: string;
+                                title: string;
+                                /** @enum {string} */
+                                type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                provider?: string;
+                                url?: string;
+                                estHours: number;
+                                doneHours: number;
+                                /**
+                                 * @default pending
+                                 * @enum {string}
+                                 */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                order: number;
+                                dependsOn: string[];
+                                isAnchor: boolean;
+                                anchorDate?: string;
+                                anchorStartTime?: string;
+                                pinnedStart?: {
+                                    date: string;
+                                    start: string;
+                                };
+                                notBefore?: string;
+                                splittable: boolean;
+                                isCertificate: boolean;
+                                certificateName?: string;
+                                lessons: {
+                                    title: string;
+                                    /** Format: uri */
+                                    url?: string;
+                                    estMinutes?: number;
+                                    summary?: string;
+                                    /** @default false */
+                                    needsCheck: boolean;
+                                }[];
+                                howToSteps: string[];
+                                promptTemplate?: string;
+                                practiceKind?: string;
+                                notes?: string;
+                                /**
+                                 * @default manual
+                                 * @enum {string}
+                                 */
+                                source: "manual" | "import" | "builder" | "auto";
+                                externalRef?: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                            };
+                            suggestDone: boolean;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/tasks/{taskId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a task done (done hours stay as logged)
+         * @description An explicit user action. Idempotent.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    taskId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            title: string;
+                            /** @enum {string} */
+                            type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                            provider?: string;
+                            url?: string;
+                            estHours: number;
+                            doneHours: number;
+                            /**
+                             * @default pending
+                             * @enum {string}
+                             */
+                            status: "pending" | "in_progress" | "done" | "skipped";
+                            order: number;
+                            dependsOn: string[];
+                            isAnchor: boolean;
+                            anchorDate?: string;
+                            anchorStartTime?: string;
+                            pinnedStart?: {
+                                date: string;
+                                start: string;
+                            };
+                            notBefore?: string;
+                            splittable: boolean;
+                            isCertificate: boolean;
+                            certificateName?: string;
+                            lessons: {
+                                title: string;
+                                /** Format: uri */
+                                url?: string;
+                                estMinutes?: number;
+                                summary?: string;
+                                /** @default false */
+                                needsCheck: boolean;
+                            }[];
+                            howToSteps: string[];
+                            promptTemplate?: string;
+                            practiceKind?: string;
+                            notes?: string;
+                            /**
+                             * @default manual
+                             * @enum {string}
+                             */
+                            source: "manual" | "import" | "builder" | "auto";
+                            externalRef?: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/tasks/{taskId}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reopen a done or skipped task
+         * @description An explicit user action. Idempotent.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    taskId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            title: string;
+                            /** @enum {string} */
+                            type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                            provider?: string;
+                            url?: string;
+                            estHours: number;
+                            doneHours: number;
+                            /**
+                             * @default pending
+                             * @enum {string}
+                             */
+                            status: "pending" | "in_progress" | "done" | "skipped";
+                            order: number;
+                            dependsOn: string[];
+                            isAnchor: boolean;
+                            anchorDate?: string;
+                            anchorStartTime?: string;
+                            pinnedStart?: {
+                                date: string;
+                                start: string;
+                            };
+                            notBefore?: string;
+                            splittable: boolean;
+                            isCertificate: boolean;
+                            certificateName?: string;
+                            lessons: {
+                                title: string;
+                                /** Format: uri */
+                                url?: string;
+                                estMinutes?: number;
+                                summary?: string;
+                                /** @default false */
+                                needsCheck: boolean;
+                            }[];
+                            howToSteps: string[];
+                            promptTemplate?: string;
+                            practiceKind?: string;
+                            notes?: string;
+                            /**
+                             * @default manual
+                             * @enum {string}
+                             */
+                            source: "manual" | "import" | "builder" | "auto";
+                            externalRef?: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/tasks/{taskId}/skip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Skip a task
+         * @description An explicit user action. Idempotent.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                    taskId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            id: string;
+                            title: string;
+                            /** @enum {string} */
+                            type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                            provider?: string;
+                            url?: string;
+                            estHours: number;
+                            doneHours: number;
+                            /**
+                             * @default pending
+                             * @enum {string}
+                             */
+                            status: "pending" | "in_progress" | "done" | "skipped";
+                            order: number;
+                            dependsOn: string[];
+                            isAnchor: boolean;
+                            anchorDate?: string;
+                            anchorStartTime?: string;
+                            pinnedStart?: {
+                                date: string;
+                                start: string;
+                            };
+                            notBefore?: string;
+                            splittable: boolean;
+                            isCertificate: boolean;
+                            certificateName?: string;
+                            lessons: {
+                                title: string;
+                                /** Format: uri */
+                                url?: string;
+                                estMinutes?: number;
+                                summary?: string;
+                                /** @default false */
+                                needsCheck: boolean;
+                            }[];
+                            howToSteps: string[];
+                            promptTemplate?: string;
+                            practiceKind?: string;
+                            notes?: string;
+                            /**
+                             * @default manual
+                             * @enum {string}
+                             */
+                            source: "manual" | "import" | "builder" | "auto";
+                            externalRef?: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hours, tasks, certificates, per-type and per-day totals of a plan */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    planId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            hours: {
+                                planned: number;
+                                done: number;
+                            };
+                            tasks: {
+                                total: number;
+                                done: number;
+                                skipped: number;
+                            };
+                            certificatesEarned: number;
+                            certificates: {
+                                taskId: string;
+                                name: string | null;
+                            }[];
+                            byType: {
+                                /** @enum {string} */
+                                type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                plannedHours: number;
+                                doneHours: number;
+                                tasksTotal: number;
+                                tasksDone: number;
+                            }[];
+                            byDay: {
+                                date: string;
+                                hours: number;
+                                entries: number;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{planId}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Logs of a plan, optionally between two local dates (inclusive) */
+        get: {
+            parameters: {
+                query?: {
+                    from?: string;
+                    to?: string;
+                };
+                header?: never;
+                path: {
+                    planId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            logs: {
+                                /** Format: uuid */
+                                id: string;
+                                /** Format: uuid */
+                                planId: string;
+                                taskId: string;
+                                date: string;
+                                hours: number;
+                                result?: string;
+                                score?: number;
+                                note?: string;
+                                /** Format: date-time */
+                                createdAt: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Today’s AI usage for the signed-in user and for this environment
+         * @description Shows this environment’s own budget per provider (calls reserved today, UTC), not a quota claimed by the provider. With no provider configured, `configured` is false and the lists are empty. `avoidedToday` counts calls that were not needed (cache, template, rubric).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            day: string;
+                            resetsAt: string;
+                            configured: boolean;
+                            user: {
+                                practiceMessages: {
+                                    used: number;
+                                    cap: number;
+                                };
+                                practiceFeedback: {
+                                    used: number;
+                                    cap: number;
+                                };
+                                dayOverview: {
+                                    used: number;
+                                    cap: number;
+                                };
+                                cvTailor: {
+                                    used: number;
+                                    cap: number;
+                                };
+                            };
+                            features: {
+                                cvTailor: boolean;
+                            };
+                            avoidedToday: number;
+                            providers: {
+                                id: string;
+                                label: string;
+                                configured: boolean;
+                                available: boolean;
+                                cooldownUntil: string | null;
+                                usedToday: number;
+                                budget: number | null;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: never;
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    schemas: never;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;

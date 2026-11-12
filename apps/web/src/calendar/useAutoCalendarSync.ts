@@ -61,6 +61,8 @@ export function useAutoCalendarSync(userId: string) {
     // No trigger of any kind may call before this time.
     let notBefore = 0;
     let calls: number[] = [];
+    // A scheduled run came due while the tab was hidden: run it as soon as the tab is visible.
+    let due = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const visible = () => document.visibilityState === 'visible';
@@ -74,11 +76,14 @@ export function useAutoCalendarSync(userId: string) {
 
     async function run(reason: Reason) {
       if (cancelled || stopped || inFlight) return;
-      if (!visible()) return;
+      if (!visible()) {
+        if (reason === 'tick' || reason === 'retry') due = true;
+        return;
+      }
       const now = Date.now();
       // A manual "Sync now" is running: it covers this one.
       if (queryClient.isMutating({ mutationKey: calendarSyncKey }) > 0) {
-        if (reason === 'tick' || reason === 'retry') arm(BUSY_RETRY_MS, 'tick');
+        if (reason === 'tick' || reason === 'retry' || due) arm(BUSY_RETRY_MS, 'tick');
         return;
       }
       calls = calls.filter((at) => now - at < HOUR_MS);
@@ -86,10 +91,11 @@ export function useAutoCalendarSync(userId: string) {
       const wait = Math.max(notBefore - now, capWait);
       if (wait > 0) {
         // Not yet: make sure a scheduled run exists for when it is allowed.
-        if (reason === 'tick' || reason === 'retry') arm(wait, 'tick');
+        if (reason === 'tick' || reason === 'retry' || due) arm(wait, 'tick');
         return;
       }
       inFlight = true;
+      due = false;
       lastAttempt = now;
       calls.push(now);
       try {
@@ -100,8 +106,8 @@ export function useAutoCalendarSync(userId: string) {
         applyCalendarSync(queryClient, result, epoch);
         // The server stamps the sync when it ENDS: ask again 5 minutes (+ margin) after that.
         const syncedAt = result.syncedAt ? Date.parse(result.syncedAt) : NaN;
-        const due = Number.isNaN(syncedAt) ? Date.now() : Math.min(syncedAt, Date.now());
-        armNormal(due + INTERVAL_MS + MARGIN_MS - Date.now());
+        const base = Number.isNaN(syncedAt) ? Date.now() : Math.min(syncedAt, Date.now());
+        armNormal(base + INTERVAL_MS + MARGIN_MS - Date.now());
       } catch (error) {
         if (cancelled) return;
         tries += 1;
@@ -132,7 +138,9 @@ export function useAutoCalendarSync(userId: string) {
 
     const onVisible = () => {
       if (!visible()) return;
-      if (lastAttempt === null || Date.now() - lastAttempt > STALE_AFTER_MS) void run('visible');
+      if (due || lastAttempt === null || Date.now() - lastAttempt > STALE_AFTER_MS) {
+        void run('visible');
+      }
     };
 
     // When the app opens (or the setting is switched on / the calendar gets connected).

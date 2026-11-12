@@ -2,7 +2,7 @@ import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../api/ApiProvider';
-import { applyCalendarSync, type CalendarSyncResult } from '../api/calendar-hooks';
+import { applyCalendarSync, useSyncCalendar, type CalendarSyncResult } from '../api/calendar-hooks';
 import { createApiClient } from '../api/client';
 import { createQueryClient } from '../lib/query-client';
 import { expectNoAxeViolations } from '../test/axe';
@@ -62,7 +62,13 @@ function setVisibility(next: 'visible' | 'hidden') {
 
 function Harness() {
   useAutoCalendarSync(currentUser);
-  return <CalendarUpdatedStatus />;
+  const manual = useSyncCalendar();
+  return (
+    <>
+      <button onClick={() => manual.mutate({ force: true })}>manual</button>
+      <CalendarUpdatedStatus />
+    </>
+  );
 }
 let currentUser = USER;
 
@@ -406,6 +412,93 @@ describe('failures stay quiet and respect one shared not-before time', () => {
     expect(syncCalls().length).toBe(MAX_CALLS_PER_HOUR);
     await advance(60 * 60 * 1000);
     expect(syncCalls().length).toBeGreaterThan(MAX_CALLS_PER_HOUR);
+  });
+});
+
+describe('retries that come due while hidden, and counters', () => {
+  it('a retry that falls due while the tab is hidden runs once when it is visible again', async () => {
+    let n = 0;
+    routes['POST /api/v1/calendar/sync'] = () =>
+      n++ === 0 ? errorResponse(409, 'sync_in_progress') : synced();
+    mount();
+    await settle();
+    setVisibility('hidden');
+    await advance(BUSY_RETRY_MS + 1000);
+    expect(syncCalls()).toHaveLength(1);
+    // Back within 2 minutes of the last attempt: still runs, because a retry was due.
+    setVisibility('visible');
+    await settle();
+    expect(syncCalls()).toHaveLength(2);
+    setVisibility('hidden');
+    setVisibility('visible');
+    await settle();
+    expect(syncCalls()).toHaveLength(2);
+    // And the normal ticks go on.
+    await advance(INTERVAL_MS + MARGIN_MS + 1000);
+    expect(syncCalls()).toHaveLength(3);
+  });
+
+  it('a due retry still waits for notBefore when the tab comes back', async () => {
+    routes['POST /api/v1/calendar/sync'] = () =>
+      errorResponse(503, 'calendar_unavailable', { 'retry-after': '100' });
+    mount();
+    await settle();
+    setVisibility('hidden');
+    await advance(101_000);
+    setVisibility('visible');
+    await settle();
+    expect(syncCalls()).toHaveLength(2);
+  });
+
+  it('a success gives the next failure its 3 timed retries again', async () => {
+    let n = 0;
+    routes['POST /api/v1/calendar/sync'] = () => {
+      const i = n++;
+      return i === 1
+        ? synced()
+        : errorResponse(503, 'calendar_unavailable', { 'retry-after': '40' });
+    };
+    mount();
+    await settle();
+    await advance(41_000);
+    // Call 2 succeeded; the next tick fails and is retried twice more (3 tries in all).
+    await advance(INTERVAL_MS + MARGIN_MS);
+    await advance(41_000);
+    await advance(41_000);
+    expect(syncCalls()).toHaveLength(5);
+    await advance(100_000);
+    expect(syncCalls()).toHaveLength(5);
+  });
+
+  it('a syncedAt in the future still arms the next run at 5 minutes plus margin', async () => {
+    routes['POST /api/v1/calendar/sync'] = () =>
+      synced({ syncedAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() });
+    mount();
+    await settle();
+    await advance(INTERVAL_MS + MARGIN_MS - 1000);
+    expect(syncCalls()).toHaveLength(1);
+    await advance(2000);
+    expect(syncCalls()).toHaveLength(2);
+  });
+
+  it('a manual sync that settles after an account switch writes nothing', async () => {
+    let n = 0;
+    let release: (() => void) | undefined;
+    routes['POST /api/v1/calendar/sync'] = () => {
+      if (n++ === 0) return synced();
+      return new Promise<Response>((resolve) => {
+        release = () => resolve(synced({ movedTaskIds: ['t1'] }));
+      });
+    };
+    mount();
+    await settle();
+    act(() => screen.getByText('manual').click());
+    await settle();
+    expect(syncCalls()).toHaveLength(2);
+    act(() => resetCalendarSyncState());
+    release?.();
+    await settle();
+    expect(screen.queryByText(/Calendar updated/)).not.toBeInTheDocument();
   });
 });
 
