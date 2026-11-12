@@ -272,10 +272,10 @@ const MOVED_TO_PLAN_SETTINGS = new Set([
 export function SettingsPage({ appEnv = 'operational' }: { appEnv?: AppEnv }) {
   const { hash } = useLocation();
   const navigate = useNavigate();
-  // The calendar feature can be off on the server; then there is nothing to connect.
+  // The calendar feature can be off on the server (the status is then null): the Connections
+  // group stays, with one plain line instead of controls.
   const calendar = useCalendarStatus();
-  const showConnections =
-    calendar.isError || (calendar.data !== null && calendar.data !== undefined);
+  const calendarUnavailable = calendar.data === null;
   // Old links such as `/settings#time-heading` land on the Plan settings tab.
   useEffect(() => {
     if (MOVED_TO_PLAN_SETTINGS.has(hash))
@@ -304,12 +304,10 @@ export function SettingsPage({ appEnv = 'operational' }: { appEnv?: AppEnv }) {
           ))}
         </nav>
       </section>
-      {showConnections ? (
-        <section aria-labelledby="connections-heading" className="space-y-6">
-          <h2 id="connections-heading">Connections</h2>
-          <CalendarSettings />
-        </section>
-      ) : null}
+      <section aria-labelledby="connections-heading" className="space-y-6">
+        <h2 id="connections-heading">Connections</h2>
+        {calendarUnavailable ? <p>Calendar sync is not available yet.</p> : <CalendarSettings />}
+      </section>
     </div>
   );
 }

@@ -48,7 +48,7 @@ The builder must strip or escape the strings `<CV>`, `</CV>`, `<JOB>` and `</JOB
 - Parse `SUMMARY`, `EXPERIENCE`, `SKILLS`, then `===NOTES===` with `gap:` and `keyword:` lines. If the answer does not follow the format, show it as plain text with a warning; never fail silently.
 - `checkTailoredOutput`: flag every number, tool, skill, certificate or employer in the text that is not in the CV, and every personal detail (remove it). Flagged items are shown highlighted for the user to verify or delete. A model that copies an example number is caught here.
 - `[number?]` placeholders: ADR 016 forbids placeholders such as `[Your Name]`. `[number?]` is the one exception (it asks the user for a real number). **The ADR must name it as allowed**, and the result screen highlights each one; "Use" and "Copy" warn while any remain.
-- Show the keyword-gap list computed in the browser (no AI) beside the AI notes; differences are worth a look.
+- Show the keyword-gap list computed in the browser (no AI) beside the AI notes; differences are worth a look. Its chips use the job post's own words (and the CV's own words for CV-only items), not catalog names (ADR 016 section 5, owner decision 2026-11-12); the copied keyword list still uses catalog names.
 - The result screen always says: "Check every line. Only keep what is true. You may be asked about any of it in an interview."
 - Nothing is stored (ADR 016).
 
