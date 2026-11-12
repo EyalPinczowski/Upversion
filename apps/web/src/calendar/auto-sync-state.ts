@@ -6,9 +6,6 @@ import { useSyncExternalStore } from 'react';
  * read the same values without a provider.
  */
 
-/** Mutation `meta` flag: this change moves planned blocks, so the calendar should be looked at soon. */
-export const CHANGES_PLANNED_BLOCKS = { changesPlannedBlocks: true } as const;
-
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((listener) => listener());
 const subscribe = (listener: () => void) => {
@@ -49,13 +46,33 @@ export function useAutoSyncEnabled(userId: string): [boolean, (enabled: boolean)
   return [enabled, (next) => writeAutoSyncEnabled(userId, next)];
 }
 
-// ---- The "Calendar updated <time>" line ----
+// ---- The "Calendar updated <time>" line and what the last sync said ----
 
 let updatedAt: string | null = null;
+/** What the previous sync reported, so a repeat of the same answer does not reload the screen. */
+let lastSignature = '';
+/** Bumped when the account changes: a sync that started before that must not write anything. */
+let epoch = 0;
+
+export const currentSyncEpoch = () => epoch;
 
 export function recordCalendarUpdate(iso: string | null): void {
   updatedAt = iso;
   notify();
+}
+
+/** True when this answer differs from the previous one (and remembers it). */
+export function syncResultChanged(signature: string): boolean {
+  const changed = signature !== lastSignature;
+  lastSignature = signature;
+  return changed;
+}
+
+/** The account changed or the app closed: forget everything about the previous sync. */
+export function resetCalendarSyncState(): void {
+  epoch += 1;
+  lastSignature = '';
+  recordCalendarUpdate(null);
 }
 
 export function useCalendarUpdatedAt(): string | null {

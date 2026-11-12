@@ -1,24 +1,26 @@
-import { QueryClientProvider, useMutation, type QueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiProvider } from '../api/ApiProvider';
+import { applyCalendarSync, type CalendarSyncResult } from '../api/calendar-hooks';
 import { createApiClient } from '../api/client';
-import { useTaskAction } from '../api/hooks';
 import { createQueryClient } from '../lib/query-client';
 import { expectNoAxeViolations } from '../test/axe';
 import { json } from '../test/helpers';
 import {
   autoSyncStorageKey,
-  CHANGES_PLANNED_BLOCKS,
+  currentSyncEpoch,
   recordCalendarUpdate,
+  resetCalendarSyncState,
   writeAutoSyncEnabled,
 } from './auto-sync-state';
 import { CalendarUpdatedStatus } from './CalendarUpdatedStatus';
 import {
   BUSY_RETRY_MS,
-  DEBOUNCE_MS,
   INTERVAL_MS,
+  MARGIN_MS,
+  MAX_CALLS_PER_HOUR,
+  MAX_RETRY_WAIT_MS,
   MAX_TRIES,
   STALE_AFTER_MS,
   useAutoCalendarSync,
@@ -26,26 +28,30 @@ import {
 
 const USER = 'user-1';
 const CONNECTED = { status: 'connected', lastSyncedAt: null, lastErrorCode: null, sources: [] };
-const SYNCED = {
-  status: 'synced',
-  syncedAt: '2026-11-12T10:32:00.000Z',
-  movedTaskIds: [],
-  finishChanged: false,
-  text: 'ok',
-};
+/** The server stamps the sync when it ends, so the answer carries the moment of the call. */
+const synced = (extra: Partial<CalendarSyncResult> = {}): Response =>
+  json({
+    status: 'synced',
+    syncedAt: new Date().toISOString(),
+    movedTaskIds: [],
+    finishChanged: false,
+    text: 'ok',
+    ...extra,
+  });
 const errorResponse = (status: number, code: string, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify({ error: { code, message: 'x' } }), {
     status,
     headers: { 'content-type': 'application/json', ...headers },
   });
+const timeText = (iso: string) =>
+  `Calendar updated ${new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(new Date(iso))}`;
 
 type Handler = (request: Request) => Response | Promise<Response>;
 
 let routes: Record<string, Handler>;
-let calls: { key: string; body: unknown }[];
+let calls: { key: string; body: string | null }[];
 let visibility: 'visible' | 'hidden';
 let queryClient: QueryClient;
-let touch: () => void;
 
 const syncCalls = () => calls.filter((c) => c.key === 'POST /api/v1/calendar/sync');
 
@@ -54,23 +60,14 @@ function setVisibility(next: 'visible' | 'hidden') {
   document.dispatchEvent(new Event('visibilitychange'));
 }
 
-function Harness({ userId = USER }: { userId?: string }) {
-  useAutoCalendarSync(userId);
-  const change = useMutation({ mutationFn: async () => 1, meta: CHANGES_PLANNED_BLOCKS });
-  const other = useMutation({ mutationFn: async () => 1 });
-  const { mutate } = change;
-  useEffect(() => {
-    touch = () => mutate();
-  }, [mutate]);
-  return (
-    <>
-      <button onClick={() => other.mutate()}>other</button>
-      <CalendarUpdatedStatus />
-    </>
-  );
+function Harness() {
+  useAutoCalendarSync(currentUser);
+  return <CalendarUpdatedStatus />;
 }
+let currentUser = USER;
 
 function mount(userId = USER) {
+  currentUser = userId;
   const client = createApiClient({
     baseUrl: 'http://api.test',
     getAccessToken: async () => null,
@@ -82,15 +79,21 @@ function mount(userId = USER) {
       return handler ? handler(request) : errorResponse(404, 'not_found');
     },
   });
-  const ui = (id: string) => (
+  const ui = () => (
     <QueryClientProvider client={queryClient}>
       <ApiProvider client={client}>
-        <Harness userId={id} />
+        <Harness />
       </ApiProvider>
     </QueryClientProvider>
   );
-  const view = render(ui(userId));
-  return { ...view, rerenderAs: (id: string) => view.rerender(ui(id)) };
+  const view = render(ui());
+  return {
+    ...view,
+    rerenderAs: (id: string) => {
+      currentUser = id;
+      view.rerender(ui());
+    },
+  };
 }
 
 /** Lets the status query and the first sync settle. */
@@ -100,14 +103,14 @@ const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
 beforeEach(() => {
   vi.useFakeTimers({ now: new Date('2026-11-12T10:00:00Z') });
   window.localStorage.clear();
-  recordCalendarUpdate(null);
+  resetCalendarSyncState();
   visibility = 'visible';
   vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility);
   calls = [];
   queryClient = createQueryClient();
   routes = {
     'GET /api/v1/calendar': () => json(CONNECTED),
-    'POST /api/v1/calendar/sync': () => json(SYNCED),
+    'POST /api/v1/calendar/sync': () => synced(),
   };
 });
 
@@ -117,14 +120,14 @@ afterEach(() => {
 });
 
 describe('automatic calendar sync triggers', () => {
-  it('(a) syncs once when the app opens, without force', async () => {
+  it('syncs once when the app opens, without force', async () => {
     mount();
     await settle();
     expect(syncCalls()).toHaveLength(1);
     expect(syncCalls()[0]!.body).toBe('null');
   });
 
-  it('(b) syncs when the tab becomes visible again after more than 2 minutes, not before', async () => {
+  it('syncs when the tab becomes visible again after more than 2 minutes, not before', async () => {
     mount();
     await settle();
     setVisibility('hidden');
@@ -134,13 +137,13 @@ describe('automatic calendar sync triggers', () => {
     expect(syncCalls()).toHaveLength(1);
 
     setVisibility('hidden');
-    await advance(STALE_AFTER_MS);
+    await advance(2000);
     setVisibility('visible');
     await settle();
     expect(syncCalls()).toHaveLength(2);
   });
 
-  it('(b) also syncs on window focus when the last sync is stale', async () => {
+  it('also syncs on window focus when the last attempt is stale', async () => {
     mount();
     await settle();
     await advance(STALE_AFTER_MS + 1000);
@@ -149,81 +152,100 @@ describe('automatic calendar sync triggers', () => {
     expect(syncCalls()).toHaveLength(2);
   });
 
-  it('(c) syncs every 5 minutes while visible', async () => {
+  it('asks again 5 minutes plus a margin after the last sync ENDED, so the server cache is over', async () => {
     mount();
     await settle();
     await advance(INTERVAL_MS);
+    // A plain 300 s timer would fire here and get `cached` from the server.
+    expect(syncCalls()).toHaveLength(1);
+    await advance(MARGIN_MS + 1000);
     expect(syncCalls()).toHaveLength(2);
-    await advance(INTERVAL_MS);
+    await advance(INTERVAL_MS + MARGIN_MS + 1000);
     expect(syncCalls()).toHaveLength(3);
   });
 
-  it('(d) a plan change syncs once after the debounce, and a plain mutation does not', async () => {
+  it('bases the next run on the server time of the last sync', async () => {
+    routes['POST /api/v1/calendar/sync'] = () =>
+      synced({ syncedAt: new Date(Date.now() - 100_000).toISOString() });
     mount();
     await settle();
-    act(() => touch());
-    await advance(DEBOUNCE_MS - 100);
+    await advance(INTERVAL_MS + MARGIN_MS - 100_000 - 1000);
     expect(syncCalls()).toHaveLength(1);
-    await advance(200);
-    expect(syncCalls()).toHaveLength(2);
-
-    act(() => screen.getByText('other').click());
-    await advance(DEBOUNCE_MS + 100);
+    await advance(2000);
     expect(syncCalls()).toHaveLength(2);
   });
 
-  it('(d) several quick changes are coalesced into one call', async () => {
+  it('a result that moves tasks does not trigger another sync', async () => {
+    routes['POST /api/v1/calendar/sync'] = () => synced({ movedTaskIds: ['t1'] });
     mount();
     await settle();
-    for (let i = 0; i < 4; i++) {
-      act(() => touch());
-      await advance(1000);
-    }
-    await advance(DEBOUNCE_MS);
-    expect(syncCalls()).toHaveLength(2);
-  });
-
-  it('(d) the real task, time and import hooks carry the flag (marking a task done syncs)', async () => {
-    routes['POST /api/v1/plans/p1/tasks/t1/complete'] = () => json({});
-    function Done() {
-      const complete = useTaskAction('p1', 'complete');
-      return <button onClick={() => complete.mutate('t1')}>done</button>;
-    }
-    const client = createApiClient({
-      baseUrl: 'http://api.test',
-      getAccessToken: async () => null,
-      fetch: async (input, init) => {
-        const request = new Request(input, init);
-        const key = `${request.method} ${new URL(request.url).pathname}`;
-        calls.push({ key, body: null });
-        const handler = routes[key];
-        return handler ? handler(request) : errorResponse(404, 'not_found');
-      },
-    });
-    render(
-      <QueryClientProvider client={queryClient}>
-        <ApiProvider client={client}>
-          <Harness />
-          <Done />
-        </ApiProvider>
-      </QueryClientProvider>,
-    );
-    await settle();
-    act(() => screen.getByText('done').click());
-    await advance(DEBOUNCE_MS + 100);
-    expect(syncCalls()).toHaveLength(2);
-  });
-
-  it('(d) a change made while hidden syncs when the tab is visible again, even if fresh', async () => {
-    mount();
-    await settle();
-    setVisibility('hidden');
-    act(() => touch());
-    await advance(DEBOUNCE_MS + 100);
+    await advance(INTERVAL_MS);
     expect(syncCalls()).toHaveLength(1);
-    setVisibility('visible');
-    await settle();
-    expect(syncCalls()).toHaveLength(2);
+  });
+});
+
+describe('what a finished sync reloads', () => {
+  const seed = () => {
+    queryClient.setQueryData(['me'], { id: 1 });
+    queryClient.setQueryData(['schedule', 'p1'], { blocks: [] });
+    queryClient.setQueryData(['tasks', 'p1'], { tasks: [] });
+  };
+  const stale = (key: readonly unknown[]) => queryClient.getQueryState(key)?.isInvalidated;
+  const result = (extra: Partial<CalendarSyncResult>): CalendarSyncResult => ({
+    status: 'synced',
+    syncedAt: '2026-11-12T10:00:00.000Z',
+    movedTaskIds: [],
+    finishChanged: false,
+    text: '',
+    ...extra,
+  });
+
+  it('reloads nothing for a cached answer, even one that lists moved tasks', () => {
+    seed();
+    applyCalendarSync(queryClient, result({ status: 'cached', movedTaskIds: ['t1'] }));
+    expect(stale(['schedule', 'p1'])).toBe(false);
+    expect(stale(['tasks', 'p1'])).toBe(false);
+  });
+
+  it('reloads nothing when a sync moved nothing', () => {
+    seed();
+    applyCalendarSync(queryClient, result({}));
+    expect(stale(['schedule', 'p1'])).toBe(false);
+  });
+
+  it('reloads only the plan queries when tasks moved, and not for the same answer again', () => {
+    seed();
+    applyCalendarSync(queryClient, result({ movedTaskIds: ['t2', 't1'] }));
+    expect(stale(['schedule', 'p1'])).toBe(true);
+    expect(stale(['tasks', 'p1'])).toBe(true);
+    expect(stale(['me'])).toBe(false);
+
+    seed();
+    queryClient.setQueryData(['schedule', 'p1'], { blocks: [] });
+    applyCalendarSync(queryClient, result({ movedTaskIds: ['t1', 't2'] }));
+    expect(stale(['schedule', 'p1'])).toBe(false);
+
+    applyCalendarSync(queryClient, result({ movedTaskIds: ['t1'] }));
+    expect(stale(['schedule', 'p1'])).toBe(true);
+  });
+
+  it('reloads when the finish date changed', () => {
+    seed();
+    applyCalendarSync(queryClient, result({ finishChanged: true }));
+    expect(stale(['schedule', 'p1'])).toBe(true);
+  });
+
+  it('drops the answer of a sync that started for an earlier account', () => {
+    seed();
+    const started = currentSyncEpoch();
+    resetCalendarSyncState();
+    applyCalendarSync(queryClient, result({ movedTaskIds: ['t1'] }), started);
+    expect(stale(['schedule', 'p1'])).toBe(false);
+    function Probe() {
+      return <CalendarUpdatedStatus />;
+    }
+    render(<Probe />);
+    expect(screen.queryByText(/Calendar updated/)).not.toBeInTheDocument();
   });
 });
 
@@ -243,32 +265,34 @@ describe('hidden tab and single flight', () => {
     let release: (() => void) | undefined;
     routes['POST /api/v1/calendar/sync'] = () =>
       new Promise<Response>((resolve) => {
-        release = () => resolve(json(SYNCED));
+        release = () => resolve(synced());
       });
     mount();
     await settle();
     expect(syncCalls()).toHaveLength(1);
-    act(() => touch());
-    await advance(DEBOUNCE_MS + 100);
     window.dispatchEvent(new Event('focus'));
-    await advance(INTERVAL_MS);
+    await advance(STALE_AFTER_MS + 1000);
+    window.dispatchEvent(new Event('focus'));
+    await settle();
     expect(syncCalls()).toHaveLength(1);
     release?.();
     await settle();
-    await advance(INTERVAL_MS);
-    expect(syncCalls().length).toBeGreaterThan(1);
   });
 });
 
-describe('failures stay quiet', () => {
+describe('failures stay quiet and respect one shared not-before time', () => {
   it('409 sync_in_progress retries later, at most a few tries', async () => {
     routes['POST /api/v1/calendar/sync'] = () => errorResponse(409, 'sync_in_progress');
     mount();
     await settle();
     expect(syncCalls()).toHaveLength(1);
-    await advance(BUSY_RETRY_MS);
+    await advance(BUSY_RETRY_MS - 1000);
+    expect(syncCalls()).toHaveLength(1);
+    await advance(2000);
     expect(syncCalls()).toHaveLength(2);
-    await advance(BUSY_RETRY_MS * 5);
+    await advance(BUSY_RETRY_MS * 2);
+    expect(syncCalls()).toHaveLength(MAX_TRIES);
+    await advance(BUSY_RETRY_MS * 3);
     expect(syncCalls()).toHaveLength(MAX_TRIES);
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
@@ -276,58 +300,112 @@ describe('failures stay quiet', () => {
   it('409 sync_in_progress then success stops retrying', async () => {
     let n = 0;
     routes['POST /api/v1/calendar/sync'] = () =>
-      n++ === 0 ? errorResponse(409, 'sync_in_progress') : json(SYNCED);
+      n++ === 0 ? errorResponse(409, 'sync_in_progress') : synced();
     mount();
     await settle();
-    await advance(BUSY_RETRY_MS);
+    await advance(BUSY_RETRY_MS + 1000);
     expect(syncCalls()).toHaveLength(2);
     await advance(BUSY_RETRY_MS * 3);
     expect(syncCalls()).toHaveLength(2);
   });
 
-  it('503 honours Retry-After, gives up after a few tries and waits for the next trigger', async () => {
+  it('503 honours Retry-After', async () => {
     routes['POST /api/v1/calendar/sync'] = () =>
       errorResponse(503, 'calendar_unavailable', { 'retry-after': '90' });
     mount();
     await settle();
     await advance(89_000);
     expect(syncCalls()).toHaveLength(1);
-    await advance(1000);
+    await advance(2000);
     expect(syncCalls()).toHaveLength(2);
-    await advance(90_000);
-    expect(syncCalls()).toHaveLength(MAX_TRIES);
-    // 270 s in: no more tries before the next trigger.
-    await advance(5000);
-    expect(syncCalls()).toHaveLength(MAX_TRIES);
-    // The next trigger (the 5-minute tick) starts fresh.
-    await advance(INTERVAL_MS);
-    expect(syncCalls().length).toBeGreaterThan(MAX_TRIES);
   });
 
-  it('calendar_reconnect_required stops auto-sync and refreshes the status for the reconnect prompt', async () => {
-    routes['POST /api/v1/calendar/sync'] = () => errorResponse(409, 'calendar_reconnect_required');
+  it('caps a Retry-After above 5 minutes', async () => {
+    routes['POST /api/v1/calendar/sync'] = () =>
+      errorResponse(503, 'calendar_unavailable', { 'retry-after': '3600' });
     mount();
     await settle();
-    const statusCalls = () => calls.filter((c) => c.key === 'GET /api/v1/calendar').length;
-    // Status was loaded once, then refetched after the rejected sync.
-    expect(statusCalls()).toBe(2);
-    await advance(INTERVAL_MS * 2);
-    act(() => touch());
-    await advance(DEBOUNCE_MS + 100);
+    await advance(MAX_RETRY_WAIT_MS - 1000);
     expect(syncCalls()).toHaveLength(1);
+    await advance(2000);
+    expect(syncCalls()).toHaveLength(2);
   });
 
-  it('a network failure is quiet and the next trigger tries again', async () => {
+  it('a focus or visibility change during backoff does not call', async () => {
+    routes['POST /api/v1/calendar/sync'] = () =>
+      errorResponse(503, 'calendar_unavailable', { 'retry-after': '240' });
+    mount();
+    await settle();
+    // Older than the 2-minute stale limit, but still inside the server's Retry-After.
+    await advance(STALE_AFTER_MS + 10_000);
+    window.dispatchEvent(new Event('focus'));
+    setVisibility('hidden');
+    setVisibility('visible');
+    await settle();
+    expect(syncCalls()).toHaveLength(1);
+    await advance(240_000 - STALE_AFTER_MS);
+    expect(syncCalls()).toHaveLength(2);
+  });
+
+  it('after the tries are used up, triggers do not restart a retry chain', async () => {
+    routes['POST /api/v1/calendar/sync'] = () =>
+      errorResponse(503, 'calendar_unavailable', { 'retry-after': '40' });
+    mount();
+    await settle();
+    await advance(40_000);
+    await advance(40_000);
+    expect(syncCalls()).toHaveLength(MAX_TRIES);
+    await advance(STALE_AFTER_MS + 1000);
+    window.dispatchEvent(new Event('focus'));
+    await settle();
+    expect(syncCalls()).toHaveLength(MAX_TRIES + 1);
+    // That try failed too: no timer chain follows it, only the normal tick.
+    await advance(60_000);
+    expect(syncCalls()).toHaveLength(MAX_TRIES + 1);
+  });
+
+  it.each(['calendar_reconnect_required', 'calendar_not_connected'])(
+    '409 %s stops auto-sync and refreshes the status',
+    async (code) => {
+      routes['POST /api/v1/calendar/sync'] = () => errorResponse(409, code);
+      mount();
+      await settle();
+      const statusCalls = () => calls.filter((c) => c.key === 'GET /api/v1/calendar').length;
+      expect(statusCalls()).toBe(2);
+      await advance(INTERVAL_MS * 2);
+      window.dispatchEvent(new Event('focus'));
+      await settle();
+      expect(syncCalls()).toHaveLength(1);
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    },
+  );
+
+  it('a network failure is quiet and the next tick tries again', async () => {
     let n = 0;
     routes['POST /api/v1/calendar/sync'] = () => {
       if (n++ === 0) throw new TypeError('offline');
-      return json(SYNCED);
+      return synced();
     };
     mount();
     await settle();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    await advance(INTERVAL_MS);
+    await advance(INTERVAL_MS + MARGIN_MS + 1000);
     expect(syncCalls()).toHaveLength(2);
+  });
+
+  it('makes at most 12 calls an hour, whatever the triggers do', async () => {
+    mount();
+    await settle();
+    for (let i = 0; i < 20; i++) {
+      await advance(STALE_AFTER_MS + 1000);
+      window.dispatchEvent(new Event('focus'));
+      await settle();
+    }
+    // 20 triggers in about 40 minutes: capped, and allowed again when the hour moves on.
+    expect(syncCalls().length).toBeLessThanOrEqual(MAX_CALLS_PER_HOUR);
+    expect(syncCalls().length).toBe(MAX_CALLS_PER_HOUR);
+    await advance(60 * 60 * 1000);
+    expect(syncCalls().length).toBeGreaterThan(MAX_CALLS_PER_HOUR);
   });
 });
 
@@ -345,8 +423,7 @@ describe('when auto-sync must not run', () => {
     mount();
     await settle();
     await advance(INTERVAL_MS * 2);
-    act(() => touch());
-    await advance(DEBOUNCE_MS + 100);
+    window.dispatchEvent(new Event('focus'));
     expect(syncCalls()).toHaveLength(0);
   });
 
@@ -356,8 +433,6 @@ describe('when auto-sync must not run', () => {
     mount();
     await settle();
     await advance(INTERVAL_MS * 2);
-    act(() => touch());
-    await advance(DEBOUNCE_MS + 100);
     window.dispatchEvent(new Event('focus'));
     expect(syncCalls()).toHaveLength(0);
 
@@ -383,11 +458,10 @@ describe('when auto-sync must not run', () => {
   });
 });
 
-describe('cleanup', () => {
+describe('cleanup and account switch', () => {
   it('stops every timer and listener on unmount', async () => {
     const view = mount();
     await settle();
-    act(() => touch());
     view.unmount();
     await advance(INTERVAL_MS * 3);
     window.dispatchEvent(new Event('focus'));
@@ -410,21 +484,53 @@ describe('cleanup', () => {
   it('forgets the last update time when the account switches', async () => {
     const view = mount();
     await settle();
-    expect(screen.getByRole('status')).toHaveTextContent(/Calendar updated/);
+    expect(screen.getByText(/Calendar updated/)).toBeInTheDocument();
+    routes['POST /api/v1/calendar/sync'] = () => new Promise<Response>(() => {});
     view.rerenderAs('user-2');
-    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.queryByText(/Calendar updated/)).not.toBeInTheDocument();
+  });
+
+  it('ignores an in-flight answer for the old user after an account switch', async () => {
+    const OLD = '2026-11-12T03:11:00.000Z';
+    let releaseOld: (() => void) | undefined;
+    let n = 0;
+    routes['POST /api/v1/calendar/sync'] = () => {
+      if (n++ === 0) {
+        return new Promise<Response>((resolve) => {
+          releaseOld = () => resolve(synced({ syncedAt: OLD, movedTaskIds: ['old'] }));
+        });
+      }
+      return synced();
+    };
+    const view = mount();
+    await settle();
+    view.rerenderAs('user-2');
+    await settle();
+    expect(syncCalls()).toHaveLength(2);
+    const fresh = screen.getByText(/Calendar updated/).textContent;
+    releaseOld?.();
+    await settle();
+    expect(screen.getByText(/Calendar updated/).textContent).toBe(fresh);
+    expect(fresh).not.toBe(timeText(OLD));
   });
 });
 
 describe('Calendar updated status line', () => {
-  it('is a polite live region with the time of the last sync, and passes axe', async () => {
+  it('is plain visible text (no live region) and passes axe', async () => {
     const view = mount();
-    const region = screen.getByRole('status');
-    expect(region).toHaveAttribute('aria-live', 'polite');
-    expect(region).toBeEmptyDOMElement();
+    expect(screen.queryByText(/Calendar updated/)).not.toBeInTheDocument();
     await settle();
-    expect(region).toHaveTextContent(/^Calendar updated .+/);
+    const line = screen.getByText(/^Calendar updated .+/);
+    expect(line).not.toHaveAttribute('role');
+    expect(line).not.toHaveAttribute('aria-live');
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     vi.useRealTimers();
     await expectNoAxeViolations(view.container);
+  });
+
+  it('keeps no text before the first sync', () => {
+    recordCalendarUpdate(null);
+    mount();
+    expect(screen.queryByText(/Calendar updated/)).not.toBeInTheDocument();
   });
 });

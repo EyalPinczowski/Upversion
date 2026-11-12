@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { redirectTo } from '../lib/navigate';
-import { recordCalendarUpdate } from '../calendar/auto-sync-state';
+import {
+  currentSyncEpoch,
+  recordCalendarUpdate,
+  syncResultChanged,
+} from '../calendar/auto-sync-state';
 import { unwrap, type ApiClient } from './client';
 import { useApi } from './context';
 import { isApiError } from './errors';
@@ -104,16 +108,49 @@ export const calendarSyncKey = [...calendarKey, 'sync'] as const;
 export const requestCalendarSync = (api: ApiClient, force: boolean): Promise<CalendarSyncResult> =>
   unwrap(api.raw.POST('/api/v1/calendar/sync', { body: force ? { force: true } : null }));
 
-/** What a finished sync means for the screen: refresh the plan when the calendar changed it. */
+/** Cached query roots that show the plan, so a calendar-driven change refreshes them (and no others). */
+const PLAN_QUERY_ROOTS = new Set([
+  'plans',
+  'plan',
+  'tasks',
+  'schedule',
+  'progress',
+  'open-tasks',
+  'day',
+  'briefing',
+]);
+
+const signatureOf = (result: CalendarSyncResult) =>
+  `${[...result.movedTaskIds].sort().join(',')}|${result.finishChanged}`;
+
+/**
+ * What a finished sync means for the screen. A `cached` answer changes nothing. A `synced` one
+ * refreshes the calendar status, and the plan queries only when the calendar moved tasks or the
+ * finish date and that answer differs from the previous one (never on every tick).
+ * `epoch` is the account epoch when the call started: an answer for an earlier account is dropped.
+ */
 export function applyCalendarSync(
   queryClient: QueryClient,
   result: CalendarSyncResult | undefined,
+  epoch: number = currentSyncEpoch(),
 ) {
-  // A sync can move tasks, so what the plan shows may be stale.
-  if (result && (result.movedTaskIds.length > 0 || result.finishChanged)) {
-    void queryClient.invalidateQueries();
-  } else void queryClient.invalidateQueries({ queryKey: calendarKey });
-  if (result) recordCalendarUpdate(result.syncedAt ?? new Date().toISOString());
+  if (epoch !== currentSyncEpoch()) return;
+  if (!result) {
+    void queryClient.invalidateQueries({ queryKey: calendarKey });
+    return;
+  }
+  if (result.status === 'cached') {
+    recordCalendarUpdate(result.syncedAt ?? new Date().toISOString());
+    return;
+  }
+  void queryClient.invalidateQueries({ queryKey: calendarKey });
+  const moved = result.movedTaskIds.length > 0 || result.finishChanged;
+  if (syncResultChanged(signatureOf(result)) && moved) {
+    void queryClient.invalidateQueries({
+      predicate: (query) => PLAN_QUERY_ROOTS.has(String(query.queryKey[0])),
+    });
+  }
+  recordCalendarUpdate(result.syncedAt ?? new Date().toISOString());
 }
 
 export function useSyncCalendar() {
@@ -122,9 +159,11 @@ export function useSyncCalendar() {
   return useMutation({
     ...mutationDefaults,
     mutationKey: calendarSyncKey,
+    onMutate: () => ({ epoch: currentSyncEpoch() }),
     mutationFn: (options?: { force?: boolean }) =>
       requestCalendarSync(api, options?.force === true),
-    onSettled: (result) => applyCalendarSync(queryClient, result),
+    onSettled: (result, _error, _vars, context) =>
+      applyCalendarSync(queryClient, result, context?.epoch),
   });
 }
 

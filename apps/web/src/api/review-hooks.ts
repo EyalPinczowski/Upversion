@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from './client';
-import { CHANGES_PLANNED_BLOCKS } from '../calendar/auto-sync-state';
 import { useApi } from './context';
 import { isApiError } from './errors';
 import { planKey, plansKey, progressKey, scheduleKey, tasksKey } from './hooks';
@@ -136,7 +135,6 @@ export function useAcceptSuggestion(planId: string) {
   const onStale = useRefetchWhenStale(planId);
   return useMutation({
     ...mutationDefaults,
-    meta: CHANGES_PLANNED_BLOCKS,
     mutationFn: ({ id, option }: { id: string; option: number }) =>
       unwrap(
         api.raw.POST('/api/v1/plans/{planId}/suggestions/{id}/accept', {

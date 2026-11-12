@@ -186,6 +186,21 @@ describe('calendar settings', () => {
     expect(await bodyOf(call)).toEqual({ force: true });
   });
 
+  it('Sync now while an automatic sync is running says so in friendly words', async () => {
+    const api = open(CONNECTED, {
+      'POST /api/v1/calendar/sync': () =>
+        apiError(409, 'sync_in_progress', 'A calendar sync is already running.'),
+    });
+    const user = userEvent.setup();
+    const section = within(await region());
+    await waitFor(() => expect(api.count('POST /api/v1/calendar/sync')).toBe(1));
+    await user.click(section.getByRole('button', { name: 'Sync now' }));
+    expect(
+      await section.findByText('Already updating, try again in a moment.'),
+    ).toBeInTheDocument();
+    expect(section.queryByText(/did not finish/)).not.toBeInTheDocument();
+  });
+
   it('saving a calendar choice sends the whole list with PUT', async () => {
     let body: unknown;
     const api = open(CONNECTED, {
@@ -289,6 +304,14 @@ describe('calendar on app open', () => {
     const api = open(CONNECTED, {
       'GET /api/v1/calendar': () => json(answers[Math.min(n++, answers.length - 1)]),
       'DELETE /api/v1/calendar': () => new Response(null, { status: 204 }),
+      'POST /api/v1/calendar/sync': () =>
+        json({
+          status: 'synced',
+          syncedAt: '2026-11-02T09:00:00.000Z',
+          movedTaskIds: [],
+          finishChanged: false,
+          text: '',
+        }),
     });
     const user = userEvent.setup();
     const section = within(await region());

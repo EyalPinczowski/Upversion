@@ -9,7 +9,6 @@ import type {
   TaskPatch,
   WeekPattern,
 } from './client';
-import { CHANGES_PLANNED_BLOCKS } from '../calendar/auto-sync-state';
 import { useApi } from './context';
 
 /**
@@ -21,9 +20,6 @@ export const meKey = ['me'] as const;
 // Mutations use networkMode "always": offline they fail at once with a network error the form can
 // show, instead of waiting silently for a connection.
 const mutationDefaults = { networkMode: 'always' } as const;
-
-// Mutations that change planned blocks also tell the calendar auto-sync to look again soon.
-const planChangeDefaults = { ...mutationDefaults, meta: CHANGES_PLANNED_BLOCKS } as const;
 
 // The plan summary bar and the page under it read the same schedule, tasks and progress. Without
 // a short freshness window the second one to mount would fetch them all again.
@@ -180,7 +176,7 @@ export function useImportPlan() {
   const api = useApi();
   const queryClient = useQueryClient();
   return useMutation({
-    ...planChangeDefaults,
+    ...mutationDefaults,
     mutationFn: (body: ImportBody) => api.importPlan(body),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: plansKey }),
   });
@@ -195,7 +191,7 @@ export function useDeletePlan(onDeleted?: (planId: string) => void) {
   const api = useApi();
   const queryClient = useQueryClient();
   return useMutation({
-    ...planChangeDefaults,
+    ...mutationDefaults,
     mutationFn: (planId: string) => api.deletePlan(planId).then(() => planId),
     onSuccess: async (planId) => {
       // Gone from the cached list at once, so a failed refetch cannot leave it on screen.
@@ -217,7 +213,7 @@ export function useAddLog(planId: string) {
   const api = useApi();
   const invalidate = useInvalidatePlanData();
   return useMutation({
-    ...planChangeDefaults,
+    ...mutationDefaults,
     mutationFn: ({ taskId, log }: { taskId: string; log: LogRequest }) =>
       api.addLog(planId, taskId, log),
     onSuccess: () => void invalidate(planId),
@@ -229,7 +225,7 @@ export function useTaskAction(planId: string, action: 'complete' | 'skip' | 'reo
   const api = useApi();
   const invalidate = useInvalidatePlanData();
   return useMutation({
-    ...planChangeDefaults,
+    ...mutationDefaults,
     mutationFn: (taskId: string) =>
       action === 'complete'
         ? api.completeTask(planId, taskId)
@@ -246,7 +242,7 @@ export function usePatchTask(planId: string) {
   const api = useApi();
   const invalidate = useInvalidatePlanData();
   return useMutation({
-    ...planChangeDefaults,
+    ...mutationDefaults,
     mutationFn: ({ taskId, patch }: { taskId: string; patch: TaskPatch }) =>
       api.patchTask(planId, taskId, patch),
     onSuccess: () => void invalidate(planId),
@@ -262,7 +258,7 @@ export function useDeleteTask(planId: string, onDeleted?: (taskId: string) => vo
   const queryClient = useQueryClient();
   const invalidate = useInvalidatePlanData();
   return useMutation({
-    ...planChangeDefaults,
+    ...mutationDefaults,
     mutationFn: ({ taskId, removeDependencies }: { taskId: string; removeDependencies: boolean }) =>
       api.deleteTask(planId, taskId, removeDependencies).then(() => taskId),
     onSuccess: async (taskId) => {
@@ -295,7 +291,7 @@ export function useSaveTimeSettings(planId: string) {
   const api = useApi();
   const invalidate = useInvalidatePlanData();
   return useMutation({
-    ...planChangeDefaults,
+    ...mutationDefaults,
     mutationFn: async (change: TimeSettingsChange) => {
       if (change.pattern) await api.putWeekPattern(planId, change.pattern);
       for (const { date, ...rest } of change.upsertOverrides) {
@@ -313,7 +309,7 @@ export function useSaveStartDate(planId: string) {
   const api = useApi();
   const invalidate = useInvalidatePlanData();
   return useMutation({
-    ...planChangeDefaults,
+    ...mutationDefaults,
     mutationFn: (startDate: string) => api.putStartDate(planId, startDate),
     onSuccess: () => invalidate(planId),
   });
@@ -342,7 +338,7 @@ export function useEndDay(planId: string) {
   const queryClient = useQueryClient();
   const invalidate = useInvalidatePlanData();
   return useMutation({
-    ...planChangeDefaults,
+    ...mutationDefaults,
     mutationFn: (date: string) => api.endDay(planId, date),
     onSuccess: (day) => {
       queryClient.setQueryData(dayKey(planId, day.date), day);

@@ -4,14 +4,13 @@ const formatTime = (iso: string) =>
   new Intl.DateTimeFormat(undefined, { timeStyle: 'short' }).format(new Date(iso));
 
 /**
- * A small, non-blocking "Calendar updated 10:32" line. The live region is always in the page and
- * only its text changes, so screen readers announce each update politely.
+ * A small "Calendar updated 10:32" line, plain text on purpose: a live region would announce every
+ * automatic run, and the manual "Sync now" result already has its own status message.
  */
 export function CalendarUpdatedStatus({ className = '' }: { className?: string }) {
   const updatedAt = useCalendarUpdatedAt();
+  if (!updatedAt) return null;
   return (
-    <p role="status" aria-live="polite" className={`text-muted ${className}`.trim()}>
-      {updatedAt ? `Calendar updated ${formatTime(updatedAt)}` : null}
-    </p>
+    <p className={`text-muted ${className}`.trim()}>Calendar updated {formatTime(updatedAt)}</p>
   );
 }

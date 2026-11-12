@@ -178,9 +178,15 @@ function Connected({ status }: { status: CalendarStatus }) {
         ) : null}
       </div>
       {sync.error ? (
-        <ErrorText>
-          {problem(sync.error, 'The sync did not finish. Your plan was not changed.')}
-        </ErrorText>
+        isApiError(sync.error) &&
+        sync.error.status === 409 &&
+        sync.error.code === 'sync_in_progress' ? (
+          <p className="text-muted">Already updating, try again in a moment.</p>
+        ) : (
+          <ErrorText>
+            {problem(sync.error, 'The sync did not finish. Your plan was not changed.')}
+          </ErrorText>
+        )
       ) : null}
       {disconnect.error ? (
         <ErrorText>
