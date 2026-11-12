@@ -498,8 +498,8 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
             <div className="space-y-1">
               {prep.cv.dropped.length > 0 ? (
                 <details>
-                  <summary className="cursor-pointer py-2 font-bold">
-                    Contact lines left out ({prep.cv.dropped.length}{' '}
+                  <summary className="flex min-h-11 cursor-pointer items-center font-bold">
+                    Removed before sending ({prep.cv.dropped.length}{' '}
                     {prep.cv.dropped.length === 1 ? 'line' : 'lines'})
                   </summary>
                   <ul className="space-y-1 pb-2 text-muted">
@@ -513,11 +513,11 @@ function Tailor({ identifiers }: { identifiers: string[] }) {
               ) : null}
               <p className="text-muted">
                 {prep.cv.dropped.length === 0
-                  ? 'No contact lines were left out. '
-                  : 'Contact lines are whole lines (your address block or a References section) that are never sent. '}
+                  ? 'No whole lines were removed. '
+                  : 'Whole lines are removed when they are the block at the top with your name and contact details, a Contact or Personal details section, or a References section. '}
                 Inside the text that is sent, {replacedCount}{' '}
-                {replacedCount === 1 ? 'detail' : 'details'} (emails, phone numbers or links){' '}
-                {replacedCount === 1 ? 'was' : 'were'} replaced by [removed].
+                {replacedCount === 1 ? 'detail' : 'details'} (such as emails, phone numbers, links
+                or your account name) {replacedCount === 1 ? 'was' : 'were'} replaced by [removed].
               </p>
             </div>
             <div className="space-y-1">

@@ -133,15 +133,16 @@ interface ProgressBarProps {
 
 /** A Blocks progress bar: accent fill on a surface track. Text beside it carries the numbers. */
 export function ProgressBar({ value, max, label, labelledBy, className = '' }: ProgressBarProps) {
-  const now = Math.max(0, Math.min(value, max));
-  const pct = max > 0 ? Math.round((now / max) * 100) : 0;
+  const top = Math.max(1, max);
+  const now = max > 0 ? Math.max(0, Math.min(value, max)) : 0;
+  const pct = Math.round((now / top) * 100);
   return (
     <div
       role="progressbar"
       aria-label={label}
       aria-labelledby={labelledBy}
       aria-valuemin={0}
-      aria-valuemax={max}
+      aria-valuemax={top}
       aria-valuenow={now}
       className={`h-3 w-full overflow-hidden rounded-full bg-surface-2 ${className}`}
     >
@@ -175,7 +176,7 @@ export const FilePicker = forwardRef<HTMLInputElement, FilePickerProps>(function
       />
       <span
         aria-hidden="true"
-        className={`${base} ${variants.secondary} pointer-events-none peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent ${disabled ? 'opacity-60' : ''}`}
+        className={`${base} ${variants.secondary} pointer-events-none peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-hover:border-accent peer-focus-visible:outline-accent ${disabled ? 'opacity-60' : ''}`}
       >
         {buttonLabel}
       </span>

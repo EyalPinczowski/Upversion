@@ -18,6 +18,16 @@ describe('ProgressBar', () => {
   });
 });
 
+describe('ProgressBar with no range', () => {
+  it('renders an empty bar and a valid aria range when max is 0', () => {
+    const { container } = render(<ProgressBar value={3} max={0} label="Empty" />);
+    const bar = screen.getByRole('progressbar', { name: 'Empty' });
+    expect(bar).toHaveAttribute('aria-valuemax', '1');
+    expect(bar).toHaveAttribute('aria-valuenow', '0');
+    expect(container.querySelector('.bg-accent')).toHaveStyle({ width: '0%' });
+  });
+});
+
 describe('FilePicker', () => {
   it('keeps the real input labelled and shows a button face', () => {
     render(

@@ -32,6 +32,15 @@ describe('evidence snippets', () => {
   const long =
     'Junior Data Analyst, Example Retail Ltd. Built weekly sales dashboards in Excel and Power BI. Wrote SQL queries against a PostgreSQL warehouse every single day.';
 
+  it('keep the matched word when a long token runs into it', () => {
+    const line = `${'a'.repeat(45)}/SQL ${'b '.repeat(30)}`;
+    const r = runReal(`Experience\n${line}\nSkills: Excel`);
+    const sql = r.tools.find((t) => t.tool === 'SQL');
+    expect(sql).toBeDefined();
+    expect(sql?.evidence).toContain('SQL');
+    expect(sql!.evidence.length).toBeLessThanOrEqual(MAX_EVIDENCE_LENGTH);
+  });
+
   it('cut on word boundaries and mark each cut with an ellipsis', () => {
     const r = runReal(`Experience\n${long}\nSkills: SQL, Excel`);
     const snippets = [...r.skills.map((s) => s.evidence), ...r.tools.map((t) => t.evidence)].filter(
