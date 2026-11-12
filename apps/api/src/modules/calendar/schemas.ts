@@ -17,6 +17,8 @@ export const calendarView = z.object({
   lastSyncedAt: z.iso.datetime().nullable(),
   /** A short machine code such as `invalid_grant`; null when the last call worked. */
   lastErrorCode: z.string().nullable(),
+  /** The user's switch for the scheduled background sync (default true). */
+  autoSync: z.boolean(),
   sources: z.array(calendarSourceView),
 });
 
@@ -41,6 +43,9 @@ export const updateSourcesBody = noNulCharacters(
       .max(200),
   }),
 );
+
+/** Strict: a `userId` or any other unknown key is rejected, never ignored. */
+export const updateSettingsBody = noNulCharacters(z.strictObject({ autoSync: z.boolean() }));
 
 /** Strict and optional: an empty body (or none) is a normal sync; `userId` or anything else is rejected. */
 export const syncBody = noNulCharacters(

@@ -26,6 +26,7 @@ const CONNECTED: CalendarStatus = {
   status: 'connected',
   lastSyncedAt: '2026-11-02T08:30:00.000Z',
   lastErrorCode: null,
+  autoSync: true,
   sources: [
     { calendarId: 'work', name: 'Work', blocksTime: true },
     { calendarId: 'birthdays', name: 'Birthdays', blocksTime: false },
@@ -35,6 +36,7 @@ const DISCONNECTED: CalendarStatus = {
   status: 'disconnected',
   lastSyncedAt: null,
   lastErrorCode: null,
+  autoSync: true,
   sources: [],
 };
 

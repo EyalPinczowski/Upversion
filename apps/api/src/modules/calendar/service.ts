@@ -45,6 +45,7 @@ export interface CalendarView {
   status: 'connected' | 'needs_reconnect' | 'disconnected';
   lastSyncedAt: string | null;
   lastErrorCode: string | null;
+  autoSync: boolean;
   sources: { calendarId: string; name: string; blocksTime: boolean }[];
 }
 
@@ -137,11 +138,18 @@ export function createCalendarService(options: CalendarServiceOptions) {
 
   function toView(conn: ConnectionRow | null, sources: SourceRow[]): CalendarView {
     if (!conn)
-      return { status: 'disconnected', lastSyncedAt: null, lastErrorCode: null, sources: [] };
+      return {
+        status: 'disconnected',
+        lastSyncedAt: null,
+        lastErrorCode: null,
+        autoSync: true,
+        sources: [],
+      };
     return {
       status: conn.status,
       lastSyncedAt: conn.last_synced_at?.toISOString() ?? null,
       lastErrorCode: conn.last_error_code,
+      autoSync: conn.auto_sync,
       sources: sources.map((s) => ({
         calendarId: s.calendar_id,
         name: s.name,
@@ -389,6 +397,19 @@ export function createCalendarService(options: CalendarServiceOptions) {
           if (n === 0) {
             throw new HttpError(404, 'unknown_calendar', 'One of the calendars is not connected.');
           }
+        }
+        return toView(
+          await calendarRepo.getConnection(ctx, userId),
+          await calendarRepo.listSources(ctx, userId),
+        );
+      });
+    },
+
+    /** The user's own switch for the scheduled background sync. 409 when nothing is connected. */
+    async setAutoSync(userId: string, autoSync: boolean): Promise<CalendarView> {
+      return db.withUser(userId, async (ctx) => {
+        if ((await calendarRepo.setAutoSync(ctx, userId, autoSync)) === 0) {
+          throw new HttpError(409, 'calendar_not_connected', 'Google Calendar is not connected.');
         }
         return toView(
           await calendarRepo.getConnection(ctx, userId),

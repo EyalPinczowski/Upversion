@@ -124,7 +124,12 @@ describe('parseCalendarTokenKeys', () => {
 
 describe('calendar config and startup', () => {
   it('is off by default with no keys', () => {
-    expect(loadConfig({}).calendar).toEqual({ enabled: false, tokenKeys: [], google: null });
+    expect(loadConfig({}).calendar).toEqual({
+      enabled: false,
+      tokenKeys: [],
+      google: null,
+      cron: null,
+    });
   });
 
   it('refuses to start with FEATURE_CALENDAR=true and no key', () => {

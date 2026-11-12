@@ -48,6 +48,13 @@ export interface Database {
    * also makes it safe behind a transaction-mode pooler. Commits on success, rolls back on error.
    */
   withUser<T>(userId: string, fn: (ctx: UserContext) => Promise<T>): Promise<T>;
+  /**
+   * The user ids whose calendar is due for the scheduled sync (migration 0018): connected, auto
+   * sync on, last sync missing or older than `olderThanMs`; never-synced first, then oldest.
+   * Runs as the app role with NO user claims; the function is SECURITY DEFINER and returns ids
+   * only. Each user's own sync then runs through `withUser`.
+   */
+  dueCalendarUsers(olderThanMs: number, limit: number): Promise<string[]>;
   /** Creates (or returns) the profile row via provision_user, as the app login. */
   provision(userId: string, email: string): Promise<UserRow>;
   /**
@@ -103,6 +110,28 @@ export function createDatabase(options: {
           const result = await fn({ client, schema });
           await client.query('commit');
           return result;
+        } catch (error) {
+          await client.query('rollback').catch(() => undefined);
+          throw error;
+        }
+      } finally {
+        client.release();
+      }
+    },
+
+    async dueCalendarUsers(olderThanMs, limit) {
+      const seconds = Math.max(0, Math.floor(olderThanMs / 1000));
+      const client = await pool.connect();
+      try {
+        await client.query('begin');
+        try {
+          await client.query(`set local role ${role}`);
+          const { rows } = await client.query<{ user_id: string }>(
+            `select user_id from ${schema}.calendar_users_due(make_interval(secs => $1::double precision), $2::int)`,
+            [seconds, limit],
+          );
+          await client.query('commit');
+          return rows.map((r) => r.user_id);
         } catch (error) {
           await client.query('rollback').catch(() => undefined);
           throw error;

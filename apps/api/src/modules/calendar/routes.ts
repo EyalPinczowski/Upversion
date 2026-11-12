@@ -14,6 +14,7 @@ import {
   connectView,
   syncBody,
   syncView,
+  updateSettingsBody,
   updateSourcesBody,
 } from './schemas';
 import type { CalendarService } from './service';
@@ -128,6 +129,22 @@ export const calendarRoutes: FastifyPluginAsyncZod<CalendarRoutesOptions> = asyn
       },
     },
     async (request) => service!.setSources(user(request), request.body.sources),
+  );
+
+  app.put(
+    '/calendar/settings',
+    {
+      schema: {
+        tags,
+        summary: 'Turn the scheduled background calendar sync on or off',
+        description:
+          'The user id comes from the token only. `autoSync` is the server-side switch the scheduled sync (docs/calendar-cron.md) respects; it changes nothing else. 409 `calendar_not_connected` when no calendar is connected.',
+        security,
+        body: updateSettingsBody,
+        response: { 200: calendarView, ...errors },
+      },
+    },
+    async (request) => service!.setAutoSync(user(request), request.body.autoSync),
   );
 
   app.post(
