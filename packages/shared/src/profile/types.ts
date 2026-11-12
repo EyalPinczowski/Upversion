@@ -68,6 +68,8 @@ export interface SkillSuggestion {
   checked: boolean;
   /** Redacted snippet, at most 80 characters; empty when no safe line exists. */
   evidence: string;
+  /** The CV's own wordings for the skill, most frequent first, capped, free of contact text. */
+  terms: string[];
 }
 
 export interface RoleSuggestion {
