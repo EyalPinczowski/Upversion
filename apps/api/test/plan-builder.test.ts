@@ -173,6 +173,44 @@ describe.skipIf(!dbAvailable)('plan builder, archive and restore (real Postgres)
     (await rows<{ status: string }>('select status from rnd.plans where id = $1', [planId]))[0]
       ?.status;
 
+  /**
+   * Holds user A's per-user lock from outside while `work` queues requests behind it, then
+   * releases it. `waiting(n)` resolves once n requests are blocked on an advisory lock, so the
+   * order in which they queue (and so the order they run in) is fixed, not a race. A request that
+   * does not take the lock never blocks, and `waiting` throws for it.
+   */
+  async function holdingUserLock(
+    work: (waiting: (n: number) => Promise<void>, release: () => Promise<void>) => Promise<void>,
+  ) {
+    const holder = new pg.Client({ connectionString: TEST_SUPERUSER_URL });
+    await holder.connect();
+    try {
+      await holder.query('begin');
+      await holder.query(`select pg_advisory_xact_lock(hashtextextended($1::text, 0))`, [
+        `active-plan:rnd:${A}`,
+      ]);
+      const waiting = async (n: number) => {
+        for (let i = 0; i < 200; i++) {
+          const waiters = await count(
+            `select count(*) as n from pg_locks where locktype = 'advisory' and not granted`,
+          );
+          if (waiters >= n) return;
+          await new Promise((r) => setTimeout(r, 25));
+        }
+        throw new Error(`fewer than ${n} requests are waiting for the lock`);
+      };
+      try {
+        await work(waiting, async () => {
+          await holder.query('commit');
+        });
+      } finally {
+        await holder.query('commit').catch(() => undefined);
+      }
+    } finally {
+      await holder.end();
+    }
+  }
+
   describe('flag, auth and body', () => {
     it('answers 404 for all three routes while the flag is off', async () => {
       const headers = await asA();
@@ -460,54 +498,39 @@ describe.skipIf(!dbAvailable)('plan builder, archive and restore (real Postgres)
 
     it('lets exactly one of two simultaneous builds succeed when there is no active plan', async () => {
       const [b1, b2] = [await bodyFor(NEW_1, []), await bodyFor(NEW_2, [])];
-      const results = await Promise.all([
-        callA('POST', '/plans/build', b1),
-        callA('POST', '/plans/build', b2),
-      ]);
-      expect(results.map((r) => r.statusCode).sort()).toEqual([201, 409]);
-      expect(results.find((r) => r.statusCode === 409)!.json().error.code).toBe(
-        'active_plan_changed',
-      );
+      await holdingUserLock(async (waiting, release) => {
+        const first = callA('POST', '/plans/build', b1);
+        await waiting(1);
+        const second = callA('POST', '/plans/build', b2);
+        await waiting(2);
+        expect(await count('select count(*) as n from rnd.plans')).toBe(0);
+        await release();
+        const [r1, r2] = await Promise.all([first, second]);
+        expect([r1.statusCode, r2.statusCode]).toEqual([201, 409]);
+        expect(r2.json().error.code).toBe('active_plan_changed');
+      });
       expect(await count(`select count(*) as n from rnd.plans where status = 'active'`)).toBe(1);
       expect(await count('select count(*) as n from rnd.plans')).toBe(1);
+      expect(await statusOf(NEW_1)).toBe('active');
     });
 
     it('serialises a build and an import on the per-user lock', async () => {
       const body = await bodyFor(NEW_1, []);
-      // Hold the user's lock from outside, queue the import and then the build behind it.
-      const holder = new pg.Client({ connectionString: TEST_SUPERUSER_URL });
-      await holder.connect();
-      try {
-        await holder.query('begin');
-        await holder.query(`select pg_advisory_xact_lock(hashtextextended($1::text, 0))`, [
-          `active-plan:rnd:${A}`,
-        ]);
-        const waiting = async (n: number) => {
-          for (let i = 0; i < 200; i++) {
-            const waiters = await count(
-              `select count(*) as n from pg_locks where locktype = 'advisory' and not granted`,
-            );
-            if (waiters >= n) return;
-            await new Promise((r) => setTimeout(r, 25));
-          }
-          throw new Error(`fewer than ${n} requests are waiting for the lock`);
-        };
+      await holdingUserLock(async (waiting, release) => {
         const imported = importDemo(OLD);
         await waiting(1);
         const built = callA('POST', '/plans/build', body);
         await waiting(2);
         expect(await statusOf(OLD)).toBeUndefined();
-        await holder.query('commit');
+        await release();
         const [importRes, buildRes] = await Promise.all([imported, built]);
         expect(importRes.statusCode).toBe(201);
         // The build's check saw the imported plan, which was not in its replacesPlanIds.
         expect(buildRes.statusCode).toBe(409);
         expect(buildRes.json().error.code).toBe('active_plan_changed');
-        expect(await statusOf(OLD)).toBe('active');
-        expect(await statusOf(NEW_1)).toBeUndefined();
-      } finally {
-        await holder.end();
-      }
+      });
+      expect(await statusOf(OLD)).toBe('active');
+      expect(await statusOf(NEW_1)).toBeUndefined();
     });
   });
 
@@ -589,6 +612,27 @@ describe.skipIf(!dbAvailable)('plan builder, archive and restore (real Postgres)
       expect(await statusOf(OLD_2)).toBe('done');
     });
 
+    it('takes the per-user lock: a restore and a build queue behind it and only one wins', async () => {
+      await buildOver();
+      await rows(`update rnd.plans set status = 'archived'`);
+      const body = await bodyFor(NEW_2, []);
+      await holdingUserLock(async (waiting, release) => {
+        const restored = callA('POST', `/plans/${OLD}/restore`, { replacesPlanIds: [] });
+        await waiting(1);
+        const built = callA('POST', '/plans/build', body);
+        await waiting(2);
+        await release();
+        const [restoreRes, buildRes] = await Promise.all([restored, built]);
+        expect(restoreRes.statusCode).toBe(200);
+        // The build's check saw the restored plan, which was not in its replacesPlanIds.
+        expect(buildRes.statusCode).toBe(409);
+        expect(buildRes.json().error.code).toBe('active_plan_changed');
+      });
+      expect(await count(`select count(*) as n from rnd.plans where status = 'active'`)).toBe(1);
+      expect(await statusOf(OLD)).toBe('active');
+      expect(await statusOf(NEW_2)).toBeUndefined();
+    });
+
     it('answers 404 for a plan that does not exist', async () => {
       const res = await callA('POST', `/plans/${GHOST}/restore`, { replacesPlanIds: [] });
       expect(res.statusCode).toBe(404);
@@ -596,6 +640,25 @@ describe.skipIf(!dbAvailable)('plan builder, archive and restore (real Postgres)
   });
 
   describe('another user', () => {
+    it('building with the first user’s plan id creates the second user’s own plan only', async () => {
+      expect((await callA('POST', '/plans/build', await bodyFor(NEW_1, []))).statusCode).toBe(201);
+      const before = await tableCounts();
+      const mine = await callB('POST', '/plans/build', await bodyFor(NEW_1, []));
+      expect(mine.statusCode).toBe(201);
+      const owners = await rows<{ user_id: string; status: string }>(
+        'select user_id, status from rnd.plans where id = $1 order by user_id',
+        [NEW_1],
+      );
+      expect(owners).toEqual([
+        { user_id: A, status: 'active' },
+        { user_id: B, status: 'active' },
+      ]);
+      expect(before.plans).toBe(1);
+      expect(await count(`select count(*) as n from rnd.events where type = 'plan.archived'`)).toBe(
+        0,
+      );
+    });
+
     it('never sees, archives or restores the first user’s plans', async () => {
       await importDemo(OLD);
       const built = await callA('POST', '/plans/build', await bodyFor(NEW_1, [OLD]));
