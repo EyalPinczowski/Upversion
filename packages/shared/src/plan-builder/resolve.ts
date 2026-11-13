@@ -62,6 +62,8 @@ export function resolveRoots(ctx: BuildContext, roots: readonly Root[]): Resolve
         existing.root = root;
         existing.origin = root.origin;
         existing.paidCertificate = root.paidCertificate;
+        // It was first added as a prerequisite of an earlier root: it keeps the higher tier.
+        if (root.tier === 'core') existing.tier = 'core';
       }
       return;
     }
@@ -100,6 +102,15 @@ export function resolveRoots(ctx: BuildContext, roots: readonly Root[]): Resolve
       byId.get(pid)?.requiredBy.push(m.id);
     }
   }
+  // The user's priority overrides apply to every member, prerequisites added around a root included.
+  const locked = new Set<string>();
+  for (const m of members) {
+    const override = ctx.request.priorityOverrides[m.id];
+    if (override) {
+      m.tier = override;
+      locked.add(m.id);
+    }
+  }
   // Tier and priority flow from dependents to prerequisites until nothing changes.
   for (let pass = 0; pass <= members.length; pass++) {
     let changed = false;
@@ -107,7 +118,7 @@ export function resolveRoots(ctx: BuildContext, roots: readonly Root[]): Resolve
       for (const did of m.requiredBy) {
         const d = byId.get(did);
         if (!d) continue;
-        if (d.tier === 'core' && m.tier !== 'core') {
+        if (d.tier === 'core' && m.tier !== 'core' && !locked.has(m.id)) {
           m.tier = 'core';
           changed = true;
         }

@@ -139,11 +139,12 @@ export function enforceLimit(
   }
 
   const beforeSkills = coveredGaps(outcome.draft);
+  // Skills lost to the budget are those the swap/drop pass lost; what the re-fit then drops for time is a time loss.
+  const afterPass = new Set(resolveRoots(ctx, roots).members.flatMap((m) => m.gapSkills));
+  const lostForBudget = [...beforeSkills].filter((s) => !afterPass.has(s)).sort();
   // The one re-fit and cost check.
   const refit = fitRoots(ctx, compose, roots);
   const recost = costOf(refit);
-  const afterSkills = coveredGaps(refit.draft);
-  const lostForBudget = [...beforeSkills].filter((s) => !afterSkills.has(s)).sort();
   const over = recost.total > amount + EPSILON;
   let removeToFit: string[] = [];
   if (over) {

@@ -1,4 +1,4 @@
-import { compareDates, hoursToMinutes, parseTime, type LocalDate } from '../dates';
+import { compareDates, diffDays, hoursToMinutes, parseTime, type LocalDate } from '../dates';
 import type { CatalogIndex } from './catalog';
 import type { BuildRequest } from './schemas';
 
@@ -10,7 +10,9 @@ export type BuildRequestIssueCode =
   | 'deadline_not_after_start'
   | 'deadline_in_past'
   | 'not_a_certificate'
-  | 'exam_date_too_late';
+  | 'exam_date_too_late'
+  | 'exam_date_out_of_range'
+  | 'deadline_too_far';
 
 export interface BuildRequestIssue {
   code: BuildRequestIssueCode;
@@ -18,6 +20,9 @@ export interface BuildRequestIssue {
   /** The offending id, when there is one. */
   id?: string;
 }
+
+/** The deadline may be at most this many days after the start date (a longer plan is not a study plan, and the engine would be asked to look years ahead). */
+export const MAX_DEADLINE_DAYS = 730;
 
 /** The longest exam block the builder plans (owner Q11: every exam block is at most 2 hours). */
 export const MAX_EXAM_BLOCK_HOURS = 2;
@@ -100,6 +105,14 @@ export function validateBuildRequest(
       });
       continue;
     }
+    const firstDay = compareDates(request.startDate, today) >= 0 ? request.startDate : today;
+    if (compareDates(e.date, firstDay) < 0 || compareDates(e.date, request.deadline) > 0) {
+      issues.push({
+        code: 'exam_date_out_of_range',
+        message: `The ${e.catalogId} exam date must be between ${firstDay} and the deadline`,
+        id: e.catalogId,
+      });
+    }
     const end = parseTime(e.start) + hoursToMinutes(examBlockHours(item.est_hours));
     if (end > 1439) {
       issues.push({
@@ -113,6 +126,12 @@ export function validateBuildRequest(
     issues.push({
       code: 'deadline_not_after_start',
       message: 'The deadline must be after the start date',
+    });
+  }
+  if (diffDays(request.startDate, request.deadline) > MAX_DEADLINE_DAYS) {
+    issues.push({
+      code: 'deadline_too_far',
+      message: `The deadline may be at most ${MAX_DEADLINE_DAYS} days after the start date`,
     });
   }
   if (compareDates(request.deadline, today) < 0) {

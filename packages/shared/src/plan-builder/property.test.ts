@@ -3,7 +3,8 @@ import { compareDates } from '../dates';
 import { parsePlanFile, WeekPatternSchema } from '../schemas';
 import { schedule } from '../scheduling/engine';
 import { buildPlan } from './build';
-import { BUNDLED_CATALOG, type CatalogItem } from './catalog';
+import { BUNDLED_CATALOG } from './bundled';
+import type { CatalogItem } from './catalog';
 import { BuildDraftSchema, type BuildDraft, type BuildRequestInput } from './schemas';
 import {
   NEEDS_CHECK_EXAM_LENGTH,
@@ -312,7 +313,10 @@ function checkDraft(draft: BuildDraft, req: BuildRequestInput, label: string): v
     }
   }
   if (draft.fits) {
-    expect(result.warnings, where('no engine warnings when it fits')).toEqual([]);
+    expect(
+      result.warnings.filter((w) => w.kind !== 'over_capacity'),
+      where('no blocking engine warnings when it fits'),
+    ).toEqual([]);
     expect(
       compareDates(result.finishDate as string, req.deadline),
       where('finish <= deadline'),
@@ -355,7 +359,11 @@ function checkDraft(draft: BuildDraft, req: BuildRequestInput, label: string): v
       }
     }
   }
-  expect(draft.overBudget === false || draft.removeToFit.length >= 0).toBe(true);
+  // Over budget must come with the items to remove. On the real catalog a plan that fits is never
+  // over budget (its months come from a real schedule). A plan that does not fit can be: its
+  // subscription runs past the deadline, which the cost of the truncated schedule cannot show.
+  if (draft.overBudget) expect(draft.removeToFit.length, where('removeToFit')).toBeGreaterThan(0);
+  if (draft.fits) expect(draft.overBudget, where('a plan that fits is within budget')).toBe(false);
 }
 
 describe('property: every role x profile x budget x deadline', () => {

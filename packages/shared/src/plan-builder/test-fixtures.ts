@@ -1,5 +1,6 @@
 import { buildPlan } from './build';
-import { BUNDLED_CATALOG, type BuildCatalog, type CatalogItem, type CatalogRole } from './catalog';
+import { BUNDLED_CATALOG } from './bundled';
+import type { BuildCatalog, CatalogItem, CatalogRole } from './catalog';
 import type { BuildDraft, BuildRequestInput } from './schemas';
 
 /** A small fictional catalog for unit tests. Nothing here comes from the real catalog. */

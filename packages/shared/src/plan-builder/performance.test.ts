@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildPlan, composeFor, createContext } from './build';
-import { BUNDLED_CATALOG } from './catalog';
+import { BUNDLED_CATALOG } from './bundled';
 import { fitRoots, MAX_FIT_RUNS } from './fit';
 import type { BuildRequestInput } from './schemas';
 import { ExclusionLog, selectCertificates, selectCourses, selectPractice } from './select';
@@ -36,13 +36,21 @@ const hard: BuildRequestInput = {
 describe('engine time budget', () => {
   it(`stays well inside a generous bound on the largest role (${largest.id})`, () => {
     // ADR 017 expects about 200 ms for the fit loop on a normal machine. The bound here is
-    // generous (CI machines are slow and noisy); it still catches a loop that runs away.
+    // tight on purpose (a normal run is about a tenth of it) and still allows for a slow CI machine.
     buildPlan({ today: '2026-11-02', request: hard }, BUNDLED_CATALOG); // warm up
     const start = performance.now();
     const draft = buildPlan({ today: '2026-11-02', request: hard }, BUNDLED_CATALOG);
     const ms = performance.now() - start;
     expect(draft.items.length + draft.excluded.length).toBeGreaterThan(8);
-    expect(ms).toBeLessThan(2000);
+    expect(ms).toBeLessThan(500);
+  });
+
+  it('a deadline at the 730-day limit is as cheap as a near one', () => {
+    const far = { ...hard, deadline: '2028-10-23' };
+    buildPlan({ today: '2026-11-02', request: far }, BUNDLED_CATALOG); // warm up
+    const start = performance.now();
+    buildPlan({ today: '2026-11-02', request: far }, BUNDLED_CATALOG);
+    expect(performance.now() - start).toBeLessThan(500);
   });
 
   it('uses a bounded number of engine runs for the fit loop', () => {

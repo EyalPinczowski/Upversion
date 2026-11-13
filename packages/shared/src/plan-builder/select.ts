@@ -169,6 +169,11 @@ export function selectCourses(ctx: BuildContext, log: ExclusionLog): Root[] {
   return roots;
 }
 
+/**
+ * Exam score bonus for how well the credential is recognised (the catalog's `recognition`):
+ * high +2, medium +1, low 0. It only breaks ties between exams that teach the same role skills;
+ * the role's skill weights, +3 for the core path and +1 for a verified link carry the rest.
+ */
 const RECOGNITION_BONUS: Record<string, number> = { high: 2, medium: 1, low: 0 };
 
 export interface CertificateSelection {

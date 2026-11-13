@@ -45,6 +45,8 @@ export const BuildWeekPatternSchema = z
     lunchStart: TimeSchema.optional(),
     lunchEnd: TimeSchema.optional(),
   })
+  // The cast restores the plain input/output types of `WeekPatternSchema`; at run time this is the
+  // pipe above (times checked first, then the strict schema).
   .pipe(WeekPatternSchema.strict()) as unknown as z.ZodType<
   z.output<typeof WeekPatternSchema>,
   z.input<typeof WeekPatternSchema>
@@ -132,7 +134,12 @@ export const BuildItemOriginSchema = z.enum([
 ]);
 
 export const ItemCostSchema = z.object({
-  /** The price counted for this item (USD), or null when the catalog has none ("price varies"). */
+  /**
+   * The catalog price of one purchase (USD), or null when the catalog has none ("price varies").
+   * For a subscription it is the price of ONE period (a month, or a year), not the total; every
+   * member of a subscription group shows the full group price, and the group is paid once per
+   * month (see `months` and `CostReport.total`). Never add the item amounts up: use the total.
+   */
   amount: z.number().nullable(),
   kind: z.enum(['free', 'one_time', 'subscription', 'certificate']),
   /** Subscription items: the months the plan uses it for (a group is paid once per month). */
@@ -203,6 +210,13 @@ export const CostReportSchema = z.object({
   total: z.number(),
   /** True when any included item has a price that is not verified. */
   estimated: z.boolean(),
+  /** How many included items have a price that is not verified (the number behind `estimated`). */
+  unverifiedPriceCount: z.number().int(),
+  /**
+   * Subscriptions (a group name, or a catalog id) that are not scheduled at all: they are counted
+   * as one month, because there is no schedule to count months from.
+   */
+  assumedOneMonth: z.array(z.string()),
   /** Items whose price is unknown ("+ N prices to check"). */
   pricesToCheck: z.number().int(),
   lines: z.array(CostLineSchema),
@@ -226,11 +240,18 @@ export const OfferedCertificateSchema = z.object({
 });
 
 export const FitOptionsSchema = z.object({
-  /** "Finish on <date>": the date the draft finishes without the deadline (null: not within a year). */
+  /** "Finish on <date>": the date the draft finishes without the deadline (null: not within two years). */
   finishOn: z.object({ date: LocalDateSchema.nullable() }),
   /** "Study <h> hours a day": the smallest value on a 0.5 h grid that fits (null: not possible within the window). */
-  hoursPerDay: z.object({ value: z.number().nullable() }),
-  /** "Keep only the essentials": the items to drop (add them to `exclude`) and the skills that are lost. */
+  hoursPerDay: z.object({
+    value: z.number().nullable(),
+    /** The value replaces the hours of every study day, per-weekday overrides included. */
+    appliesToAllStudyDays: z.literal(true),
+  }),
+  /**
+   * "Keep only the essentials": the items to drop (add them to `exclude`) and the skills that are
+   * lost. Exams and items the user asked for (opt-in, exam date, mustInclude) are never in it.
+   */
   essentials: z.object({
     possible: z.boolean(),
     droppedItemIds: z.array(z.string()),
@@ -240,6 +261,7 @@ export const FitOptionsSchema = z.object({
 
 export const BuildWarningSchema = z.object({
   code: z.enum([
+    'subscription_months_assumed',
     'thin_role',
     'no_free_items',
     'catalog_gap',

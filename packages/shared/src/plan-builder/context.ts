@@ -38,6 +38,8 @@ export interface BuildContext {
   /** Items on a target role's suggested core path (its free-only path when the budget is free). */
   coreIds: Set<string>;
   closureCache: Map<string, ClosureResult>;
+  /** Engine runs used so far in this `buildPlan` call (bounded by `MAX_TOTAL_ENGINE_RUNS`). */
+  engineRuns: number;
 }
 
 /** Items without a link are never chosen, except practice templates (they run in the app). */
@@ -82,8 +84,10 @@ export function closureOf(ctx: BuildContext, item: CatalogItem): ClosureResult {
   const cached = ctx.closureCache.get(item.id);
   if (cached) return cached;
   const order: string[] = [];
-  const seen = new Set<string>([item.id]);
-  const skipped: { catalogId: string; message: string }[] = [];
+  // `included` only holds items that are really in the closure. A skipped item is not marked, so
+  // an exam that needs it directly still finds it, whichever path reaches it first.
+  const included = new Set<string>([item.id]);
+  const skipped = new Map<string, string>();
   let failure = null as ClosureResult | null;
 
   const visit = (dependent: CatalogItem): void => {
@@ -91,15 +95,11 @@ export function closureOf(ctx: BuildContext, item: CatalogItem): ClosureResult {
       if (failure) return;
       if (dependent.prerequisite_kinds[pid] === 'recommended') continue;
       const p = ctx.index.byId.get(pid);
-      if (!p || seen.has(pid)) continue;
-      seen.add(pid);
+      if (!p || included.has(pid)) continue;
       if (dependent.type !== 'cert_exam' && ratedAtLeastComfortable(ctx, p)) {
         const lowest = Math.min(...p.skills.map((s) => ctx.request.skillLevels[s] ?? 0));
         const names = p.skills.map((s) => skillName(ctx.index, s)).join(', ');
-        skipped.push({
-          catalogId: p.id,
-          message: `Skipped "${p.title}": you rated ${names} ${levelLabel(lowest)}.`,
-        });
+        skipped.set(p.id, `Skipped "${p.title}": you rated ${names} ${levelLabel(lowest)}.`);
         continue;
       }
       const issue = itemIssue(ctx, p);
@@ -107,13 +107,20 @@ export function closureOf(ctx: BuildContext, item: CatalogItem): ClosureResult {
         failure = { ok: false, reason: issue, relatedId: p.id };
         return;
       }
+      included.add(pid);
       visit(p);
       if (failure) return;
       order.push(p.id);
     }
   };
   visit(item);
-  const result: ClosureResult = failure ?? { ok: true, required: order, skipped };
+  const result: ClosureResult = failure ?? {
+    ok: true,
+    required: order,
+    skipped: [...skipped]
+      .filter(([id]) => !included.has(id))
+      .map(([catalogId, message]) => ({ catalogId, message })),
+  };
   ctx.closureCache.set(item.id, result);
   return result;
 }

@@ -59,6 +59,7 @@ export function createContext(input: BuildInputShape, catalog: BuildCatalog): Bu
     excluded: new Set(request.exclude),
     coreIds,
     closureCache: new Map(),
+    engineRuns: 0,
   };
 }
 
@@ -220,6 +221,7 @@ export function buildPlan(input: BuildInputShape, catalog: BuildCatalog): BuildD
     fits,
     final.run.warnings.map((w) => w.kind),
     skillsNotCovered,
+    limited.cost.assumedOneMonth,
   );
 
   const taskList = draft.composed.tasks;
@@ -281,6 +283,7 @@ function buildWarnings(
   fits: boolean,
   engineKinds: readonly string[],
   notCovered: readonly SkillNotCovered[],
+  assumedOneMonth: readonly string[],
 ): BuildWarning[] {
   const out: BuildWarning[] = [
     {
@@ -319,6 +322,12 @@ function buildWarnings(
         gaps.map((g) => g.name),
         50,
       )}.`,
+    });
+  }
+  if (assumedOneMonth.length > 0) {
+    out.push({
+      code: 'subscription_months_assumed',
+      message: `A subscription that is not scheduled is counted as one month (${assumedOneMonth.join(', ')}).`,
     });
   }
   if (!fits) {

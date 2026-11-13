@@ -21,8 +21,18 @@ export type Compose = (roots: Root[]) => Draft;
 
 /** Most engine runs one fit may use (a bound on the trim loops; the engine itself is fast). */
 export const MAX_FIT_RUNS = 80;
-/** The engine looks at most this many days ahead when it asks "when would this finish". */
-export const FINISH_HORIZON_DAYS = 365;
+/** The engine never looks further ahead than this many days (the longest deadline the builder accepts). */
+export const FINISH_HORIZON_DAYS = 730;
+/** Most engine runs one `buildPlan` may use in all its loops together. */
+export const MAX_TOTAL_ENGINE_RUNS = 300;
+
+/** Engine warnings that mean a task could not be placed. Anything else (e.g. an anchored exam on a non-study day) is not a failure to fit. */
+const BLOCKING_WARNINGS: ReadonlySet<ScheduleWarning['kind']> = new Set([
+  'unscheduled',
+  'anchor_at_risk',
+  'anchor_in_past',
+  'dependency_cycle',
+]);
 
 export interface FitRun {
   fits: boolean;
@@ -44,10 +54,14 @@ export function runFit(
   horizonDays?: number,
 ): FitRun {
   const deadline = ctx.request.deadline;
-  const horizon = horizonDays ?? Math.max(0, diffDays(ctx.from, deadline));
+  const horizon = Math.min(
+    horizonDays ?? Math.max(0, diffDays(ctx.from, deadline)),
+    FINISH_HORIZON_DAYS,
+  );
+  ctx.engineRuns += 1;
   const result = schedule({ tasks: [...tasks], pattern, today: ctx.from, horizonDays: horizon });
   const fits =
-    result.warnings.length === 0 &&
+    !result.warnings.some((w) => BLOCKING_WARNINGS.has(w.kind)) &&
     result.finishDate !== null &&
     compareDates(result.finishDate, deadline) <= 0;
   return { fits, finishDate: result.finishDate, blocks: result.blocks, warnings: result.warnings };
@@ -74,9 +88,13 @@ function dropOrder(
 }
 
 /** The next root to give up, or null. `optionalOnly`: only roots whose effective tier is optional. */
-export function nextToDrop(draft: Draft, optionalOnly: boolean): string | null {
+export function nextToDrop(
+  draft: Draft,
+  optionalOnly: boolean,
+  canDrop: (id: string) => boolean = () => true,
+): string | null {
   const candidates = draft.resolved.members
-    .filter((m) => m.root !== null && (!optionalOnly || m.tier === 'optional'))
+    .filter((m) => m.root !== null && (!optionalOnly || m.tier === 'optional') && canDrop(m.id))
     .sort(dropOrder);
   return candidates[0]?.id ?? null;
 }
@@ -91,7 +109,7 @@ export function fitRoots(ctx: BuildContext, compose: Compose, roots: Root[]): Fi
   let run = runFit(ctx, draft.composed.tasks);
   let runs = 1;
   const droppedForTime: string[] = [];
-  while (!run.fits && runs < MAX_FIT_RUNS) {
+  while (!run.fits && runs < MAX_FIT_RUNS && ctx.engineRuns < MAX_TOTAL_ENGINE_RUNS) {
     const id = nextToDrop(draft, true);
     if (!id) break;
     droppedForTime.push(...droppedBy(ctx, current, id));
@@ -108,6 +126,7 @@ function windowHours(pattern: WeekPattern): number {
   return Math.floor(totalMinutes(studyWindow(pattern)) / 30) / 2;
 }
 
+/** The option sets the same hours on every study day: per-weekday overrides are cleared (and the option says so). */
 function withHours(pattern: WeekPattern, hours: number): WeekPattern {
   return { ...pattern, defaultHours: hours, hoursByWeekday: {} };
 }
@@ -139,6 +158,12 @@ export function coveredGaps(draft: Draft): Set<string> {
   return covered;
 }
 
+/** Exams and items the user asked for by name (opt-in, exam date, mustInclude) are never offered to be dropped. */
+function isProtected(draft: Draft, id: string): boolean {
+  const origin = draft.resolved.byId.get(id)?.origin;
+  return origin === 'opt_in' || origin === 'must_include';
+}
+
 /**
  * The three options when the plan does not fit (spec 3.0), all computed by the engine. The
  * builder never applies one: the caller shows them and the user picks.
@@ -158,8 +183,11 @@ export function fitOptions(ctx: BuildContext, compose: Compose, outcome: FitOutc
   const dropped: string[] = [];
   let runs = 0;
   let fits = false;
-  while (current.length > 0 && runs < MAX_FIT_RUNS) {
-    const id = nextToDrop(draft, false);
+  while (current.length > 0 && runs < MAX_FIT_RUNS && ctx.engineRuns < MAX_TOTAL_ENGINE_RUNS) {
+    const roots = current;
+    const id = nextToDrop(draft, false, (candidate) =>
+      droppedBy(ctx, roots, candidate).every((r) => !isProtected(draft, r)),
+    );
     if (!id) break;
     dropped.push(...droppedBy(ctx, current, id));
     current = rootsWithout(ctx, current, id);
@@ -175,7 +203,7 @@ export function fitOptions(ctx: BuildContext, compose: Compose, outcome: FitOutc
   const lost = [...before].filter((s) => !after.has(s)).sort();
   return {
     finishOn: { date: finishDate },
-    hoursPerDay: { value: hoursPerDay },
+    hoursPerDay: { value: hoursPerDay, appliesToAllStudyDays: true },
     essentials: {
       possible: fits && current.length > 0,
       droppedItemIds: fits ? [...new Set(dropped)].sort() : [],

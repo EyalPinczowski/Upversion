@@ -1,13 +1,4 @@
-export * from './schemas';
-export * from './catalog';
+/** The plan builder entry point (`@upversion/shared/plan-builder`): the root exports plus `buildPlan` and the bundled catalog. */
+export * from './root';
 export { buildPlan, BUILDER_VERSION } from './build';
-export {
-  BuildRequestError,
-  validateBuildRequest,
-  examBlockHours,
-  MAX_EXAM_BLOCK_HOURS,
-} from './validate';
-export type { BuildRequestIssue, BuildRequestIssueCode } from './validate';
-export { prefillFromProfile, TIME_OF_DAY_WINDOWS } from './prefill';
-export type { PrefillOptions, PrefillResult } from './prefill';
-export { LEVEL_LABELS, levelLabel } from './context';
+export { BUNDLED_CATALOG } from './bundled';

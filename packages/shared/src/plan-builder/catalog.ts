@@ -1,11 +1,7 @@
-import catalogData from '../../../../data/catalog/catalog.json';
-import rolesData from '../../../../data/catalog/roles.json';
-import skillsData from '../../../../data/catalog/skills.json';
-
 /**
- * The catalog as the plan builder reads it (ADR 017, WP-1). The JSON in `data/catalog/` is
- * bundled at build time; nothing is read at run time. `buildPlan` takes a `BuildCatalog` as an
- * argument, so tests can pass a modified copy and the API can pass the bundled one.
+ * The catalog as the plan builder reads it (ADR 017, WP-1). `buildPlan` takes a `BuildCatalog`
+ * as an argument, so tests can pass a modified copy and the API can pass the bundled one
+ * (`bundled.ts`, the only file that imports the JSON).
  */
 
 export type CatalogItemType = 'course' | 'cert_exam' | 'practice';
@@ -69,12 +65,6 @@ export interface BuildCatalog {
   roles: readonly CatalogRole[];
   skills: readonly CatalogSkill[];
 }
-
-export const BUNDLED_CATALOG: BuildCatalog = {
-  items: (catalogData as unknown as { items: CatalogItem[] }).items,
-  roles: (rolesData as unknown as { roles: CatalogRole[] }).roles,
-  skills: (skillsData as unknown as { skills: CatalogSkill[] }).skills,
-};
 
 /** Catalog lookups, built once per `buildPlan` call. Items are sorted by id, so the order of the input never matters. */
 export interface CatalogIndex {

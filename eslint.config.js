@@ -102,5 +102,22 @@ export default tseslint.config(
     files: ['apps/web/**/*.{ts,tsx}'],
     extends: [reactHooks.configs.flat.recommended, reactRefresh.configs.vite],
     languageOptions: { globals: globals.browser },
+    rules: {
+      // ADR 017: the plan builder and the bundled catalog (about 180 items of JSON) are for the API.
+      // A static import would put them in the main bundle; a lazy `import()` (a route chunk) is the
+      // only way the web may load them, and `no-restricted-imports` does not check dynamic imports.
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@upversion/shared/plan-builder',
+              message:
+                'Do not import the plan builder statically in the web app: it pulls the catalog JSON into the main bundle. Use a lazy import() in a route chunk, or call the API.',
+            },
+          ],
+        },
+      ],
+    },
   },
 );

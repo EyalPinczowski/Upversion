@@ -63,11 +63,16 @@ export function computeCost(members: readonly Member[], span: SpanOf): CostRepor
   const subscriptionMonths: Record<string, number> = {};
   let pricesToCheck = 0;
   let estimated = false;
+  let unverifiedPriceCount = 0;
+  const assumedOneMonth: string[] = [];
 
   const groups = new Map<string, Member[]>();
   for (const m of members) {
     const { item } = m;
-    if (item.type !== 'practice' && !item.price_verified) estimated = true;
+    if (item.type !== 'practice' && !item.price_verified) {
+      estimated = true;
+      unverifiedPriceCount += 1;
+    }
     if (item.cost_type === 'subscription') {
       if (item.subscription_group) {
         const list = groups.get(item.subscription_group) ?? [];
@@ -86,7 +91,9 @@ export function computeCost(members: readonly Member[], span: SpanOf): CostRepor
         });
         continue;
       }
-      const days = span(`item:${item.id}`, [item.id]) ?? 1;
+      const scheduledDays = span(`item:${item.id}`, [item.id]);
+      if (scheduledDays === null) assumedOneMonth.push(item.id);
+      const days = scheduledDays ?? 1;
       const unit = item.subscription_period === 'year' ? DAYS_PER_YEAR : DAYS_PER_MONTH;
       const periods = Math.max(1, Math.ceil(days / unit));
       lines.push({
@@ -120,11 +127,12 @@ export function computeCost(members: readonly Member[], span: SpanOf): CostRepor
   }
   for (const [group, list] of [...groups].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
     const sorted = [...list].sort((a, b) => (a.id < b.id ? -1 : 1));
-    const days =
-      span(
-        `group:${group}`,
-        sorted.map((m) => m.id),
-      ) ?? 1;
+    const groupDays = span(
+      `group:${group}`,
+      sorted.map((m) => m.id),
+    );
+    if (groupDays === null) assumedOneMonth.push(group);
+    const days = groupDays ?? 1;
     const months = Math.max(1, Math.ceil(days / DAYS_PER_MONTH));
     subscriptionMonths[group] = months;
     const priced = sorted.find((m) => m.item.price !== null);
@@ -151,7 +159,16 @@ export function computeCost(members: readonly Member[], span: SpanOf): CostRepor
   }
   lines.sort((a, b) => (a.catalogId < b.catalogId ? -1 : a.catalogId > b.catalogId ? 1 : 0));
   const total = cents(lines.reduce((sum, l) => sum + (l.amount ?? 0), 0));
-  return { currency: 'USD', total, estimated, pricesToCheck, lines, subscriptionMonths };
+  return {
+    currency: 'USD',
+    total,
+    estimated,
+    unverifiedPriceCount,
+    assumedOneMonth: assumedOneMonth.sort(),
+    pricesToCheck,
+    lines,
+    subscriptionMonths,
+  };
 }
 
 /** The cost shown on one item of the draft. */
