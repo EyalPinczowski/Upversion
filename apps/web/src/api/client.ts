@@ -39,6 +39,10 @@ export type LogRequest = Body<paths['/api/v1/plans/{planId}/tasks/{taskId}/logs'
 export type LogResult = Ok<paths['/api/v1/plans/{planId}/tasks/{taskId}/logs']['post']>;
 export type TaskPatch = Body<paths['/api/v1/plans/{planId}/tasks/{taskId}']['patch']>;
 export type ImportBody = Body<paths['/api/v1/plans/import']['post']>;
+export type BuildRequestBody = Body<paths['/api/v1/plans/build/preview']['post']>;
+export type BuildDraft = Ok<paths['/api/v1/plans/build/preview']['post']>;
+export type BuildPlanBody = Body<paths['/api/v1/plans/build']['post']>;
+export type RestoreBody = Body<paths['/api/v1/plans/{id}/restore']['post']>;
 
 export type ProfileView = Ok<paths['/api/v1/me/profile']['get']>;
 export type ProfileImportBody = Body<paths['/api/v1/me/profile/import']['put']>;
@@ -116,6 +120,11 @@ export function createApiClient({
     deletePlan: (id: string) =>
       unwrap(raw.DELETE('/api/v1/plans/{id}', { params: { path: { id } } })),
     importPlan: (body: ImportBody) => unwrap(raw.POST('/api/v1/plans/import', { body })),
+    previewBuild: (body: BuildRequestBody, signal?: AbortSignal) =>
+      unwrap(raw.POST('/api/v1/plans/build/preview', { body, signal })),
+    buildPlan: (body: BuildPlanBody) => unwrap(raw.POST('/api/v1/plans/build', { body })),
+    restorePlan: (id: string, body: RestoreBody) =>
+      unwrap(raw.POST('/api/v1/plans/{id}/restore', { params: { path: { id } }, body })),
     getSchedule: (id: string, signal?: AbortSignal) =>
       unwrap(raw.GET('/api/v1/plans/{id}/schedule', { params: { path: { id } }, signal })),
     previewSchedule: (id: string, body: PreviewRequest) =>

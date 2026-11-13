@@ -10,6 +10,7 @@ import { formatHours } from '../lib/format';
 import { safeWebUrl } from '../lib/links';
 import { describeError } from '../lib/messages';
 import { anchorText, dependencyText } from '../lib/task-text';
+import { useReadOnlyPlan } from '../plan/context';
 import { PlanGate } from '../plan/PlanGate';
 import { LogTimeForm } from './today/LogTimeForm';
 import { TaskActions } from './today/TaskActions';
@@ -167,6 +168,7 @@ function Detail({
   titleOf: (id: string) => string;
 }) {
   const navigate = useNavigate();
+  const readOnly = useReadOnlyPlan();
   // The delete can finish after the person has left this page: then they stay where they went.
   const mounted = useRef(true);
   useEffect(() => {
@@ -253,9 +255,13 @@ function Detail({
         </section>
       ) : null}
 
-      <EditForm planId={planId} task={task} />
+      {readOnly ? null : <EditForm planId={planId} task={task} />}
 
-      <section aria-labelledby="delete-heading" className="space-y-2 border-t border-border pt-6">
+      <section
+        aria-labelledby="delete-heading"
+        hidden={readOnly}
+        className="space-y-2 border-t border-border pt-6"
+      >
         <h2 id="delete-heading">Delete this task</h2>
         <p className="text-muted">Removes it from the plan and recalculates the schedule.</p>
         <DeleteTask

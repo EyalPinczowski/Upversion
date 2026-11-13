@@ -1,11 +1,10 @@
 import { vi } from 'vitest';
 import { CV_TEXT, FORBIDDEN } from './cv-fixture';
-import type { installSetupApi } from './setup-fixtures';
 
 /** Shared by the CV privacy tests (setup wizard and Change my CV): every channel a leak could use. */
 
 /** Everything the app sent: URL, method, header names and values, and body, of every request. */
-export async function everythingSent(api: ReturnType<typeof installSetupApi>) {
+export async function everythingSent(api: { calls: Request[] }) {
   const parts: string[] = [];
   for (const call of api.calls) {
     parts.push(call.method, call.url);

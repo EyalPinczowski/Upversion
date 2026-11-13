@@ -37,5 +37,5 @@ export * from './cv-tailor/gaps';
 export * from './cv-tailor/prompt';
 export * from './cv-tailor/output';
 export * from './cv-tailor/schemas';
-export { CATALOG_TAXONOMY } from './profile/catalog';
+export { CATALOG_QUESTIONS, CATALOG_TAXONOMY } from './profile/catalog';
 export * from './plan-builder/root';
