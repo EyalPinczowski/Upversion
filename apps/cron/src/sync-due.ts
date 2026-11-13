@@ -21,10 +21,10 @@ export interface SyncDueOptions {
 }
 
 export const ENDPOINT_PATH = '/api/v1/internal/calendar/sync-due';
-export const DEFAULT_TIMEOUT_MS = 240_000;
+export const DEFAULT_TIMEOUT_MS = 300_000;
 export const DEFAULT_RETRY_DELAY_MS = 5_000;
 const COUNT_KEYS = ['due', 'synced', 'cached', 'failed', 'skipped'] as const;
-const RETRY_STATUSES = new Set([502, 503]);
+const RETRY_STATUSES = new Set([429, 502, 503]);
 
 /** Thrown for a run that did not work, so the cron event shows as failed. Carries no secret. */
 export class SyncDueError extends Error {

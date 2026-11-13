@@ -9,15 +9,12 @@
   // No public URL: the worker only runs on its schedule.
   "workers_dev": false,
   "preview_urls": false,
+  // API_BASE_URL (plain variable) and CALENDAR_CRON_SECRET (secret) are set in the Cloudflare
+  // dashboard, not here. Without keep_vars a deploy would remove variables that are not in this file.
+  // If API_BASE_URL is missing the run fails with outcome "misconfigured" in the log.
+  "keep_vars": true,
   "triggers": {
     // Every 15 minutes, UTC. Best effort: Cloudflare may start a run a little late.
     "crons": ["*/15 * * * *"],
   },
-  "vars": {
-    // Placeholder. Set the real origin of the R&D API (no trailing slash) in the Cloudflare
-    // dashboard (Settings > Variables) or here before deploying. Not a secret.
-    "API_BASE_URL": "https://<your-rnd-api>.onrender.com",
-  },
-  // The secret is NOT in this file. Set it once with:  npx wrangler secret put CALENDAR_CRON_SECRET
-  // (run in apps/cron), or in the dashboard under Settings > Variables and Secrets.
 }

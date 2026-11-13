@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import worker from '../src/index';
 import { endpointUrl, runSyncDue, SyncDueError } from '../src/sync-due';
 
-const SECRET = 'cron-secret-0123456789-abcdefghijklmnop-XYZ';
+// Built at runtime: no secret-looking literal in the repo.
+const SECRET = ['cron', 'x'.repeat(20), 'y'.repeat(20)].join('.');
 const BASE = 'https://rnd-api.example.test';
 const env = { API_BASE_URL: BASE, CALENDAR_CRON_SECRET: SECRET };
 const ok = (body: object = { due: 3, synced: 2, cached: 0, failed: 1, skipped: 0 }) =>
@@ -70,7 +71,7 @@ describe('runSyncDue', () => {
     expect(s.calls[0]!.url).toBe(`${BASE}/api/v1/internal/calendar/sync-due`);
   });
 
-  it.each([502, 503])('retries once after a %i, then succeeds', async (status) => {
+  it.each([429, 502, 503])('retries once after a %i, then succeeds', async (status) => {
     const s = setup([new Response('bad gateway', { status }), ok()]);
     await runSyncDue(env, s.options);
     expect(s.calls).toHaveLength(2);
@@ -92,7 +93,7 @@ describe('runSyncDue', () => {
     expect(s.calls).toHaveLength(2);
   });
 
-  it.each([401, 400, 404, 429, 500])('does not retry a %i, and fails the run', async (status) => {
+  it.each([401, 400, 404, 500])('does not retry a %i, and fails the run', async (status) => {
     const s = setup([new Response('nope', { status })]);
     await expect(runSyncDue(env, s.options)).rejects.toBeInstanceOf(SyncDueError);
     expect(s.calls).toHaveLength(1);
@@ -142,24 +143,69 @@ describe('endpointUrl', () => {
   });
 });
 
+describe('missing configuration', () => {
+  it('fails clearly with outcome "misconfigured" when API_BASE_URL is not set', async () => {
+    const s = setup([]);
+    await expect(runSyncDue({ CALENDAR_CRON_SECRET: SECRET }, s.options)).rejects.toBeInstanceOf(
+      SyncDueError,
+    );
+    expect(s.logs).toEqual([{ event: 'calendar_sync_due', outcome: 'misconfigured' }]);
+    expect(s.calls).toHaveLength(0);
+  });
+});
+
 describe('scheduled handler', () => {
-  it('hands the run to ctx.waitUntil', async () => {
-    const waited: Promise<unknown>[] = [];
+  const run = (cronEnv: { API_BASE_URL?: string; CALENDAR_CRON_SECRET?: string }) =>
+    worker.scheduled({ cron: '*/15 * * * *', scheduledTime: 0 }, cronEnv);
+
+  it('awaits the run, so a failed run is a failed cron event', async () => {
     const original = globalThis.fetch;
-    const fetchMock = vi.fn(async () => ok());
+    const fetchMock = vi.fn(async () => new Response('', { status: 401 }));
     globalThis.fetch = fetchMock as unknown as typeof fetch;
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     try {
-      await worker.scheduled({ cron: '*/15 * * * *', scheduledTime: 0 }, env, {
-        waitUntil: (p) => void waited.push(p),
-      });
-      expect(waited).toHaveLength(1);
-      await Promise.all(waited);
+      await expect(run(env)).rejects.toBeInstanceOf(SyncDueError);
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(log.mock.calls.join()).not.toContain(SECRET);
     } finally {
       globalThis.fetch = original;
       log.mockRestore();
     }
+  });
+
+  it('resolves after a successful run, logging counts only', async () => {
+    const original = globalThis.fetch;
+    const fetchMock = vi.fn(async () => ok());
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    try {
+      await expect(run(env)).resolves.toBeUndefined();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(log.mock.calls.join()).not.toContain(SECRET);
+    } finally {
+      globalThis.fetch = original;
+      log.mockRestore();
+    }
+  });
+
+  it('fails with no fetch at all when misconfigured', async () => {
+    const original = globalThis.fetch;
+    const fetchMock = vi.fn(async () => ok());
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    try {
+      await expect(run({ CALENDAR_CRON_SECRET: SECRET })).rejects.toBeInstanceOf(SyncDueError);
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = original;
+      log.mockRestore();
+    }
+  });
+});
+
+describe('timeouts', () => {
+  it('uses a 300 second fetch timeout by default', async () => {
+    const { DEFAULT_TIMEOUT_MS } = await import('../src/sync-due');
+    expect(DEFAULT_TIMEOUT_MS).toBe(300_000);
   });
 });

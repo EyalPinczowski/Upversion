@@ -17,7 +17,7 @@ vi.mock('node:crypto', async (importOriginal) => {
 const { bearerToken, secretsMatch } = await import('../src/modules/calendar/cron');
 
 describe('secretsMatch', () => {
-  const secret = 'a-very-long-cron-secret-0123456789-abcdef';
+  const secret = ['long', 'a'.repeat(20), 'b'.repeat(20)].join('.');
 
   it('compares with timingSafeEqual on equal-length digests, whatever the input lengths', () => {
     compared.length = 0;

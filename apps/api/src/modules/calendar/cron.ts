@@ -15,7 +15,7 @@ export const DUE_AFTER_MS = 10 * 60 * 1000;
 /** One user may take this long before the run moves on (the sync itself is not aborted). */
 export const USER_BUDGET_MS = 45_000;
 /** The whole run stops starting new users after this long; the rest wait for the next run. */
-export const RUN_BUDGET_MS = 150_000;
+export const RUN_BUDGET_MS = 120_000;
 /** Authenticated runs per minute across all callers. */
 export const GLOBAL_RUNS_PER_MINUTE = 6;
 

@@ -21,7 +21,7 @@ const cronView = z.object({
   skipped: z.number().int(),
 });
 
-/** Per IP, on top of the global limit inside the service. */
+/** Failed attempts per IP per minute. Valid calls are limited inside the service. */
 export const CRON_ROUTE_MAX_PER_MINUTE = 6;
 
 const unauthorized = () => new HttpError(401, 'unauthorized', 'Authentication is required.');
@@ -36,24 +36,28 @@ export const calendarCronRoutes: FastifyPluginAsyncZod<CalendarCronRoutesOptions
   app,
   { secret, cron },
 ) => {
-  // Per IP, checked first, so wrong guesses are limited too. In memory: one API process.
-  const perIp = new Map<string, { windowStart: number; count: number }>();
+  // The secret is checked first, in constant time. Only FAILED attempts are counted per IP (in
+  // memory, one API process), so a flood of wrong guesses from a shared proxy address can never
+  // make a valid call answer 429. Valid calls are limited by `cron.allowRun()` instead.
+  const failures = new Map<string, { windowStart: number; count: number }>();
   app.addHook('onRequest', async (request) => {
+    const provided = bearerToken(request.headers.authorization);
+    if (provided !== null && secretsMatch(provided, secret)) return;
     const now = Date.now();
-    if (perIp.size > 1000) {
-      for (const [ip, entry] of perIp) if (now - entry.windowStart >= 60_000) perIp.delete(ip);
+    if (failures.size > 1000) {
+      for (const [ip, entry] of failures)
+        if (now - entry.windowStart >= 60_000) failures.delete(ip);
     }
-    const entry = perIp.get(request.ip);
+    const entry = failures.get(request.ip);
     if (!entry || now - entry.windowStart >= 60_000) {
-      perIp.set(request.ip, { windowStart: now, count: 1 });
+      failures.set(request.ip, { windowStart: now, count: 1 });
     } else if (++entry.count > CRON_ROUTE_MAX_PER_MINUTE) {
       throw new HttpError(429, 'rate_limited', 'Too many requests. Please slow down.', undefined, {
         'retry-after': '60',
       });
     }
-    const provided = bearerToken(request.headers.authorization);
     // Same generic answer for missing, malformed, short and wrong secrets.
-    if (provided === null || !secretsMatch(provided, secret)) throw unauthorized();
+    throw unauthorized();
   });
 
   app.post(

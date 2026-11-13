@@ -11,7 +11,8 @@ import { GoogleStub } from './google-stub';
 import { testConfig } from './helpers';
 import { ISSUER, makeTestKeys, type TestKeys } from './tokens';
 
-const SECRET = 'cron-secret-0123456789-abcdefghijklmnop-XYZ';
+// Built at runtime: no secret-looking literal in the repo.
+const SECRET = ['cron', 'x'.repeat(20), 'y'.repeat(20)].join('.');
 const URL = '/api/v1/internal/calendar/sync-due';
 const REFRESH = 'refresh-token-plaintext-0001';
 const APP_KEY = Buffer.alloc(32, 7);
@@ -303,7 +304,7 @@ describe.skipIf(!dbAvailable)('scheduled calendar sync (real Postgres, stub Goog
   describe('authentication', () => {
     it.each([
       ['no header', {}],
-      ['a wrong secret', { authorization: `Bearer ${SECRET.replace('0', '1')}` }],
+      ['a wrong secret', { authorization: `Bearer ${SECRET.slice(0, -1)}Z` }],
       ['a short secret', { authorization: 'Bearer short' }],
       ['a prefix of the secret', { authorization: `Bearer ${SECRET.slice(0, -1)}` }],
       ['the secret with extra characters', { authorization: `Bearer ${SECRET}x` }],
@@ -496,7 +497,18 @@ describe.skipIf(!dbAvailable)('scheduled calendar sync (real Postgres, stub Goog
       expect(codes).toEqual([200, 200, 200, 200, 200, 200, 429, 429]);
     });
 
-    it('limits bad guesses per IP too (they are never free)', async () => {
+    it('a flood of wrong secrets never makes a valid call answer 429', async () => {
+      await seed({ 1: 60 });
+      for (let i = 0; i < 30; i += 1) {
+        const code = (await call({ authorization: 'Bearer wrong' })).statusCode;
+        expect(code === 401 || code === 429).toBe(true);
+      }
+      const res = await call();
+      expect(res.statusCode).toBe(200);
+      expect(res.json().synced).toBe(1);
+    });
+
+    it('limits bad guesses per IP (only failed attempts are counted)', async () => {
       const codes: number[] = [];
       for (let i = 0; i < 8; i += 1)
         codes.push((await call({ authorization: 'Bearer wrong' })).statusCode);

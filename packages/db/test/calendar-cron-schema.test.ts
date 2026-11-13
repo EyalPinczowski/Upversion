@@ -103,6 +103,63 @@ for (const schema of ENVS) {
       });
     });
 
+    /** Runs `work` as the superuser in a transaction that is always rolled back. */
+    const scratch = <T>(work: (q: Q) => Promise<T>) =>
+      withClient(TEST_SUPERUSER_URL!, async (client) => {
+        await client.query('begin');
+        try {
+          return await work((sql, params) => client.query(sql, params));
+        } finally {
+          await client.query('rollback');
+        }
+      });
+
+    it('skips a connection with no stored refresh token or no app calendar', async () => {
+      await scratch(async (q) => {
+        await q(
+          `update ${s}.calendar_connections set refresh_token_ciphertext = null where user_id = $1`,
+          [U.due],
+        );
+        expect((await due(q)).rows).toEqual([{ user_id: U.never }]);
+      });
+      await scratch(async (q) => {
+        await q(`update ${s}.calendar_connections set app_calendar_id = null where user_id = $1`, [
+          U.due,
+        ]);
+        expect((await due(q)).rows).toEqual([{ user_id: U.never }]);
+      });
+    });
+
+    it('never returns more than 100 rows, however large the limit', async () => {
+      await scratch(async (q) => {
+        await q(
+          `insert into ${s}.app_users (id, email)
+           select ('00000000-0000-4000-8000-' || lpad(g::text, 12, '0'))::uuid, 'bulk' || g || '@example.test'
+             from generate_series(1, 130) g`,
+        );
+        await q(
+          `insert into ${s}.calendar_connections (user_id, status, app_calendar_id, refresh_token_ciphertext)
+           select id, 'connected', 'cal', 'cipher' from ${s}.app_users where email like 'bulk%'`,
+        );
+        expect((await due(q, '10 minutes', 100000)).rows).toHaveLength(100);
+        expect((await due(q, '10 minutes', 100)).rows).toHaveLength(100);
+        expect((await due(q, '10 minutes', 99)).rows).toHaveLength(99);
+      });
+    });
+
+    it('revokes EXECUTE from PUBLIC and lists only the app role', async () => {
+      await withClient(TEST_SUPERUSER_URL!, async (client) => {
+        const { rows } = await client.query<{ public_execute: boolean; app: boolean }>(
+          `select has_function_privilege('public', p.oid, 'execute') as public_execute,
+                  has_function_privilege('app_${s}_user', p.oid, 'execute') as app
+             from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = $1 and p.proname = 'calendar_users_due'`,
+          [s],
+        );
+        expect(rows).toEqual([{ public_execute: false, app: true }]);
+      });
+    });
+
     it('lets a user update only their own auto_sync (RLS unchanged)', async () => {
       await as(U.due, async (q) => {
         await q(`update ${s}.calendar_connections set auto_sync = false`);
