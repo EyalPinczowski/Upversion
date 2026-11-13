@@ -19,6 +19,6 @@ One short record per significant choice: the context, the options considered, th
 | [013](013-free-ai-providers-after-github-models.md) | Free AI providers after GitHub Models | Accepted for the code; spec 3.3 and 12.3 change proposed, awaiting owner approval |
 | [014](014-calendar-token-encryption-and-write-guard.md) | Calendar token encryption and write guard | Accepted |
 | [015](015-onboarding-setup-and-cv-import.md) | First-time setup and in-browser CV import | Accepted (owner, 2026-11-08) |
-| [016](016-cv-change-and-ai-tailoring.md) | Changing the CV after setup, and tailoring the CV to a job with AI | Accepted (owner, 2026-11-08), except: the residual-risk acceptance for undetected names and addresses is pending the owner's confirmation in PR #101 |
+| [016](016-cv-change-and-ai-tailoring.md) | Changing the CV after setup, and tailoring the CV to a job with AI | Accepted (owner, 2026-11-08). On 2026-11-12 the owner accepted the residual risk of undetected names and addresses, approved the 1.85 MB lazy PDF chunk budget and confirmed Groq is used only with Zero Data Retention on |
 
 Facts about third-party free plans change often. Anything in these records that has not been confirmed on the provider's own documentation is marked **needs check**.

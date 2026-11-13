@@ -557,11 +557,48 @@ export function splitCvLines(text: string): string[] {
   return text.split(/\r\n|\r|\n|\u2028|\u2029/u);
 }
 
+/** Longest wording kept as a display term, in characters (longer matches are skipped). */
+export const MAX_TERM_LENGTH = 40;
+/** Most display terms kept for one skill. */
+export const MAX_TERMS_PER_SKILL = 3;
+
+/** Counts the wordings of one skill as written in a text, for display. */
+class TermCounter {
+  private readonly seen = new Map<string, { text: string; count: number }>();
+
+  /** `raw` is the matched span as written. Invisible format characters (bidi overrides) are removed, whitespace is collapsed; case is kept. */
+  add(raw: string): void {
+    const text = raw
+      .replace(/\p{Cf}/gu, '')
+      .replace(/\s+/gu, ' ')
+      .trim();
+    if (text === '' || text.length > MAX_TERM_LENGTH) return;
+    const key = text.toLowerCase();
+    const prev = this.seen.get(key);
+    if (prev) prev.count += 1;
+    else this.seen.set(key, { text, count: 1 });
+  }
+
+  /**
+   * Most frequent first (ties: first seen), capped. A wording the PII redaction would change is
+   * dropped, so contact text never reaches the screen.
+   */
+  top(): string[] {
+    return [...this.seen.values()]
+      .filter((t) => redactPii(t.text).count === 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, MAX_TERMS_PER_SKILL)
+      .map((t) => t.text);
+  }
+}
+
 /** A skill found in free text (a job post), with how often it was named. */
 export interface TextSkillHit {
   skillId: string;
   /** Total matches in the text (for sorting). */
   hits: number;
+  /** The text's own wordings for it, most frequent first, capped, free of contact text. */
+  terms: string[];
 }
 
 /**
@@ -579,7 +616,10 @@ export function matchSkillsInText(
   const taxonomy = options.taxonomy ?? CATALOG_TAXONOMY;
   const { skills: skillIndex } = taxonomyIndexes(taxonomy);
   const toolIndex = buildToolIndex(options.tools ?? catalogToolLabels());
-  const agg = new Map<string, { strong: Set<string>; weak: Set<string>; hits: number }>();
+  const agg = new Map<
+    string,
+    { strong: Set<string>; weak: Set<string>; hits: number; terms: TermCounter }
+  >();
   for (const raw of splitCvLines(text.normalize('NFKC'))) {
     const line = capLine(raw);
     const toolKeys = new Set(matchLine(line, toolIndex).map((m) => m.term.lower.join(' ')));
@@ -588,9 +628,10 @@ export function matchSkillsInText(
       const id = m.term.owner;
       let a = agg.get(id);
       if (!a) {
-        a = { strong: new Set(), weak: new Set(), hits: 0 };
+        a = { strong: new Set(), weak: new Set(), hits: 0, terms: new TermCounter() };
         agg.set(id, a);
       }
+      a.terms.add(line.slice(m.start, m.end));
       const key = m.term.lower.join(' ');
       if ((m.term.strong && !m.loose) || toolKeys.has(key)) a.strong.add(key);
       else a.weak.add(key);
@@ -599,7 +640,7 @@ export function matchSkillsInText(
   }
   return [...agg]
     .filter(([, a]) => a.strong.size >= 1 || a.weak.size >= 2)
-    .map(([skillId, a]) => ({ skillId, hits: a.hits }))
+    .map(([skillId, a]) => ({ skillId, hits: a.hits, terms: a.terms.top() }))
     .sort((a, b) => b.hits - a.hits || a.skillId.localeCompare(b.skillId));
 }
 
@@ -643,6 +684,7 @@ interface SkillHits {
   inSkills: boolean;
   level: 1 | 2;
   evidence: { line: number; text: string; strong: boolean } | null;
+  terms: TermCounter;
 }
 
 /**
@@ -752,10 +794,12 @@ export function extractProfileFromText(text: string, options: CvMatchOptions = {
           inSkills: false,
           level: 1,
           evidence: null,
+          terms: new TermCounter(),
         };
         hits.set(id, h);
       }
       if (isUnguardedMake(m.term.lower, kind[i] as SectionKind, line)) continue;
+      h.terms.add(line.slice(m.start, m.end));
       // Distinct terms across the document: the same word on two lines is one weak hit.
       const key = m.term.lower.join(' ');
       if (m.term.strong && !m.loose) h.strongKeys.add(key);
@@ -779,6 +823,7 @@ export function extractProfileFromText(text: string, options: CvMatchOptions = {
       strength: strong ? 'strong' : 'weak',
       checked: strong || h.inSkills,
       evidence: h.evidence ? snippet(lines[h.evidence.line] as string, h.evidence.text) : '',
+      terms: h.terms.top(),
     });
   }
   skills.sort(
