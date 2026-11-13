@@ -38,7 +38,10 @@ export const calendarCronRoutes: FastifyPluginAsyncZod<CalendarCronRoutesOptions
 ) => {
   // The secret is checked first, in constant time. Only FAILED attempts are counted per IP (in
   // memory, one API process), so a flood of wrong guesses from a shared proxy address can never
-  // make a valid call answer 429. Valid calls are limited by `cron.allowRun()` instead.
+  // make a valid call answer 429. Valid calls are limited by `cron.allowRun()` instead. This does NOT
+  // throttle guessing: a correct secret is accepted even from a rate-limited IP. The secret's length
+  // (at least 32 characters, enforced at start-up) is the protection; a 429 here only means
+  // "wrong and rate-limited".
   const failures = new Map<string, { windowStart: number; count: number }>();
   app.addHook('onRequest', async (request) => {
     const provided = bearerToken(request.headers.authorization);

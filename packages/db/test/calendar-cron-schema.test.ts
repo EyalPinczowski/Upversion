@@ -157,6 +157,31 @@ for (const schema of ENVS) {
           [s],
         );
         expect(rows).toEqual([{ public_execute: false, app: true }]);
+        // Nobody else: the backup role and the other environment's app role cannot execute it.
+        const other = s === 'rnd' ? 'prod' : 'rnd';
+        const { rows: others } = await client.query<{ role: string; can: boolean }>(
+          `select r as role, has_function_privilege(r, p.oid, 'execute') as can
+             from pg_proc p join pg_namespace n on n.oid = p.pronamespace,
+                  unnest(array['backup_${s}', 'app_${other}_user', 'app_${other}']) r
+            where n.nspname = $1 and p.proname = 'calendar_users_due'
+            order by r`,
+          [s],
+        );
+        expect(others.every((r) => r.can === false)).toBe(true);
+        expect(others).toHaveLength(3);
+      });
+    });
+
+    it('keeps the owner default ACL that takes EXECUTE on new functions away from PUBLIC', async () => {
+      await withClient(TEST_SUPERUSER_URL!, async (client) => {
+        const { rows } = await client.query<{ acl: string }>(
+          `select defaclacl::text as acl from pg_default_acl
+            where defaclrole = 'owner_${s}'::regrole and defaclobjtype = 'f'
+              and defaclnamespace = 0`,
+        );
+        expect(rows).toHaveLength(1);
+        // A PUBLIC entry would read "=X/owner_<env>"; the owner's own entry is all that is left.
+        expect(rows[0]!.acl).not.toMatch(/(^|[{,"])=X\//);
       });
     });
 

@@ -71,11 +71,25 @@ describe('runSyncDue', () => {
     expect(s.calls[0]!.url).toBe(`${BASE}/api/v1/internal/calendar/sync-due`);
   });
 
-  it.each([429, 502, 503])('retries once after a %i, then succeeds', async (status) => {
+  it.each([502, 503])('retries once after a %i, then succeeds', async (status) => {
     const s = setup([new Response('bad gateway', { status }), ok()]);
     await runSyncDue(env, s.options);
     expect(s.calls).toHaveLength(2);
     expect(s.sleeps).toEqual([7]);
+  });
+
+  it('waits past the API rate-limit window before retrying a 429', async () => {
+    const s = setup([new Response('', { status: 429 }), ok()]);
+    await runSyncDue(env, { ...s.options, rateLimitDelayMs: 65_000 });
+    expect(s.sleeps).toEqual([65_000]);
+  });
+
+  it('uses 65 seconds for the 429 retry by default', async () => {
+    const { RATE_LIMIT_RETRY_DELAY_MS } = await import('../src/sync-due');
+    const s = setup([new Response('', { status: 429 }), ok()]);
+    await runSyncDue(env, { ...s.options });
+    expect(s.sleeps).toEqual([RATE_LIMIT_RETRY_DELAY_MS]);
+    expect(RATE_LIMIT_RETRY_DELAY_MS).toBeGreaterThan(60_000);
   });
 
   it('retries once after a network failure', async () => {

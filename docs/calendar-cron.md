@@ -35,10 +35,10 @@ Cloudflare Cron Trigger (*/15, UTC)
 | Endpoint exposure | Registered only with `FEATURE_CALENDAR_CRON=true` **and** `CALENDAR_CRON_SECRET` set (and `FEATURE_CALENDAR=true`); otherwise 404 (the route does not exist). Hidden from the OpenAPI document. |
 | Secret | At least 32 characters (the API refuses to start with a shorter one, without echoing it). Sent as `Authorization: Bearer`. Compared with `crypto.timingSafeEqual` on SHA-256 digests (equal length, so the length of the secret does not leak). Missing, malformed, short and wrong secrets all get the same generic 401. A user JWT is not accepted. |
 | Client data | Strict empty body: `userId`, `force` or any other field is a 400. No query values are read. The set of users comes from the database only. |
-| Rate limits | The secret is checked first (constant time). Per IP, only FAILED attempts are counted (6 a minute, then 429), so a flood of wrong guesses, even from the one shared proxy address Render shows when `TRUST_PROXY=0`, can never make the real Worker's valid call answer 429; a valid secret skips that counter. Valid calls are limited globally to 6 runs a minute. In memory, one API process (free plan). 429 with `Retry-After`; the Worker retries a 429 once. |
+| Rate limits | The secret is checked first (constant time). Per IP, only FAILED attempts are counted (6 a minute, then 429). **This does not throttle guessing:** a correct secret is accepted even from a rate-limited IP, so the counter only keeps a flood of wrong guesses from reaching the global run limit and cannot make the real Worker's call answer 429 (even behind Render's one shared proxy address with `TRUST_PROXY=0`). What protects the endpoint is the length of the secret (at least 32 characters, enforced at start-up). A 429 from the per-IP counter only means "wrong and rate-limited". Valid calls are limited globally to 6 runs a minute. In memory, one API process (free plan). 429 with `Retry-After`; the Worker waits about 65 s (the global window is 60 s) and retries a 429 once. |
 | Overlap | Global single-flight lock: a second call while one runs answers 409 `already_running`. The cron Worker treats 409 as fine. |
 | Data access | Each user's sync runs under that user's RLS context; the due function is the only cross-user read and returns ids. |
-| Secrets in the repo | None. `.env.example` has names only; `wrangler.jsonc` has a placeholder `API_BASE_URL`; the Worker secret is set by the owner. |
+| Secrets in the repo | None. `.env.example` has names only; `apps/cron/wrangler.jsonc` has no `vars` block (`keep_vars` is on; `API_BASE_URL` lives in the Cloudflare dashboard); the Worker secret is set by the owner. |
 | Worker exposure | `workers_dev: false` and `preview_urls: false`: the Worker has no public URL, it only runs on its schedule. |
 
 ## Environment variables
@@ -102,7 +102,7 @@ Cloudflare:
 
 Render (https://render.com/docs/free, same facts as `docs/setup/deployments.md`):
 
-- A free web service "goes 15 minutes without receiving any inbound traffic" and then spins down; spinning up "takes about one minute". That is why the Worker allows a long fetch timeout (300 s) and retries once on a network failure, 429, 502 or 503.
+- A free web service "goes 15 minutes without receiving any inbound traffic" and then spins down; spinning up "takes about one minute". That is why the Worker allows a long fetch timeout (300 s) and retries once on a network failure, 429 (after about 65 s), 502 or 503 (after 5 s).
 - 750 free instance hours per workspace per calendar month; spun-down services do not use hours; unused hours do not roll over; when they run out, all free web services are suspended until the next month.
 - **Consequence (design check for the owner):** a call every 15 minutes keeps the API awake most of the day. One always-on service is about 720 to 744 hours a month, so R&D and production together do not fit in 750 hours if both are kept awake (the existing note in `docs/setup/deployments.md` says the same). Run the cron against R&D only while testing, delete the trigger when done, and for production decide on the hours (for example only 05:00-18:59 UTC like the wake-up workflow: `*/15 5-18 * * *`).
 

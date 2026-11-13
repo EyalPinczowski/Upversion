@@ -16,6 +16,8 @@ export interface SyncDueOptions {
   timeoutMs?: number;
   /** Pause before the single retry. */
   retryDelayMs?: number;
+  /** Pause before the single retry after a 429. */
+  rateLimitDelayMs?: number;
   sleep?: (ms: number) => Promise<void>;
   log?: (entry: Record<string, unknown>) => void;
 }
@@ -23,6 +25,8 @@ export interface SyncDueOptions {
 export const ENDPOINT_PATH = '/api/v1/internal/calendar/sync-due';
 export const DEFAULT_TIMEOUT_MS = 300_000;
 export const DEFAULT_RETRY_DELAY_MS = 5_000;
+/** The API's global window for valid runs is 60 s, so a retry after a 429 waits past it. */
+export const RATE_LIMIT_RETRY_DELAY_MS = 65_000;
 const COUNT_KEYS = ['due', 'synced', 'cached', 'failed', 'skipped'] as const;
 const RETRY_STATUSES = new Set([429, 502, 503]);
 
@@ -64,6 +68,7 @@ export async function runSyncDue(env: CronEnv, options: SyncDueOptions = {}): Pr
   const doFetch = options.fetch ?? fetch;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const retryDelayMs = options.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS;
+  const rateLimitDelayMs = options.rateLimitDelayMs ?? RATE_LIMIT_RETRY_DELAY_MS;
   const sleep = options.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const log = options.log ?? ((entry) => console.log(JSON.stringify(entry)));
 
@@ -103,7 +108,7 @@ export async function runSyncDue(env: CronEnv, options: SyncDueOptions = {}): Pr
     if (status === 200 || status === 409) return;
     const retryable = status === null || RETRY_STATUSES.has(status);
     if (!retryable || attempt === 2) break;
-    await sleep(retryDelayMs);
+    await sleep(status === 429 ? rateLimitDelayMs : retryDelayMs);
   }
   throw new SyncDueError(`Scheduled sync failed (status ${lastStatus ?? 'network error'}).`);
 }
