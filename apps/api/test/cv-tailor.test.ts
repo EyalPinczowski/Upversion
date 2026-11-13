@@ -369,7 +369,7 @@ describe.skipIf(!dbAvailable)('POST /me/cv/tailor (real Postgres, real provider 
       url: '/api/v1/ai/usage',
       headers: await as(A, 'zed.quill@example.com'),
     });
-    expect(usage.json().features).toEqual({ cvTailor: false });
+    expect(usage.json().features).toEqual({ cvTailor: false, planBuilder: false });
   });
 
   it('shows the meter and the flag on the usage endpoint when on', async () => {
@@ -380,7 +380,7 @@ describe.skipIf(!dbAvailable)('POST /me/cv/tailor (real Postgres, real provider 
       url: '/api/v1/ai/usage',
       headers: await as(A, 'zed.quill@example.com'),
     });
-    expect(usage.json().features).toEqual({ cvTailor: true });
+    expect(usage.json().features).toEqual({ cvTailor: true, planBuilder: false });
     expect(usage.json().user.cvTailor).toEqual({ used: 1, cap: 3 });
     // Another user sees their own meter only (RLS unaffected).
     const other = await app!.inject({

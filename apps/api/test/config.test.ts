@@ -24,6 +24,7 @@ describe('loadConfig defaults', () => {
         aiOverview: false,
         profileSetup: false,
         cvTailor: false,
+        planBuilder: false,
       },
       calendar: { enabled: false, tokenKeys: [], google: null, cron: null },
       ai: {
@@ -39,7 +40,7 @@ describe('loadConfig defaults', () => {
         cvTailorDailyTotal: 20,
       },
     });
-    expect(featureNames).toHaveLength(7);
+    expect(featureNames).toHaveLength(8);
   });
 });
 
@@ -106,7 +107,13 @@ describe('boolean variables', () => {
       aiOverview: false,
       profileSetup: false,
       cvTailor: false,
+      planBuilder: false,
     });
+  });
+
+  it('turns the plan builder on with FEATURE_PLAN_BUILDER=true', () => {
+    expect(loadConfig({ FEATURE_PLAN_BUILDER: 'true' }).features.planBuilder).toBe(true);
+    expect(loadConfig({}).features.planBuilder).toBe(false);
   });
 
   it.each(['1', 'yes', 'TRUE', 'True', 'on', ' true', ''])(

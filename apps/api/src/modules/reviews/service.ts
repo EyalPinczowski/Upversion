@@ -16,6 +16,7 @@ import type { Database, UserContext } from '../../db/database';
 import { HttpError } from '../../errors';
 import * as daysRepo from '../days/repository';
 import type { DayContext, DaysService } from '../days/service';
+import { requireWritablePlan } from '../plans/guard';
 import * as plansRepo from '../plans/repository';
 import { MAX_OVERRIDES_PER_PLAN, MAX_TASKS_PER_PLAN } from '../plans/schemas';
 import type { SchedulingService } from '../scheduling/service';
@@ -78,9 +79,12 @@ export function createReviewService(
   days: DaysService,
   scheduling: SchedulingService,
 ) {
-  /** Locks the plan against other writers, then loads it with its stored past days. */
+  /**
+   * For writes only (the review, accept and reject): locks the plan against other writers and
+   * refuses an archived one (409 `plan_archived`), then loads it with its stored past days.
+   */
   async function openLocked(ctx: UserContext, userId: string, planId: string): Promise<DayContext> {
-    if (!(await plansRepo.lockPlan(ctx, userId, planId))) throw notFound();
+    await requireWritablePlan(ctx, userId, planId);
     return days.open(ctx, userId, planId);
   }
 

@@ -1,6 +1,13 @@
-import { compareDates, localDateOf, type DayOverride, type WeekPattern } from '@upversion/shared';
-import type { Database } from '../../db/database';
+import {
+  compareDates,
+  localDateOf,
+  type DayOverride,
+  type PlanFile,
+  type WeekPattern,
+} from '@upversion/shared';
+import type { Database, UserContext } from '../../db/database';
 import { HttpError } from '../../errors';
+import { requireWritablePlan } from './guard';
 import { summarize, type ValidImport } from './import';
 import * as repo from './repository';
 import { MAX_OVERRIDES_PER_PLAN, type PlanDetail, type PlanSummary } from './schemas';
@@ -13,6 +20,26 @@ const isUniqueViolation = (error: unknown) =>
   error !== null &&
   (error as { code?: unknown }).code === UNIQUE_VIOLATION;
 
+/**
+ * Where a new plan comes from. The import service owns the transaction: the per-user lock, the
+ * idempotency check on `payloadHash` and the insert. `prepare` runs inside it, after the lock and
+ * the idempotency check and before the insert, so a source can check state and archive other
+ * plans atomically with the insert.
+ */
+export interface ImportSource {
+  /** Compared with the hash stored by the first call that used the same plan id. */
+  payloadHash: string;
+  createdFrom: 'import' | 'builder';
+  prepare(ctx: UserContext): Promise<{
+    status: 'draft' | 'active';
+    plan: PlanFile;
+    /** Added to `plans.summary`. */
+    summaryExtra?: Record<string, unknown>;
+    /** Added to the `plan.imported` event payload. */
+    eventExtra?: Record<string, unknown>;
+  }>;
+}
+
 export interface ImportResult {
   /** False when the same plan had already been imported (an idempotent retry). */
   created: boolean;
@@ -24,11 +51,13 @@ export interface ImportResult {
  * plan that is not the caller's looks exactly like one that does not exist.
  */
 export function createPlanService(db: Database, now: () => Date = () => new Date()) {
-  async function importOnce(userId: string, planId: string, input: ValidImport) {
+  async function importOnce(userId: string, planId: string, source: ImportSource) {
     return db.withUser(userId, async (ctx): Promise<ImportResult> => {
+      // First lock of the transaction: imports, builds and restores of one user run one at a time.
+      await repo.lockUserPlans(ctx, userId);
       const existing = await repo.planExists(ctx, userId, planId);
       if (existing) {
-        if ((await repo.importHashOf(ctx, userId, planId)) !== input.payloadHash) {
+        if ((await repo.importHashOf(ctx, userId, planId)) !== source.payloadHash) {
           throw new HttpError(
             409,
             'conflict',
@@ -37,19 +66,45 @@ export function createPlanService(db: Database, now: () => Date = () => new Date
         }
         return { created: false, plan: (await repo.loadPlan(ctx, userId, planId))! };
       }
-      const { plan } = input;
-      await repo.insertPlan(ctx, userId, planId, input.status, plan, summarize(plan));
+      const { status, plan, summaryExtra, eventExtra } = await source.prepare(ctx);
+      await repo.insertPlan(
+        ctx,
+        userId,
+        planId,
+        status,
+        plan,
+        summarize(plan, summaryExtra),
+        source.createdFrom,
+      );
       await repo.upsertWeekPattern(ctx, userId, planId, plan.weekPattern);
       await repo.insertOverrides(ctx, userId, planId, plan.overrides);
       await repo.insertTasks(ctx, userId, planId, plan.tasks);
       await repo.insertEvent(ctx, userId, planId, 'plan.imported', {
-        payloadHash: input.payloadHash,
+        payloadHash: source.payloadHash,
         taskCount: plan.tasks.length,
         overrideCount: plan.overrides.length,
-        status: input.status,
+        status,
+        ...eventExtra,
       });
       return { created: true, plan: (await repo.loadPlan(ctx, userId, planId))! };
     });
+  }
+
+  /**
+   * Shared by the file import and the plan builder. The same unique-violation retry applies:
+   * the retry re-runs everything, including `prepare`, and then takes the "already exists" path.
+   */
+  async function importFrom(
+    userId: string,
+    planId: string,
+    source: ImportSource,
+  ): Promise<ImportResult> {
+    try {
+      return await importOnce(userId, planId, source);
+    } catch (error) {
+      if (!isUniqueViolation(error)) throw error;
+      return importOnce(userId, planId, source);
+    }
   }
 
   return {
@@ -59,14 +114,15 @@ export function createPlanService(db: Database, now: () => Date = () => new Date
      * content answers 409. Two simultaneous first calls collide on the primary key; the loser
      * runs once more and then takes the "already imported" path.
      */
-    async importPlan(userId: string, planId: string, input: ValidImport): Promise<ImportResult> {
-      try {
-        return await importOnce(userId, planId, input);
-      } catch (error) {
-        if (!isUniqueViolation(error)) throw error;
-        return importOnce(userId, planId, input);
-      }
-    },
+    importPlan: (userId: string, planId: string, input: ValidImport): Promise<ImportResult> =>
+      importFrom(userId, planId, {
+        payloadHash: input.payloadHash,
+        createdFrom: 'import',
+        prepare: async () => ({ status: input.status, plan: input.plan }),
+      }),
+
+    /** The import transaction with a different source of the plan (the plan builder). */
+    importFrom,
 
     list: (userId: string): Promise<PlanSummary[]> =>
       db.withUser(userId, (ctx) => repo.listPlans(ctx, userId)),
@@ -84,7 +140,7 @@ export function createPlanService(db: Database, now: () => Date = () => new Date
 
     putWeekPattern: (userId: string, planId: string, pattern: WeekPattern) =>
       db.withUser(userId, async (ctx) => {
-        if (!(await repo.planExists(ctx, userId, planId))) throw notFound();
+        await requireWritablePlan(ctx, userId, planId);
         await repo.upsertWeekPattern(ctx, userId, planId, pattern);
         await repo.touchPlan(ctx, userId, planId);
         return (await repo.loadPlan(ctx, userId, planId))!.weekPattern!;
@@ -97,8 +153,8 @@ export function createPlanService(db: Database, now: () => Date = () => new Date
      */
     putStartDate: (userId: string, planId: string, startDate: string) =>
       db.withUser(userId, async (ctx) => {
-        // Serialises with task edits and other plan writes.
-        if (!(await repo.lockPlan(ctx, userId, planId))) throw notFound();
+        // Serialises with task edits and other plan writes; refuses an archived plan.
+        await requireWritablePlan(ctx, userId, planId);
         const dates = (await repo.planDates(ctx, userId, planId))!;
         // Nothing to change: no bounds check, no event.
         if (startDate === dates.startDate) return { startDate, endDate: dates.endDate };
@@ -145,7 +201,7 @@ export function createPlanService(db: Database, now: () => Date = () => new Date
 
     putDayOverride: (userId: string, planId: string, override: DayOverride) =>
       db.withUser(userId, async (ctx) => {
-        if (!(await repo.planExists(ctx, userId, planId))) throw notFound();
+        await requireWritablePlan(ctx, userId, planId);
         const known = await repo.dayOverrideExists(ctx, userId, planId, override.date);
         if (
           !known &&
@@ -165,7 +221,7 @@ export function createPlanService(db: Database, now: () => Date = () => new Date
     /** Idempotent: removing an override that is not there succeeds. The plan itself must exist. */
     removeDayOverride: (userId: string, planId: string, date: string) =>
       db.withUser(userId, async (ctx) => {
-        if (!(await repo.planExists(ctx, userId, planId))) throw notFound();
+        await requireWritablePlan(ctx, userId, planId);
         await repo.deleteDayOverride(ctx, userId, planId, date);
         await repo.touchPlan(ctx, userId, planId);
       }),

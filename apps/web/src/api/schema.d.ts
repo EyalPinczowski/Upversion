@@ -186,6 +186,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -207,6 +211,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -227,6 +235,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -281,6 +293,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -301,6 +317,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -323,6 +343,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -344,6 +368,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -364,6 +392,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -437,6 +469,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -458,6 +494,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -478,6 +518,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -562,6 +606,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -582,6 +630,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -604,6 +656,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -624,6 +680,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -757,6 +817,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -778,6 +842,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -798,6 +866,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -868,6 +940,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -888,6 +964,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -910,6 +990,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -930,6 +1014,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -952,6 +1040,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -972,6 +1064,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1020,6 +1116,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1040,6 +1140,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1062,6 +1166,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1082,6 +1190,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1104,6 +1216,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1124,6 +1240,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1196,6 +1316,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1216,6 +1340,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1238,6 +1366,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1258,6 +1390,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1280,6 +1416,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1300,6 +1440,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1366,6 +1510,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1386,6 +1534,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1408,6 +1560,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1428,6 +1584,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1450,6 +1610,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1470,6 +1634,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1550,6 +1718,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1570,6 +1742,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1592,6 +1768,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1612,6 +1792,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1634,6 +1818,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1654,6 +1842,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1732,6 +1924,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1752,6 +1948,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1774,6 +1974,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1794,6 +1998,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1816,6 +2024,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1837,6 +2049,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1857,6 +2073,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1936,6 +2156,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1956,6 +2180,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -1978,6 +2206,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -1998,6 +2230,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2020,6 +2256,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2040,6 +2280,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2116,6 +2360,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2136,6 +2384,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2158,6 +2410,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2178,6 +2434,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2200,6 +2460,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2221,6 +2485,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2241,6 +2509,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2321,6 +2593,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2341,6 +2617,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2363,6 +2643,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2383,6 +2667,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2456,6 +2744,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2476,6 +2768,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2498,6 +2794,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2518,6 +2818,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2606,6 +2910,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2626,6 +2934,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2648,6 +2960,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2668,6 +2984,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2768,6 +3088,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2788,6 +3112,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2810,6 +3138,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2830,6 +3162,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2925,6 +3261,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2945,6 +3285,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -2967,6 +3311,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -2987,6 +3335,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -3072,6 +3424,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -3092,6 +3448,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -3114,6 +3474,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -3134,6 +3498,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -3156,6 +3524,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -3176,6 +3548,1253 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/build/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The plan the builder would make for these choices (saves nothing)
+         * @description Runs the rule-based builder on the bundled catalog and returns the draft: the plan file, items with flags, cost and a "why" line, skipped and excluded items, the fit against the deadline (with the three options when it does not fit), warnings and a `draftHash`. 422 with `issues` (codes only) when the request names an unknown role, skill or catalog id or the dates cannot work.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        targetRoleIds: string[];
+                        /** @default [] */
+                        extraSkillIds?: string[];
+                        /** @default {} */
+                        skillLevels?: {
+                            [key: string]: number;
+                        };
+                        startDate: string;
+                        deadline: string;
+                        weekPattern: {
+                            windowStart: string;
+                            windowEnd: string;
+                            lunchStart?: string;
+                            lunchEnd?: string;
+                        } & {
+                            [key: string]: unknown;
+                        };
+                        budget: {
+                            /** @enum {string} */
+                            mode: "free" | "limit" | "flexible";
+                            amount?: number;
+                            maxItemPrice?: number;
+                        };
+                        /** @enum {string} */
+                        certPreference: "must" | "nice" | "none";
+                        /** @enum {string} */
+                        interviewPrep: "yes" | "later" | "no";
+                        /** @default [] */
+                        certificateOptIns?: string[];
+                        /** @default [] */
+                        examDates?: {
+                            catalogId: string;
+                            date: string;
+                            start: string;
+                        }[];
+                        /** @default [] */
+                        mustInclude?: string[];
+                        /** @default [] */
+                        exclude?: string[];
+                        /** @default {} */
+                        priorityOverrides?: {
+                            [key: string]: "core" | "optional";
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            plan: {
+                                /** @enum {number} */
+                                formatVersion: 1;
+                                name: string;
+                                startDate: string;
+                                endDate?: string;
+                                weekPattern: {
+                                    studyWeekdays: number[];
+                                    defaultHours: number;
+                                    /** @default {} */
+                                    hoursByWeekday: {
+                                        [key: string]: number;
+                                    };
+                                    windowStart: string;
+                                    windowEnd: string;
+                                    lunchStart?: string;
+                                    lunchEnd?: string;
+                                    /** @default 2 */
+                                    breakEveryHours: number;
+                                    /** @default 10 */
+                                    breakMinutes: number;
+                                    /** @default 30 */
+                                    minBlockMinutes: number;
+                                    timezone: string;
+                                };
+                                /** @default [] */
+                                overrides: {
+                                    date: string;
+                                    isStudyDay: boolean;
+                                    capacityHours?: number;
+                                }[];
+                                tasks: {
+                                    id: string;
+                                    title: string;
+                                    /** @enum {string} */
+                                    type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                    provider?: string;
+                                    /** Format: uri */
+                                    url?: string;
+                                    estHours: number;
+                                    /** @default 0 */
+                                    doneHours: number;
+                                    /**
+                                     * @default pending
+                                     * @enum {string}
+                                     */
+                                    status: "pending" | "in_progress" | "done" | "skipped";
+                                    order: number;
+                                    /** @default [] */
+                                    dependsOn: string[];
+                                    /** @default false */
+                                    isAnchor: boolean;
+                                    anchorDate?: string;
+                                    anchorStartTime?: string;
+                                    pinnedStart?: {
+                                        date: string;
+                                        start: string;
+                                    };
+                                    notBefore?: string;
+                                    /** @default true */
+                                    splittable: boolean;
+                                    /** @default false */
+                                    isCertificate: boolean;
+                                    certificateName?: string;
+                                    /** @default [] */
+                                    lessons: {
+                                        title: string;
+                                        /** Format: uri */
+                                        url?: string;
+                                        estMinutes?: number;
+                                        summary?: string;
+                                        /** @default false */
+                                        needsCheck: boolean;
+                                    }[];
+                                    /** @default [] */
+                                    howToSteps: string[];
+                                    promptTemplate?: string;
+                                    practiceKind?: string;
+                                    notes?: string;
+                                    /**
+                                     * @default manual
+                                     * @enum {string}
+                                     */
+                                    source: "manual" | "import" | "builder" | "auto";
+                                    externalRef?: string;
+                                }[];
+                                skillIds?: string[];
+                            };
+                            items: {
+                                catalogId: string;
+                                title: string;
+                                provider: string;
+                                /** @enum {string} */
+                                kind: "course" | "exam" | "practice";
+                                /** @enum {string} */
+                                tier: "core" | "optional";
+                                /** @enum {string} */
+                                origin: "gap" | "prerequisite" | "certificate" | "opt_in" | "must_include" | "practice" | "free_alternative";
+                                taskIds: string[];
+                                hours: number;
+                                skillIds: string[];
+                                priority: number;
+                                why: string;
+                                cost: {
+                                    amount: number | null;
+                                    /** @enum {string} */
+                                    kind: "free" | "one_time" | "subscription" | "certificate";
+                                    months?: number;
+                                };
+                                needsCheckLink: boolean;
+                                needsCheckPrice: boolean;
+                                priceVaries: boolean;
+                                isCertificate: boolean;
+                            }[];
+                            excluded: {
+                                catalogId: string;
+                                /** @enum {string} */
+                                reason: "excluded_by_user" | "free_only" | "price_unknown" | "over_item_price" | "over_budget" | "no_link" | "needs_prerequisite" | "dropped_to_fit_time" | "dropped_to_fit_budget" | "certificate_not_allowed" | "exam_date_not_used";
+                                message: string;
+                                relatedId?: string;
+                            }[];
+                            skippedPrerequisites: {
+                                catalogId: string;
+                                message: string;
+                            }[];
+                            summary: {
+                                scheduleFrom: string;
+                                deadline: string;
+                                finishDate: string | null;
+                                totalHours: number;
+                                cost: {
+                                    /** @enum {string} */
+                                    currency: "USD";
+                                    total: number;
+                                    estimated: boolean;
+                                    unverifiedPriceCount: number;
+                                    assumedOneMonth: string[];
+                                    mayBeHigher: boolean;
+                                    pricesToCheck: number;
+                                    lines: {
+                                        catalogId: string;
+                                        /** @enum {string} */
+                                        kind: "one_time" | "subscription" | "certificate";
+                                        amount: number | null;
+                                        priceVerified: boolean;
+                                        periods?: number;
+                                        subscriptionGroup?: string | null;
+                                    }[];
+                                    subscriptionMonths: {
+                                        [key: string]: number;
+                                    };
+                                };
+                                skillsAsked: number;
+                                skillsCovered: string[];
+                                skillsAlreadyCovered: string[];
+                                skillsNotCovered: {
+                                    skillId: string;
+                                    name: string;
+                                    /** @enum {string} */
+                                    reason: "catalog_gap" | "dropped_to_fit_time" | "dropped_to_fit_budget";
+                                }[];
+                                certificatesIncluded: string[];
+                                certificatesOffered: {
+                                    catalogId: string;
+                                    title: string;
+                                    provider: string;
+                                    price: number | null;
+                                    priceVerified: boolean;
+                                }[];
+                            };
+                            fits: boolean;
+                            options: {
+                                finishOn: {
+                                    date: string | null;
+                                };
+                                hoursPerDay: {
+                                    value: number | null;
+                                    /** @enum {boolean} */
+                                    appliesToAllStudyDays: true;
+                                };
+                                essentials: {
+                                    possible: boolean;
+                                    droppedItemIds: string[];
+                                    lostSkillIds: string[];
+                                };
+                            } | null;
+                            overBudget: boolean;
+                            removeToFit: string[];
+                            warnings: {
+                                /** @enum {string} */
+                                code: "subscription_months_assumed" | "cost_may_be_higher" | "thin_role" | "no_free_items" | "catalog_gap" | "schedule" | "estimates" | "unknown_exam_length";
+                                message: string;
+                                catalogId?: string;
+                            }[];
+                            draftHash: string;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/build": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create the plan from a confirmed draft (idempotent on the client-generated id)
+         * @description In one transaction: rebuilds the draft and compares `draftHash` (409 `draft_changed`), checks that `replacesPlanIds` is exactly the set of the user’s active plans (409 `active_plan_changed`), archives those plans and creates the new active plan with `createdFrom: builder`. 201 on creation; 200 with the stored plan when the same id and the same body are sent again (also after the catalog changed); 409 when the id exists with a different body.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        request: {
+                            targetRoleIds: string[];
+                            /** @default [] */
+                            extraSkillIds?: string[];
+                            /** @default {} */
+                            skillLevels?: {
+                                [key: string]: number;
+                            };
+                            startDate: string;
+                            deadline: string;
+                            weekPattern: {
+                                windowStart: string;
+                                windowEnd: string;
+                                lunchStart?: string;
+                                lunchEnd?: string;
+                            } & {
+                                [key: string]: unknown;
+                            };
+                            budget: {
+                                /** @enum {string} */
+                                mode: "free" | "limit" | "flexible";
+                                amount?: number;
+                                maxItemPrice?: number;
+                            };
+                            /** @enum {string} */
+                            certPreference: "must" | "nice" | "none";
+                            /** @enum {string} */
+                            interviewPrep: "yes" | "later" | "no";
+                            /** @default [] */
+                            certificateOptIns?: string[];
+                            /** @default [] */
+                            examDates?: {
+                                catalogId: string;
+                                date: string;
+                                start: string;
+                            }[];
+                            /** @default [] */
+                            mustInclude?: string[];
+                            /** @default [] */
+                            exclude?: string[];
+                            /** @default {} */
+                            priorityOverrides?: {
+                                [key: string]: "core" | "optional";
+                            };
+                        };
+                        draftHash: string;
+                        replacesPlanIds: string[];
+                        useAiExplanations?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            status: "draft" | "active" | "archived" | "done";
+                            /** @enum {string} */
+                            createdFrom: "builder" | "import";
+                            startDate: string;
+                            endDate: string | null;
+                            summary: {
+                                [key: string]: unknown;
+                            };
+                            taskCount: number;
+                            createdAt: string;
+                            updatedAt: string;
+                            weekPattern: {
+                                studyWeekdays: number[];
+                                defaultHours: number;
+                                /** @default {} */
+                                hoursByWeekday: {
+                                    [key: string]: number;
+                                };
+                                windowStart: string;
+                                windowEnd: string;
+                                lunchStart?: string;
+                                lunchEnd?: string;
+                                /** @default 2 */
+                                breakEveryHours: number;
+                                /** @default 10 */
+                                breakMinutes: number;
+                                /** @default 30 */
+                                minBlockMinutes: number;
+                                timezone: string;
+                            } | null;
+                            overrides: {
+                                date: string;
+                                isStudyDay: boolean;
+                                capacityHours?: number;
+                            }[];
+                            tasks: {
+                                id: string;
+                                title: string;
+                                /** @enum {string} */
+                                type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                provider?: string;
+                                /** Format: uri */
+                                url?: string;
+                                estHours: number;
+                                /** @default 0 */
+                                doneHours: number;
+                                /**
+                                 * @default pending
+                                 * @enum {string}
+                                 */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                order: number;
+                                /** @default [] */
+                                dependsOn: string[];
+                                /** @default false */
+                                isAnchor: boolean;
+                                anchorDate?: string;
+                                anchorStartTime?: string;
+                                pinnedStart?: {
+                                    date: string;
+                                    start: string;
+                                };
+                                notBefore?: string;
+                                /** @default true */
+                                splittable: boolean;
+                                /** @default false */
+                                isCertificate: boolean;
+                                certificateName?: string;
+                                /** @default [] */
+                                lessons: {
+                                    title: string;
+                                    /** Format: uri */
+                                    url?: string;
+                                    estMinutes?: number;
+                                    summary?: string;
+                                    /** @default false */
+                                    needsCheck: boolean;
+                                }[];
+                                /** @default [] */
+                                howToSteps: string[];
+                                promptTemplate?: string;
+                                practiceKind?: string;
+                                notes?: string;
+                                /**
+                                 * @default manual
+                                 * @enum {string}
+                                 */
+                                source: "manual" | "import" | "builder" | "auto";
+                                externalRef?: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            status: "draft" | "active" | "archived" | "done";
+                            /** @enum {string} */
+                            createdFrom: "builder" | "import";
+                            startDate: string;
+                            endDate: string | null;
+                            summary: {
+                                [key: string]: unknown;
+                            };
+                            taskCount: number;
+                            createdAt: string;
+                            updatedAt: string;
+                            weekPattern: {
+                                studyWeekdays: number[];
+                                defaultHours: number;
+                                /** @default {} */
+                                hoursByWeekday: {
+                                    [key: string]: number;
+                                };
+                                windowStart: string;
+                                windowEnd: string;
+                                lunchStart?: string;
+                                lunchEnd?: string;
+                                /** @default 2 */
+                                breakEveryHours: number;
+                                /** @default 10 */
+                                breakMinutes: number;
+                                /** @default 30 */
+                                minBlockMinutes: number;
+                                timezone: string;
+                            } | null;
+                            overrides: {
+                                date: string;
+                                isStudyDay: boolean;
+                                capacityHours?: number;
+                            }[];
+                            tasks: {
+                                id: string;
+                                title: string;
+                                /** @enum {string} */
+                                type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                provider?: string;
+                                /** Format: uri */
+                                url?: string;
+                                estHours: number;
+                                /** @default 0 */
+                                doneHours: number;
+                                /**
+                                 * @default pending
+                                 * @enum {string}
+                                 */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                order: number;
+                                /** @default [] */
+                                dependsOn: string[];
+                                /** @default false */
+                                isAnchor: boolean;
+                                anchorDate?: string;
+                                anchorStartTime?: string;
+                                pinnedStart?: {
+                                    date: string;
+                                    start: string;
+                                };
+                                notBefore?: string;
+                                /** @default true */
+                                splittable: boolean;
+                                /** @default false */
+                                isCertificate: boolean;
+                                certificateName?: string;
+                                /** @default [] */
+                                lessons: {
+                                    title: string;
+                                    /** Format: uri */
+                                    url?: string;
+                                    estMinutes?: number;
+                                    summary?: string;
+                                    /** @default false */
+                                    needsCheck: boolean;
+                                }[];
+                                /** @default [] */
+                                howToSteps: string[];
+                                promptTemplate?: string;
+                                practiceKind?: string;
+                                notes?: string;
+                                /**
+                                 * @default manual
+                                 * @enum {string}
+                                 */
+                                source: "manual" | "import" | "builder" | "auto";
+                                externalRef?: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make an archived plan the active plan again
+         * @description Only an archived plan can be restored. The plans that are active now are archived in the same transaction, after the same check as a build (`replacesPlanIds`, 409 `active_plan_changed`). 200 with the plan; a retry when the plan is already the only active plan also answers 200. 409 `plan_not_archived` for a draft or done plan.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        replacesPlanIds: string[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            /** @enum {string} */
+                            status: "draft" | "active" | "archived" | "done";
+                            /** @enum {string} */
+                            createdFrom: "builder" | "import";
+                            startDate: string;
+                            endDate: string | null;
+                            summary: {
+                                [key: string]: unknown;
+                            };
+                            taskCount: number;
+                            createdAt: string;
+                            updatedAt: string;
+                            weekPattern: {
+                                studyWeekdays: number[];
+                                defaultHours: number;
+                                /** @default {} */
+                                hoursByWeekday: {
+                                    [key: string]: number;
+                                };
+                                windowStart: string;
+                                windowEnd: string;
+                                lunchStart?: string;
+                                lunchEnd?: string;
+                                /** @default 2 */
+                                breakEveryHours: number;
+                                /** @default 10 */
+                                breakMinutes: number;
+                                /** @default 30 */
+                                minBlockMinutes: number;
+                                timezone: string;
+                            } | null;
+                            overrides: {
+                                date: string;
+                                isStudyDay: boolean;
+                                capacityHours?: number;
+                            }[];
+                            tasks: {
+                                id: string;
+                                title: string;
+                                /** @enum {string} */
+                                type: "course" | "cert_exam" | "practice" | "admin" | "cv_update";
+                                provider?: string;
+                                /** Format: uri */
+                                url?: string;
+                                estHours: number;
+                                /** @default 0 */
+                                doneHours: number;
+                                /**
+                                 * @default pending
+                                 * @enum {string}
+                                 */
+                                status: "pending" | "in_progress" | "done" | "skipped";
+                                order: number;
+                                /** @default [] */
+                                dependsOn: string[];
+                                /** @default false */
+                                isAnchor: boolean;
+                                anchorDate?: string;
+                                anchorStartTime?: string;
+                                pinnedStart?: {
+                                    date: string;
+                                    start: string;
+                                };
+                                notBefore?: string;
+                                /** @default true */
+                                splittable: boolean;
+                                /** @default false */
+                                isCertificate: boolean;
+                                certificateName?: string;
+                                /** @default [] */
+                                lessons: {
+                                    title: string;
+                                    /** Format: uri */
+                                    url?: string;
+                                    estMinutes?: number;
+                                    summary?: string;
+                                    /** @default false */
+                                    needsCheck: boolean;
+                                }[];
+                                /** @default [] */
+                                howToSteps: string[];
+                                promptTemplate?: string;
+                                practiceKind?: string;
+                                notes?: string;
+                                /**
+                                 * @default manual
+                                 * @enum {string}
+                                 */
+                                source: "manual" | "import" | "builder" | "auto";
+                                externalRef?: string;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -3447,6 +5066,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -3467,6 +5090,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -3489,6 +5116,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -3509,6 +5140,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -3531,6 +5166,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -3551,6 +5190,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -3573,6 +5216,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -3593,6 +5240,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -3667,6 +5318,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -3687,6 +5342,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -3709,6 +5368,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -3729,6 +5392,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -3751,6 +5418,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -3771,6 +5442,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -3926,6 +5601,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -3946,6 +5625,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -3968,6 +5651,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -3988,6 +5675,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4010,6 +5701,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4030,6 +5725,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4077,6 +5776,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4097,6 +5800,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4119,6 +5826,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4139,6 +5850,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4161,6 +5876,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4181,6 +5900,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4282,6 +6005,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4302,6 +6029,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4324,6 +6055,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4344,6 +6079,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4366,6 +6105,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4386,6 +6129,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4458,6 +6205,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4478,6 +6229,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4500,6 +6255,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4520,6 +6279,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4542,6 +6305,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4563,6 +6330,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4583,6 +6354,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4655,6 +6430,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4675,6 +6454,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4697,6 +6480,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4717,6 +6504,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4739,6 +6530,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4759,6 +6554,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4806,6 +6605,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4826,6 +6629,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4848,6 +6655,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4868,6 +6679,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4890,6 +6705,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -4910,6 +6729,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -4990,6 +6813,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5010,6 +6837,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5032,6 +6863,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5052,6 +6887,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5074,6 +6913,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5094,6 +6937,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5226,6 +7073,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5246,6 +7097,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5268,6 +7123,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5288,6 +7147,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5310,6 +7173,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5330,6 +7197,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5409,6 +7280,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5429,6 +7304,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5451,6 +7330,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5471,6 +7354,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5493,6 +7380,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5513,6 +7404,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5624,6 +7519,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5644,6 +7543,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5666,6 +7569,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5686,6 +7593,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5708,6 +7619,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5728,6 +7643,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5843,6 +7762,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5863,6 +7786,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5885,6 +7812,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5905,6 +7836,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -5927,6 +7862,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -5947,6 +7886,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -6031,6 +7974,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6051,6 +7998,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -6073,6 +8024,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6093,6 +8048,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -6115,6 +8074,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6135,6 +8098,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -6217,6 +8184,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6237,6 +8208,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -6259,6 +8234,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6279,6 +8258,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -6301,6 +8284,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6321,6 +8308,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -6402,6 +8393,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6422,6 +8417,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -6444,6 +8443,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6464,6 +8467,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -6486,6 +8493,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6507,6 +8518,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6527,6 +8542,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -6810,6 +8829,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6830,6 +8853,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -6852,6 +8879,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6872,6 +8903,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -6894,6 +8929,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6915,6 +8954,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -6935,6 +8978,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -7007,6 +9054,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7027,6 +9078,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -7049,6 +9104,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7069,6 +9128,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -7091,6 +9154,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7112,6 +9179,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7132,6 +9203,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -7273,6 +9348,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7293,6 +9372,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -7315,6 +9398,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7335,6 +9422,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -7357,6 +9448,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7378,6 +9473,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7398,6 +9497,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -7512,6 +9615,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7532,6 +9639,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -7554,6 +9665,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7574,6 +9689,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -7596,6 +9715,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7617,6 +9740,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7637,6 +9764,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -7759,6 +9890,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7779,6 +9914,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -7801,6 +9940,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7821,6 +9964,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -7843,6 +9990,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7864,6 +10015,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -7884,6 +10039,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8003,6 +10162,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8023,6 +10186,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8045,6 +10212,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8065,6 +10236,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8087,6 +10262,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8108,6 +10287,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8128,6 +10311,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8193,6 +10380,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8213,6 +10404,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8235,6 +10430,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8255,6 +10454,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8277,6 +10480,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8297,6 +10504,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8319,6 +10530,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8339,6 +10554,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8398,6 +10617,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8418,6 +10641,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8440,6 +10667,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8460,6 +10691,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8482,6 +10717,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8502,6 +10741,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8524,6 +10767,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8544,6 +10791,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8622,6 +10873,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8642,6 +10897,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8664,6 +10923,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8684,6 +10947,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8706,6 +10973,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8726,6 +10997,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8748,6 +11023,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8768,6 +11047,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8932,6 +11215,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8952,6 +11239,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -8974,6 +11265,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -8994,6 +11289,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9016,6 +11315,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9036,6 +11339,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9058,6 +11365,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9078,6 +11389,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9188,6 +11503,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9208,6 +11527,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9230,6 +11553,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9250,6 +11577,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9272,6 +11603,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9292,6 +11627,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9314,6 +11653,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9334,6 +11677,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9485,6 +11832,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9505,6 +11856,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9527,6 +11882,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9547,6 +11906,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9569,6 +11932,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9589,6 +11956,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9611,6 +11982,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9631,6 +12006,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9806,6 +12185,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9826,6 +12209,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9848,6 +12235,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9868,6 +12259,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9890,6 +12285,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9910,6 +12309,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -9932,6 +12335,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -9952,6 +12359,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10132,6 +12543,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10152,6 +12567,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10174,6 +12593,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10194,6 +12617,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10216,6 +12643,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10236,6 +12667,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10258,6 +12693,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10278,6 +12717,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10369,6 +12812,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10389,6 +12836,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10411,6 +12862,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10431,6 +12886,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10453,6 +12912,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10473,6 +12936,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10495,6 +12962,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10515,6 +12986,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10596,6 +13071,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10616,6 +13095,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10638,6 +13121,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10658,6 +13145,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10680,6 +13171,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10700,6 +13195,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10722,6 +13221,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10742,6 +13245,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10821,6 +13328,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10841,6 +13352,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10863,6 +13378,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10883,6 +13402,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10905,6 +13428,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10925,6 +13452,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -10947,6 +13478,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -10967,6 +13502,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -11079,6 +13618,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11099,6 +13642,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -11121,6 +13668,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11142,6 +13693,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11162,6 +13717,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -11273,6 +13832,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11293,6 +13856,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -11315,6 +13882,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11336,6 +13907,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11356,6 +13931,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -11409,6 +13988,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11429,6 +14012,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -11451,6 +14038,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11471,6 +14062,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -11493,6 +14088,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11513,6 +14112,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -11642,6 +14245,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11662,6 +14269,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -11684,6 +14295,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11704,6 +14319,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -11726,6 +14345,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11746,6 +14369,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -11961,6 +14588,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -11981,6 +14612,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12003,6 +14638,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12023,6 +14662,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12045,6 +14688,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12065,6 +14712,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12179,6 +14830,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12199,6 +14854,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12221,6 +14880,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12241,6 +14904,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12263,6 +14930,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12283,6 +14954,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12397,6 +15072,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12417,6 +15096,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12439,6 +15122,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12459,6 +15146,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12481,6 +15172,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12501,6 +15196,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12615,6 +15314,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12635,6 +15338,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12657,6 +15364,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12677,6 +15388,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12699,6 +15414,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12719,6 +15438,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12805,6 +15528,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12825,6 +15552,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12847,6 +15578,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12868,6 +15603,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12888,6 +15627,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -12966,6 +15709,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -12986,6 +15733,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -13008,6 +15759,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -13029,6 +15784,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -13049,6 +15808,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -13114,6 +15877,7 @@ export interface paths {
                             };
                             features: {
                                 cvTailor: boolean;
+                                planBuilder: boolean;
                             };
                             avoidedToday: number;
                             providers: {
@@ -13145,6 +15909,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -13165,6 +15933,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };
@@ -13187,6 +15959,10 @@ export interface paths {
                                     id: string;
                                     title: string;
                                 }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
                             };
                         };
                     };
@@ -13207,6 +15983,10 @@ export interface paths {
                                 dependents?: {
                                     id: string;
                                     title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
                                 }[];
                             };
                         };

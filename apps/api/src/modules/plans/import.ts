@@ -26,7 +26,7 @@ function describe(error: unknown): string {
 }
 
 /** JSON with sorted keys, so equal content always gives equal text. */
-function canonical(value: unknown): string {
+export function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
   if (value !== null && typeof value === 'object') {
     const entries = Object.entries(value as Record<string, unknown>)
@@ -100,10 +100,14 @@ export function validateImport(
 }
 
 /** The plan's headline numbers, stored in `plans.summary` (spec 4: hours, certs). */
-export function summarize(plan: PlanFile): Record<string, unknown> {
+export function summarize(
+  plan: PlanFile,
+  extra: Record<string, unknown> = {},
+): Record<string, unknown> {
   return {
     ...(plan.skillIds && plan.skillIds.length > 0 ? { skillIds: plan.skillIds } : {}),
     hours: Math.round(plan.tasks.reduce((sum, t) => sum + t.estHours, 0) * 100) / 100,
     certs: plan.tasks.filter((t) => t.isCertificate).length,
+    ...extra,
   };
 }

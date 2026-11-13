@@ -17,6 +17,8 @@ export const errorResponseSchema = z.object({
     sessionId: z.string().optional(),
     /** The tasks that depend on the one being deleted, on 409 `has_dependents`. */
     dependents: z.array(z.object({ id: z.string(), title: z.string() })).optional(),
+    /** The reasons a plan request was refused, on 422 from the plan builder: codes and ids only. */
+    issues: z.array(z.object({ code: z.string(), id: z.string().optional() })).optional(),
   }),
 });
 

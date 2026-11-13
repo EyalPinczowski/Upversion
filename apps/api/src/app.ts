@@ -2,7 +2,7 @@ import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
-import { APP_NAME } from '@upversion/shared';
+import { APP_NAME, type BuildCatalog } from '@upversion/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 import {
   jsonSchemaTransform,
@@ -45,6 +45,7 @@ import { createDaysService } from './modules/days/service';
 import { createSchedulingService } from './modules/scheduling/service';
 import { createDatabaseProbe } from './modules/health/probe';
 import { healthRoutes } from './modules/health/routes';
+import { planBuilderRoutes } from './modules/plan-builder/routes';
 import { planRoutes } from './modules/plans/routes';
 import { taskRoutes } from './modules/tasks/routes';
 import { installIdempotency } from './plugins/idempotency';
@@ -87,8 +88,8 @@ const HEALTH_URL = '/api/v1/health';
  * pattern, day overrides, task edits, logs, completion, skips, day end and accepted
  * adjustments. Everything else (reads, practice, reviews' notes) leaves the calendar alone.
  */
-const RESCHEDULING_ROUTE =
-  /^\/api\/v1\/plans\/import$|^\/api\/v1\/plans\/:(?:id|planId)\/(?:week-pattern$|start-date$|day-overrides\/|tasks\/|days\/:date\/end$|suggestions\/:id\/accept$|practice\/sessions\/:sessionId\/finish$)/;
+export const RESCHEDULING_ROUTE =
+  /^\/api\/v1\/plans\/(?:import|build)$|^\/api\/v1\/plans\/:(?:id|planId)\/(?:week-pattern$|start-date$|day-overrides\/|tasks\/|days\/:date\/end$|suggestions\/:id\/accept$|practice\/sessions\/:sessionId\/finish$|restore$)/;
 
 /** A plugin that shares the root scope, so its hooks apply to every route (like fastify-plugin). */
 const sharedScope = (fn: (instance: FastifyInstance) => void) =>
@@ -113,6 +114,8 @@ export interface AppDeps {
     usage?: AIUsageStore;
     cache?: AICache | null;
   };
+  /** Tests only: a catalog other than the bundled one for the plan builder. */
+  planBuilderCatalog?: BuildCatalog;
   /** Tests only: where log lines go, so they can be inspected. Defaults to stdout. */
   logStream?: { write(line: string): void };
 }
@@ -336,6 +339,14 @@ export function buildApp(config: Config, deps: AppDeps = {}) {
           dailyTotal: config.ai.cvTailorDailyTotal,
         });
       }
+      if (config.features.planBuilder) {
+        v1.register(planBuilderRoutes, {
+          verifier,
+          db,
+          now: deps.now,
+          catalog: deps.planBuilderCatalog,
+        });
+      }
       v1.register(planRoutes, {
         verifier,
         db,
@@ -357,7 +368,10 @@ export function buildApp(config: Config, deps: AppDeps = {}) {
         gateway: aiGateway,
         usage: aiUsage,
         userCaps: config.ai.userCaps,
-        features: { cvTailor: config.features.cvTailor },
+        features: {
+          cvTailor: config.features.cvTailor,
+          planBuilder: config.features.planBuilder,
+        },
       });
     },
     { prefix: '/api/v1' },
