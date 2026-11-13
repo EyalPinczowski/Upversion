@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 // The fictional demo plan (spec section 7). Read via a relative JSON import (resolveJsonModule).
 import demoPlanJson from '../../../data/sample-plans/demo-plan.json';
@@ -43,6 +45,44 @@ describe('demo sample plan', () => {
       // Catalog practice templates have no link at all; every other catalog item without one is flagged.
       if (t.externalRef?.startsWith('catalog:') && !t.url && t.provider !== 'Upversion practice') {
         expect(t.notes ?? '').toMatch(/needs check/i);
+      }
+    }
+  });
+
+  it('makes no link or price claim about a catalog item that the catalog does not back', () => {
+    const catalog = JSON.parse(
+      readFileSync(
+        fileURLToPath(new URL('../../../data/catalog/catalog.json', import.meta.url)),
+        'utf8',
+      ),
+    ) as {
+      items: {
+        id: string;
+        url: string | null;
+        url_verified: boolean;
+        price: number | null;
+        price_verified: boolean;
+      }[];
+    };
+    const byId = new Map(catalog.items.map((i) => [i.id, i]));
+    for (const t of plan.tasks) {
+      if (!t.externalRef?.startsWith('catalog:')) continue;
+      const item = byId.get(t.externalRef.slice('catalog:'.length));
+      expect(item, `${t.id} refers to a catalog item`).toBeDefined();
+      if (!item) continue;
+      const notes = t.notes ?? '';
+      // PL-300 is url_verified in the catalog: its task carries the catalog url and no "not verified" note.
+      // (Other demo tasks have the same stale note; ADR 017 leaves them for a later pass.)
+      if (t.id === 'pl300-exam') {
+        expect(item.url_verified).toBe(true);
+        expect(t.url).toBe(item.url);
+        expect(notes).not.toMatch(/link not yet verified/i);
+      }
+      // A "per catalog: N USD" price only for a verified price, and it must equal the catalog price.
+      const fee = /per catalog: (\d+(?:\.\d+)?) USD/i.exec(notes);
+      if (fee) {
+        expect(item.price_verified, `${t.id} price note`).toBe(true);
+        expect(Number(fee[1]), `${t.id} price`).toBe(item.price);
       }
     }
   });
