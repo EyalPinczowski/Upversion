@@ -34,6 +34,8 @@ import {
   rejectAllVerifier,
   type TokenVerifier,
 } from './modules/accounts/token-verifier';
+import { createCalendarCron } from './modules/calendar/cron';
+import { calendarCronRoutes } from './modules/calendar/cron-routes';
 import { calendarRoutes } from './modules/calendar/routes';
 import { cvTailorRoutes } from './modules/cv-tailor/routes';
 import { profileRoutes } from './modules/profile/routes';
@@ -306,6 +308,18 @@ export function buildApp(config: Config, deps: AppDeps = {}) {
           db,
           service: calendarService,
           sync: calendarSync,
+        });
+      }
+      if (config.calendar.cron && calendarSync && db) {
+        // The scheduled sync (docs/calendar-cron.md): own secret, no user token.
+        v1.register(calendarCronRoutes, {
+          secret: config.calendar.cron.secret,
+          cron: createCalendarCron({
+            db,
+            sync: calendarSync,
+            maxUsers: config.calendar.cron.maxUsers,
+            log: app.log,
+          }),
         });
       }
       if (config.features.profileSetup) {

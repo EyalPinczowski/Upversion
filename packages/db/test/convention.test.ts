@@ -112,6 +112,7 @@ describe.skipIf(!dbAvailable)('table convention: RLS enabled and a backup SELECT
           'ai_cv_tailor_usage_today',
           'ai_provider_usage_today',
           'ai_reserve_provider',
+          'calendar_users_due',
           'delete_account',
           'provision_user',
         ]);
@@ -127,6 +128,7 @@ describe.skipIf(!dbAvailable)('table convention: RLS enabled and a backup SELECT
           ai_cv_tailor_usage_today: [`app_${schema}_user`],
           ai_provider_usage_today: [`app_${schema}_user`],
           ai_reserve_provider: [`app_${schema}_user`],
+          calendar_users_due: [`app_${schema}_user`],
           delete_account: [`app_${schema}_user`],
           provision_user: [`app_${schema}`],
         };

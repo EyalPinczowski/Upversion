@@ -33,6 +33,8 @@ Migration 0016 (user profiles, ADR 015): `user_profiles`, one row per user (a mi
 
 Migration 0017 (CV tailoring, ADR 016): additive. `ai_usage_daily.purpose` also accepts `cv_tailor` (the check `ai_usage_daily_purpose_check` is dropped and re-added; `ai_cache` is deliberately unchanged, so a `cv_tailor` cache row stays impossible) and `ai_cv_tailor_usage_today()`, a SECURITY DEFINER function (no argument, fixed to `cv_tailor`) that returns today's (UTC) request sum over all users, the one number the app-wide cap needs (no rows, signed-in users only). Tests: `test/cv-tailor-schema.test.ts` (both schemas) and `test/convention.test.ts`.
 
+Migration 0018 (scheduled calendar sync, `docs/calendar-cron.md`): additive. `calendar_connections.auto_sync boolean not null default true` (the user's switch; the app login may update it) and `calendar_users_due(p_older_than interval, p_limit integer)`, a SECURITY DEFINER function that returns user ids only (connected, token and app calendar present, auto_sync on, account active, last sync missing or older than the interval; never-synced first, then oldest; limit clamped to 1..100). EXECUTE only for the app role. Tests: `test/calendar-cron-schema.test.ts` and `test/convention.test.ts`.
+
 SQL tokens: `{{schema}} {{owner}} {{app}} {{app_user}} {{backup}}`. Anything else in `{{ }}` is an error.
 
 ## How the roles fit together (per schema `s`)

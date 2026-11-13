@@ -15,6 +15,7 @@ export interface ConnectionRow {
   granted_scopes: string[];
   last_synced_at: Date | null;
   last_error_code: string | null;
+  auto_sync: boolean;
 }
 
 export interface BusyItemRow {
@@ -86,7 +87,7 @@ export const calendarRepo = {
   async getConnection(ctx: UserContext, userId: string): Promise<ConnectionRow | null> {
     const { rows } = await ctx.client.query<ConnectionRow>(
       `select status, app_calendar_id, refresh_token_ciphertext, granted_scopes, last_synced_at,
-              last_error_code
+              last_error_code, auto_sync
        from ${ctx.schema}.calendar_connections where user_id = $1`,
       [userId],
     );
@@ -121,6 +122,16 @@ export const calendarRepo = {
        where user_id = $1 and status <> 'disconnected'`,
       [userId, code],
     );
+  },
+
+  /** Returns how many rows changed (0 when the user has no connection). */
+  async setAutoSync(ctx: UserContext, userId: string, autoSync: boolean): Promise<number> {
+    const { rowCount } = await ctx.client.query(
+      `update ${ctx.schema}.calendar_connections set auto_sync = $2, updated_at = now()
+       where user_id = $1 and status <> 'disconnected'`,
+      [userId, autoSync],
+    );
+    return rowCount ?? 0;
   },
 
   async listSources(ctx: UserContext, userId: string): Promise<SourceRow[]> {

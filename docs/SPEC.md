@@ -349,7 +349,7 @@ Calendar scopes are "sensitive". While a Google OAuth app is in **Testing** stat
 - **Fail loudly, never silently:** if a token is ever rejected (`invalid_grant`), the app shows a "Reconnect calendar" banner with one-tap reconnection, and keeps working on its own data in the meantime. The schedule never depends on the calendar being reachable.
 - Refresh tokens are stored encrypted in the backend only.
 
-**Sync:** on every app open, via a "Sync now" button, and after every reschedule. A new event that conflicts with a study block → the block moves, and I see what changed in the summary.
+**Sync:** on every app open, via a "Sync now" button, and after every reschedule. Optionally also every 15 minutes while the app is closed, by a Cloudflare cron trigger that calls a protected API endpoint (off unless the owner enables it; per-user switch `auto_sync`; see `docs/calendar-cron.md`). A new event that conflicts with a study block → the block moves, and I see what changed in the summary.
 
 ### 3.9 Course and certificate library
 - All courses and certificates: provider, link, cost, status, date earned.

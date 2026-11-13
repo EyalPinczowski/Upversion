@@ -128,6 +128,11 @@ const envSchema = z.object({
   // an authorised redirect URI of the OAuth client exactly. Required when FEATURE_CALENDAR=true.
   GOOGLE_REDIRECT_URI: z.url().max(1000).optional(),
   // Overridable so e2e can point at a local stub. Defaults are Google's (needs check against docs).
+  // Scheduled calendar sync (docs/calendar-cron.md). The endpoint exists only with the flag on AND a
+  // secret of at least 32 characters. The secret is server-only: never logged or serialised.
+  FEATURE_CALENDAR_CRON: booleanString('false'),
+  CALENDAR_CRON_SECRET: z.string().min(32).max(512).optional(),
+  CALENDAR_CRON_MAX_USERS: intBetween(1, 100, 20),
   GOOGLE_CALENDAR_API_BASE: z.url().default('https://www.googleapis.com/calendar/v3'),
   GOOGLE_OAUTH_BASE: z.url().default('https://oauth2.googleapis.com'),
   ...featureEnvShape,
@@ -190,6 +195,11 @@ export interface Config {
     tokenKeys: CalendarKey[];
     /** Null until GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set. Holds a secret: never log it. */
     google: GoogleCalendarConfig | null;
+    /**
+     * Null unless FEATURE_CALENDAR_CRON is on and CALENDAR_CRON_SECRET is set: the scheduled-sync
+     * endpoint then does not exist (404). Holds a secret: never log or serialise it.
+     */
+    cron?: { secret: string; maxUsers: number } | null;
   };
   ai: AIConfig;
 }
@@ -263,7 +273,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     rateLimitPerMinute: e.RATE_LIMIT_PER_MINUTE,
     trustProxy: e.TRUST_PROXY,
     features: toFeatures(e),
-    calendar: { enabled: e.FEATURE_CALENDAR, tokenKeys: calendarKeys, google: loadGoogle(e) },
+    calendar: {
+      enabled: e.FEATURE_CALENDAR,
+      tokenKeys: calendarKeys,
+      google: loadGoogle(e),
+      cron:
+        e.FEATURE_CALENDAR_CRON && e.CALENDAR_CRON_SECRET
+          ? { secret: e.CALENDAR_CRON_SECRET, maxUsers: e.CALENDAR_CRON_MAX_USERS }
+          : null,
+    },
     ai,
   };
 }
