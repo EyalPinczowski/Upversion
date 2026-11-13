@@ -14,8 +14,17 @@ const errorBodySchema = z.object({
 
 export type ApiErrorKind = 'http' | 'network' | 'timeout';
 
+/** Reads a `Retry-After` header in seconds (the form the API sends) as milliseconds, or null. */
+export function retryAfterMs(header: string | null): number | null {
+  if (header === null || !/^\d+$/.test(header.trim())) return null;
+  return Number(header.trim()) * 1000;
+}
+
 /** Every failure of an API call: an error response, no connection, or no answer in time. */
 export class ApiError extends Error {
+  /** How long the server asked to wait before trying again (`Retry-After`), when it said so. */
+  retryAfterMs: number | null = null;
+
   constructor(
     public readonly kind: ApiErrorKind,
     /** HTTP status, or 0 when there was no response. */

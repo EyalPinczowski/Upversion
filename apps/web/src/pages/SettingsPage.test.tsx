@@ -85,11 +85,23 @@ describe('settings page', () => {
     expect(await screen.findByRole('region', { name: 'Calendar' })).toBeInTheDocument();
   });
 
-  it('hides Connections when the calendar feature is off', async () => {
+  it('keeps Connections with one plain line when the calendar feature is off', async () => {
     open({ 'GET /api/v1/calendar': () => apiError(404, 'not_found', 'off') });
-    await screen.findByRole('heading', { level: 2, name: 'App' });
-    await new Promise((r) => setTimeout(r, 50));
-    expect(screen.queryByRole('heading', { name: 'Connections' })).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Connections' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Calendar sync is not available yet.')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Calendar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('does not show the unavailable line when the calendar feature is on', async () => {
+    open({
+      'GET /api/v1/calendar': () =>
+        json({ status: 'disconnected', lastSyncedAt: null, lastErrorCode: null, sources: [] }),
+    });
+    await screen.findByRole('region', { name: 'Calendar' });
+    expect(screen.queryByText('Calendar sync is not available yet.')).not.toBeInTheDocument();
   });
 
   it.each(['#time-heading', '#practice-heading', '#start-date-heading'])(

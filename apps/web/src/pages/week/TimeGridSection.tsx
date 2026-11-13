@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import type { PlanSummary, Schedule, Task } from '../../api/client';
 import { useCalendarBusy, useCalendarStatus } from '../../api/calendar-hooks';
 import { usePlan } from '../../api/hooks';
+import { CalendarUpdatedStatus } from '../../calendar/CalendarUpdatedStatus';
 import { ErrorText, linkClass } from '../../components/ui';
 import { ConnectButton } from '../settings/CalendarSettings';
 import { TimeGrid } from './TimeGrid';
@@ -39,6 +40,7 @@ export function TimeGridSection({
   return (
     <section aria-labelledby="grid-heading" className="min-w-0 space-y-3">
       <h2 id="grid-heading">Time grid</h2>
+      {connected ? <CalendarUpdatedStatus /> : null}
       {notConnected ? (
         <p className="text-muted">
           <Link to="/settings" className={linkClass}>

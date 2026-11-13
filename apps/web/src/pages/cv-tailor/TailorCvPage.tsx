@@ -70,8 +70,12 @@ function KeywordList({
       ) : (
         <ul className="flex flex-wrap gap-2">
           {items.map((i) => (
-            <li key={i.skillId} className="rounded-sm border border-border bg-surface-2 px-2 py-1">
-              {i.name}
+            <li
+              key={i.skillId}
+              dir="auto"
+              className="break-words rounded-sm border border-border bg-surface-2 px-2 py-1"
+            >
+              {i.label}
             </li>
           ))}
         </ul>

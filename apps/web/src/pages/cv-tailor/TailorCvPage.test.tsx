@@ -170,6 +170,19 @@ describe('Tailor my CV: gate and entries', () => {
 });
 
 describe('Tailor my CV: the flow and the privacy rules', () => {
+  it("shows the job post's own words in the keyword chips, not catalog names", async () => {
+    install();
+    await open();
+    await toStep3(
+      'We need an analyst with strong stakeholder communication, Python scripting and a weekly review of the reports we send to the finance team every month.',
+    );
+    const missing = screen.getByText('In the post, not in your CV').parentElement as HTMLElement;
+    expect(within(missing).getByText('stakeholder communication')).toBeVisible();
+    expect(within(missing).getByText('Python')).toBeVisible();
+    expect(within(missing).queryByText('Business communication')).toBeNull();
+    expect(within(missing).queryByText('Python basics')).toBeNull();
+  });
+
   it('sends nothing before the preview is confirmed, then one POST with the cleaned text only', async () => {
     const { api } = install();
     const spies = spyOnSideChannels();
