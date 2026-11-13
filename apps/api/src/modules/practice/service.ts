@@ -32,6 +32,7 @@ import type { AIPurpose } from '../../ai/provider';
 import { buildSafeRequest, truncateHistory, type SafeMessage } from '../../ai/safe-request';
 import type { Database, UserContext } from '../../db/database';
 import { HttpError } from '../../errors';
+import { requireWritablePlan } from '../plans/guard';
 import * as plansRepo from '../plans/repository';
 import type { createTaskService } from '../tasks/service';
 import type { TaskView } from '../tasks/schemas';
@@ -765,7 +766,7 @@ export function createPracticeService(
 
     putContext: (userId: string, planId: string, jobDescription: string) =>
       db.withUser(userId, async (ctx) => {
-        if (!(await plansRepo.planExists(ctx, userId, planId))) throw notFound();
+        await requireWritablePlan(ctx, userId, planId);
         const identity = await repo.getIdentity(ctx, userId);
         const updatedAt = await repo.upsertContext(ctx, userId, planId, jobDescription, now());
         const { count } = redactPii(jobDescription, {
@@ -831,8 +832,9 @@ export function createPracticeService(
       const task = await practiceTask(userId, planId, taskId);
       const topics = await weekTopics(userId, planId, taskId);
       const result = await db.withUser(userId, async (ctx) => {
-        // One writer per plan at a time, so "one active session per task" cannot race.
-        if (!(await plansRepo.lockPlan(ctx, userId, planId))) throw notFound();
+        // One writer per plan at a time, so "one active session per task" cannot race. An
+        // archived plan takes no new session (ADR 017 section 4.1).
+        await requireWritablePlan(ctx, userId, planId);
         const existing = await repo.getSessionById(ctx, userId, input.id);
         if (existing) {
           if (
@@ -958,6 +960,9 @@ export function createPracticeService(
       });
 
       const prep = await db.withUser(userId, async (ctx) => {
+        // A new message on an archived plan is refused. The second transaction below, which stores
+        // the reply of a turn that was already running, is not guarded.
+        await requireWritablePlan(ctx, userId, planId);
         const session = await repo.getSession(ctx, userId, planId, sessionId, true);
         if (!session) throw notFound();
         if (session.channel !== 'in_app') throw unprocessable('This is not an in-app session.');

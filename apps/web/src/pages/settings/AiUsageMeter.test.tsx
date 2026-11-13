@@ -15,7 +15,7 @@ const usage = (messagesUsed: number, overrides: Partial<AiUsage> = {}): AiUsage 
     dayOverview: { used: 0, cap: 0 },
     cvTailor: { used: 0, cap: 3 },
   },
-  features: { cvTailor: false },
+  features: { cvTailor: false, planBuilder: false },
   avoidedToday: 3,
   providers: [
     {

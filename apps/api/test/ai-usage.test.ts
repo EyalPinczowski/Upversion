@@ -337,7 +337,7 @@ describe.skipIf(!dbAvailable)('AI usage, budgets and cache (real Postgres)', () 
           dayOverview: { used: 0, cap: 1 },
           cvTailor: { used: 0, cap: 3 },
         },
-        features: { cvTailor: false },
+        features: { cvTailor: false, planBuilder: false },
         avoidedToday: 0,
         providers: [
           {

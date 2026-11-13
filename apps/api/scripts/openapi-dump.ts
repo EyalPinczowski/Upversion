@@ -18,6 +18,7 @@ export async function buildOpenApiDocument(): Promise<string> {
     FEATURE_CALENDAR: 'true',
     FEATURE_PROFILE_SETUP: 'true',
     FEATURE_CV_TAILOR: 'true',
+    FEATURE_PLAN_BUILDER: 'true',
     CALENDAR_TOKEN_KEYS: `v1:${Buffer.alloc(32).toString('base64')}`,
     GOOGLE_CLIENT_ID: 'openapi-dump-placeholder',
     GOOGLE_CLIENT_SECRET: 'openapi-dump-placeholder',

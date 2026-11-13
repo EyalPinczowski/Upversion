@@ -182,9 +182,9 @@ The app never jumps straight to courses. It first runs a short guided interview 
 - **Nothing becomes a real plan until I press "Start this plan".** Then it is scheduled by the engine (3.6) and appears on the dashboard. Every plan change after that is a suggestion I approve (3.4).
 
 **How the plan is generated:**
-- Uses the free LLM through the `AIProvider` layer (3.3) – the model returns a structured plan (JSON, validated with Zod, with the same retry-then-fallback rule).
-- **Rule-based fallback** when the AI is unavailable: match catalog items by skill tags and level, order them by prerequisites, and trim to capacity. The plan builder must work, in a simpler form, with no AI at all.
-- The prompt receives only the intake answers and the catalog entries – no personal identifying details.
+- **v1 is the rule-based builder** (ADR 017): a pure function turns the intake (target roles, skill levels, time, deadline, budget, certificates) and the bundled catalog into a draft plan. The same input always gives the same plan, with AI on or off. The backend runs it (preview, then create on "Start this plan"); the web only collects choices and renders the draft.
+- AI never chooses, adds, orders or prices items. At most it rewrites the "why this is here" lines and a short overview, only when the user asks, behind its own flag (ADR 017 section 3; later work package). Its input has no personal details.
+- RAG retrieval and AI-ordered plans (the earlier design: the model returns a structured plan, validated with Zod, retry-then-fallback) move to a later record. The builder works with no AI at all.
 
 **The course catalog:**
 - A curated list of verified learning resources, stored in the database and editable in the app. Each entry: title, provider, URL, skills taught (tags), level, estimated hours, cost, certificate type (`none` / `completion` / `official exam`), how recognized the certificate is (`low` / `medium` / `high`), prerequisites, format, language.
@@ -203,6 +203,7 @@ The app never jumps straight to courses. It first runs a short guided interview 
 
 **Multiple plans:**
 - One plan is **active** at a time (the dashboard runs it). Other plans can be drafts or archived.
+- Starting a built plan, or restoring one, **archives the current active plan in the same step**, after the user confirms (the confirm names the plan). Archived plans keep their history, are **read-only** (every write answers 409 `plan_archived`; the plan can still be deleted) and can be **restored** (`POST /plans/{id}/restore`). Plans imported from a file are unchanged: import does not archive anything. (ADR 017 section 4.1)
 - A finished plan keeps its history and results (hours, certificates, scores), which can inform the next plan ("last time, courses took you 30% longer than estimated").
 
 
@@ -675,7 +676,7 @@ Design: clean, practical, touch-friendly, light and dark mode. A daily work tool
 - Skills asked for but not covered by the plan are listed as gaps.
 - With the AI provider disabled → the rule-based builder still produces a valid plan.
 - Nothing is scheduled or written to the calendar until "Start this plan" is pressed.
-- Starting a new plan while another is active → asks whether to archive or pause the current one.
+- Starting a new plan while another is active → asks to confirm archiving the current one (it can be restored later). Pause is not offered.
 - Price limit $100 → the plan's backend-calculated total is ≤ $100; an AI draft over the limit is rejected.
 - "Free only" → every item has cost type `free` or `free_audit`, and certificate costs are shown separately.
 - A subscription item (e.g. $59/month) in a 6-week plan → cost counts 2 months, based on when the plan actually uses it.
@@ -798,7 +799,7 @@ Each seam below costs little in v1.0 and makes a deferred item a contained addit
 - **Versioned API** (`/api/v1/...`) with the OpenAPI spec as the contract, and a typed client generated from it for the web app. → a native app or another client can use the same API.
 - **No business logic in the frontend.** The web app only renders what the API returns and sends user actions. → native app, offline mode.
 - **Idempotent write endpoints with client-generated ids** (so a retried request never creates duplicates), and all frontend data access through one client layer (e.g. TanStack Query). → offline queuing and sync later.
-- **Feature flags** in config (`features.notifications`, `features.sharing`, …), all off. New features ship behind a flag.
+- **Feature flags** in config (`features.notifications`, `features.sharing`, `features.planBuilder`, …), all off. New features ship behind a flag.
 
 ### 12.4 Rules while building
 - Don't build anything from 12.1, and don't add its dependencies. Build only the seams in 12.3.

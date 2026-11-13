@@ -1,5 +1,5 @@
 import type { DayOverride, PlanFile, Task, WeekPattern } from '@upversion/shared';
-import type { UserContext } from '../../db/database';
+import { advisoryKey, type UserContext } from '../../db/database';
 import type { PlanDetail, PlanSummary } from './schemas';
 
 /**
@@ -287,14 +287,16 @@ export async function insertPlan(
   status: 'draft' | 'active',
   plan: PlanFile,
   summary: Record<string, unknown>,
+  createdFrom: 'import' | 'builder' = 'import',
 ): Promise<void> {
   await ctx.client.query(
     `insert into ${ctx.schema}.plans (user_id, id, status, created_from, name, start_date, end_date, summary)
-     values ($1, $2, $3, 'import', $4, $5, $6, $7)`,
+     values ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       userId,
       planId,
       status,
+      createdFrom,
       plan.name,
       plan.startDate,
       plan.endDate ?? null,
@@ -561,4 +563,61 @@ export async function planTimezone(
     [userId, planId],
   );
   return rows[0]?.timezone ?? null;
+}
+
+/**
+ * The per-user lock that serialises everything that decides which plan is active: a build, a
+ * restore and an import (ADR 017 section 4.1). A row lock on the active plans alone would lock
+ * nothing when none is active, so two builds could both succeed. Held until the transaction
+ * ends. Always the first lock a transaction takes. The schema is in the key, because the same
+ * user id exists in both environments (one Supabase Auth, ADR 003).
+ */
+export async function lockUserPlans(ctx: UserContext, userId: string): Promise<void> {
+  await ctx.client.query(`select pg_advisory_xact_lock(hashtextextended($1::text, 0))`, [
+    advisoryKey(ctx, 'active-plan', userId),
+  ]);
+}
+
+/**
+ * Locks the plan row and returns its status; null when it is not the user's. `exclusive` is the
+ * `for no key update` of `lockPlan` (serialises with other plan writers). `shared` is
+ * `for key share`: it does not wait for a review or an accept that holds the exclusive lock (a
+ * log must never wait for one), and it does not wait for a build or a restore either, because
+ * they only update non-key columns. A write that slips in beside an archive is the same as one
+ * that came just before it.
+ */
+export async function lockPlanStatus(
+  ctx: UserContext,
+  userId: string,
+  planId: string,
+  mode: 'exclusive' | 'shared' = 'exclusive',
+): Promise<PlanSummary['status'] | null> {
+  const lock = mode === 'exclusive' ? 'no key update' : 'key share';
+  const { rows } = await ctx.client.query<{ status: PlanSummary['status'] }>(
+    `select status from ${ctx.schema}.plans where user_id = $1 and id = $2 for ${lock}`,
+    [userId, planId],
+  );
+  return rows[0]?.status ?? null;
+}
+
+/** The ids of the user's active plans (locked, so the set cannot change under the caller). */
+export async function lockActivePlanIds(ctx: UserContext, userId: string): Promise<string[]> {
+  const { rows } = await ctx.client.query<{ id: string }>(
+    `select id from ${ctx.schema}.plans where user_id = $1 and status = 'active'
+     order by id for no key update`,
+    [userId],
+  );
+  return rows.map((r) => r.id);
+}
+
+export async function setPlanStatus(
+  ctx: UserContext,
+  userId: string,
+  planId: string,
+  status: PlanSummary['status'],
+): Promise<void> {
+  await ctx.client.query(
+    `update ${ctx.schema}.plans set status = $3, updated_at = now() where user_id = $1 and id = $2`,
+    [userId, planId, status],
+  );
 }

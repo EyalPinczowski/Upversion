@@ -1,7 +1,7 @@
 import { localDateOf, TaskSchema } from '@upversion/shared';
 import type { Database, UserContext } from '../../db/database';
 import { HttpError } from '../../errors';
-import * as plansRepo from '../plans/repository';
+import { requireWritablePlan } from '../plans/guard';
 import { createsCycle } from './graph';
 import type { LogBody, LogView, PatchTaskBody, TaskView } from './schemas';
 
@@ -149,11 +149,7 @@ async function lockTask(
   return rows[0];
 }
 
-async function requirePlan(ctx: UserContext, userId: string, planId: string, lock = false) {
-  if (lock) {
-    if (!(await plansRepo.lockPlan(ctx, userId, planId))) throw notFound();
-    return;
-  }
+async function requirePlan(ctx: UserContext, userId: string, planId: string) {
   const { rows } = await ctx.client.query(
     `select 1 from ${ctx.schema}.plans where user_id = $1 and id = $2`,
     [userId, planId],
@@ -329,10 +325,18 @@ export function createTaskService(db: Database, now: () => Date = () => new Date
 
   return {
     ...inCtx,
+    // The public writes refuse an archived plan (ADR 017 section 4.1); the `...In` variants above
+    // do not, because they also serve closing a practice session that was open at archive time.
     addLog: (userId: string, planId: string, taskId: string, input: LogBody) =>
-      run(userId, (ctx) => inCtx.addLogIn(ctx, userId, planId, taskId, input)),
+      run(userId, async (ctx) => {
+        await requireWritablePlan(ctx, userId, planId, 'shared');
+        return inCtx.addLogIn(ctx, userId, planId, taskId, input);
+      }),
     completeTask: (userId: string, planId: string, taskId: string) =>
-      run(userId, (ctx) => inCtx.completeTaskIn(ctx, userId, planId, taskId)),
+      run(userId, async (ctx) => {
+        await requireWritablePlan(ctx, userId, planId, 'shared');
+        return inCtx.completeTaskIn(ctx, userId, planId, taskId);
+      }),
     listTasks: (userId: string, planId: string) =>
       run(userId, async (ctx) => {
         await requirePlan(ctx, userId, planId);
@@ -351,7 +355,7 @@ export function createTaskService(db: Database, now: () => Date = () => new Date
     patchTask: (userId: string, planId: string, taskId: string, patch: PatchTaskBody) =>
       run(userId, async (ctx) => {
         // The plan lock serializes edits of one plan, so two edits cannot close a loop together.
-        await requirePlan(ctx, userId, planId, true);
+        await requireWritablePlan(ctx, userId, planId);
         const current = toTaskView(await lockTask(ctx, userId, planId, taskId));
 
         const all = await ctx.client.query<{ id: string; depends_on: string[] }>(
@@ -408,7 +412,7 @@ export function createTaskService(db: Database, now: () => Date = () => new Date
      */
     deleteTask: (userId: string, planId: string, taskId: string, removeDependencies: boolean) =>
       run(userId, async (ctx) => {
-        await requirePlan(ctx, userId, planId, true);
+        await requireWritablePlan(ctx, userId, planId);
         await lockTask(ctx, userId, planId, taskId);
         const { rows: dependents } = await ctx.client.query<{ id: string; title: string }>(
           `select id, title from ${ctx.schema}.tasks
@@ -447,6 +451,7 @@ export function createTaskService(db: Database, now: () => Date = () => new Date
     /** Back to in_progress when hours were logged, otherwise pending. Idempotent. */
     reopenTask: (userId: string, planId: string, taskId: string) =>
       run(userId, async (ctx) => {
+        await requireWritablePlan(ctx, userId, planId, 'shared');
         const before = await lockTask(ctx, userId, planId, taskId);
         if (before.status !== 'done' && before.status !== 'skipped') return toTaskView(before);
         const { rows } = await ctx.client.query<TaskRow>(
@@ -462,6 +467,7 @@ export function createTaskService(db: Database, now: () => Date = () => new Date
     /** Idempotent. A done task has to be reopened first, so a finished task is not skipped by mistake. */
     skipTask: (userId: string, planId: string, taskId: string) =>
       run(userId, async (ctx) => {
+        await requireWritablePlan(ctx, userId, planId, 'shared');
         const before = await lockTask(ctx, userId, planId, taskId);
         if (before.status === 'skipped') return toTaskView(before);
         if (before.status === 'done') {

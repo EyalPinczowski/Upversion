@@ -257,7 +257,7 @@ describe('Change my CV: the tailor link', () => {
               dayOverview: { used: 0, cap: 0 },
               cvTailor: { used: 0, cap: 3 },
             },
-            features: { cvTailor: true },
+            features: { cvTailor: true, planBuilder: false },
             avoidedToday: 0,
             providers: [],
           }),

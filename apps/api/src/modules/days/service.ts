@@ -11,6 +11,7 @@ import {
 import type { Database, UserContext } from '../../db/database';
 import { HttpError } from '../../errors';
 import type { PlanDetail } from '../plans/schemas';
+import { requireWritablePlan } from '../plans/guard';
 import * as plansRepo from '../plans/repository';
 import { loadCalendarInputs, withDayOffs, type CalendarInputs } from '../calendar/inputs';
 import * as repo from './repository';
@@ -267,6 +268,7 @@ export function createDaysService(db: Database, now: () => Date = () => new Date
     /** Idempotent. `created` is false when the day had been started before. */
     start: (userId: string, planId: string, date: string) =>
       db.withUser(userId, async (ctx) => {
+        await requireWritablePlan(ctx, userId, planId);
         const c = await load(ctx, userId, planId);
         requireActionable(c, date, 'started');
         const created = await repo.insertSession(ctx, userId, planId, date);
@@ -280,6 +282,7 @@ export function createDaysService(db: Database, now: () => Date = () => new Date
      */
     end: (userId: string, planId: string, date: string) =>
       db.withUser(userId, async (ctx) => {
+        await requireWritablePlan(ctx, userId, planId);
         const c = await load(ctx, userId, planId);
         requireActionable(c, date, 'ended');
         // Earlier days first, so the day being ended is planned with them frozen. The lock also

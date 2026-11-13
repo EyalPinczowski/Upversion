@@ -40,10 +40,15 @@ describe.skipIf(!dbAvailable)('terms and privacy must be accepted (real Postgres
     testDb = await prepareDatabase();
     keys = await makeTestKeys();
     db = createDatabase({ connectionString: testDb.appUrl('rnd'), appEnv: 'rnd' });
-    app = buildApp(testConfig({ appEnv: 'rnd', rateLimitPerMinute: 100_000 }), {
-      verifier: createSupabaseVerifier({ issuer: ISSUER, keys: keys.keys }),
-      db,
-    });
+    const base = testConfig({ appEnv: 'rnd', rateLimitPerMinute: 100_000 });
+    // Flag-gated routes are switched on, so the route table below includes the plan builder.
+    app = buildApp(
+      { ...base, features: { ...base.features, planBuilder: true } },
+      {
+        verifier: createSupabaseVerifier({ issuer: ISSUER, keys: keys.keys }),
+        db,
+      },
+    );
     await app.ready();
     // Every operation the API documents as needing a bearer token, from the real route table, so
     // a route added to any module later is covered without touching this test.
