@@ -1,0 +1,20 @@
+{
+  // Cron worker for the scheduled calendar sync (docs/calendar-cron.md). A separate Worker from the
+  // web app (root wrangler.jsonc, name "upversion-web"): deploy it from this folder only.
+  // "name" must equal the Worker name in the Cloudflare dashboard. The R&D worker is this file as is;
+  // the operational one is a later, separate decision (owner approval) and needs its own name.
+  "name": "upversion-cron-rnd",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-31",
+  // No public URL: the worker only runs on its schedule.
+  "workers_dev": false,
+  "preview_urls": false,
+  // API_BASE_URL (plain variable) and CALENDAR_CRON_SECRET (secret) are set in the Cloudflare
+  // dashboard, not here. Without keep_vars a deploy would remove variables that are not in this file.
+  // If API_BASE_URL is missing the run fails with outcome "misconfigured" in the log.
+  "keep_vars": true,
+  "triggers": {
+    // Every 15 minutes, UTC. Best effort: Cloudflare may start a run a little late.
+    "crons": ["*/15 * * * *"],
+  },
+}

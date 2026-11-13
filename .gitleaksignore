@@ -5,3 +5,10 @@ a08bb18fe1f25d3d206ff183aed11fabf6f7e7aa:apps/api/test/idempotency.test.ts:gener
 # False positive: a dummy key literal in a provider test, not a credential. The test now builds it at
 # runtime; this exact finding stays in the pull request's history.
 bf612dfe7f2d1f717d3eceaa3e99b7694c9cd453:apps/api/test/ai-providers.test.ts:generic-api-key:18
+
+# False positive: test fixture. A made-up cron secret literal in tests of the scheduled calendar sync,
+# not a credential. The tests now build it at runtime; these exact findings stay in the history of
+# the pull request (commit a082690).
+a08269047612834ea9823d84dea41fb321b14852:apps/api/test/calendar-cron.test.ts:generic-api-key:14
+a08269047612834ea9823d84dea41fb321b14852:apps/api/test/calendar-cron-auth.test.ts:generic-api-key:20
+a08269047612834ea9823d84dea41fb321b14852:apps/cron/test/sync-due.test.ts:generic-api-key:5

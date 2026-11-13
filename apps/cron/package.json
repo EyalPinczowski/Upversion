@@ -1,0 +1,11 @@
+{
+  "name": "@upversion/cron",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Cloudflare cron worker that asks the API to sync due calendars every 15 minutes (docs/calendar-cron.md).",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  }
+}

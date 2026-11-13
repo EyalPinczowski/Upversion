@@ -374,6 +374,7 @@ describe.skipIf(!dbAvailable)(
           status: 'connected',
           lastSyncedAt: null,
           lastErrorCode: null,
+          autoSync: true,
           sources: [
             { calendarId: PRIMARY, name: 'Personal', blocksTime: true },
             { calendarId: 'work@example.com', name: 'Work', blocksTime: false },
@@ -608,6 +609,7 @@ describe.skipIf(!dbAvailable)(
           status: 'disconnected',
           lastSyncedAt: null,
           lastErrorCode: null,
+          autoSync: true,
           sources: [],
         });
       });
@@ -623,6 +625,7 @@ describe.skipIf(!dbAvailable)(
           expect(body).not.toContain(secret);
         }
         expect(Object.keys(res.json()).sort()).toEqual([
+          'autoSync',
           'lastErrorCode',
           'lastSyncedAt',
           'sources',

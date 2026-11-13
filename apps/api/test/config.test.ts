@@ -25,7 +25,7 @@ describe('loadConfig defaults', () => {
         profileSetup: false,
         cvTailor: false,
       },
-      calendar: { enabled: false, tokenKeys: [], google: null },
+      calendar: { enabled: false, tokenKeys: [], google: null, cron: null },
       ai: {
         allowPaid: false,
         paidMonthlyCapUsd: null,

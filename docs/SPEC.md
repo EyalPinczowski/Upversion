@@ -188,7 +188,7 @@ The app never jumps straight to courses. It first runs a short guided interview 
 
 **The course catalog:**
 - A curated list of verified learning resources, stored in the database and editable in the app. Each entry: title, provider, URL, skills taught (tags), level, estimated hours, cost, certificate type (`none` / `completion` / `official exam`), how recognized the certificate is (`low` / `medium` / `high`), prerequisites, format, language.
-- **Seed data is provided** in `data/catalog/` (researched separately): 121 items across 27 roles and 59 skills, with `catalog.json`, `roles.json`, `skills.json`, `questions.json` (the guided intake), `documents.jsonl` (ready to embed), `schema.sql` (pgvector + keyword search + `match_catalog()` with budget filters) and `seed.sql`. Read its README first – it marks which URLs and prices are verified. Unverified entries are shown with a "needs check" badge until the link checker confirms them.
+- **Seed data is provided** in `data/catalog/` (researched separately): 178 items across 27 roles and 59 skills, with `catalog.json`, `roles.json`, `skills.json`, `questions.json` (the guided intake), `documents.jsonl` (ready to embed), `schema.sql` (pgvector + keyword search + `match_catalog()` with budget filters) and `seed.sql`. Read its README first – it marks which URLs and prices are verified. Unverified entries are shown with a "needs check" badge until the link checker confirms them.
 - **Retrieval (RAG):** embed `documents.jsonl` with a free open model run locally (384 dimensions, e.g. all-MiniLM-L6-v2 via transformers.js – no paid API), store in `rag_documents`, and retrieve with hybrid search (vector + keyword + exact skill match). The LLM only sees retrieved items.
 - **Link checker:** a scheduled GitHub Action checks catalog URLs weekly and flags broken ones in the app.
 - I can add entries manually at any time, including from the "Unverified" suggestions above.
@@ -349,7 +349,7 @@ Calendar scopes are "sensitive". While a Google OAuth app is in **Testing** stat
 - **Fail loudly, never silently:** if a token is ever rejected (`invalid_grant`), the app shows a "Reconnect calendar" banner with one-tap reconnection, and keeps working on its own data in the meantime. The schedule never depends on the calendar being reachable.
 - Refresh tokens are stored encrypted in the backend only.
 
-**Sync:** on every app open, via a "Sync now" button, and after every reschedule. A new event that conflicts with a study block → the block moves, and I see what changed in the summary.
+**Sync:** on every app open, via a "Sync now" button, and after every reschedule. Optionally also every 15 minutes while the app is closed, by a Cloudflare cron trigger that calls a protected API endpoint (off unless the owner enables it; per-user switch `auto_sync`; see `docs/calendar-cron.md`). A new event that conflicts with a study block → the block moves, and I see what changed in the summary.
 
 ### 3.9 Course and certificate library
 - All courses and certificates: provider, link, cost, status, date earned.

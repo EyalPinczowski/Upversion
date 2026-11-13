@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 // The fictional demo plan (spec section 7). Read via a relative JSON import (resolveJsonModule).
 import demoPlanJson from '../../../data/sample-plans/demo-plan.json';
@@ -47,6 +49,57 @@ describe('demo sample plan', () => {
     }
   });
 
+  it('makes no link or price claim about a catalog item that the catalog does not back', () => {
+    const catalog = JSON.parse(
+      readFileSync(
+        fileURLToPath(new URL('../../../data/catalog/catalog.json', import.meta.url)),
+        'utf8',
+      ),
+    ) as {
+      items: {
+        id: string;
+        url: string | null;
+        url_verified: boolean;
+        price: number | null;
+        price_verified: boolean;
+      }[];
+    };
+    const byId = new Map(catalog.items.map((i) => [i.id, i]));
+    for (const t of plan.tasks) {
+      if (!t.externalRef?.startsWith('catalog:')) continue;
+      const item = byId.get(t.externalRef.slice('catalog:'.length));
+      expect(item, `${t.id} refers to a catalog item`).toBeDefined();
+      if (!item) continue;
+      const notes = t.notes ?? '';
+      // Practice templates have no catalog link or price to claim.
+      if (item.url === null) {
+        expect(t.url, `${t.id} has no catalog link`).toBeUndefined();
+        continue;
+      }
+      if (item.url_verified) {
+        expect(t.url, `${t.id} url`).toBe(item.url);
+        expect(notes, `${t.id} link note`).not.toMatch(/link not yet verified/i);
+      } else {
+        expect(t.url, `${t.id} unverified link`).toBeUndefined();
+        expect(notes, `${t.id} link note`).toMatch(/needs check: link/i);
+      }
+      if (!item.price_verified) {
+        const flag = item.price === null ? /price varies/i : /needs check: price/i;
+        expect(notes, `${t.id} price note`).toMatch(flag);
+      }
+      // Any amount in the notes ("75 USD", "$75", "USD 1,200") must be the catalog price.
+      const amounts = [
+        ...notes.matchAll(
+          /(\d[\d,]*(?:\.\d+)?)\s*USD|USD\s*(\d[\d,]*(?:\.\d+)?)|\$\s*(\d[\d,]*(?:\.\d+)?)/gi,
+        ),
+      ];
+      for (const m of amounts) {
+        const amount = Number((m[1] ?? m[2] ?? m[3] ?? '').replace(/,/g, ''));
+        expect(amount, `${t.id} price amount`).toBe(item.price);
+      }
+    }
+  });
+
   it('marks a lesson link verified only when it is an https link', () => {
     const lessons = plan.tasks.flatMap((t) => t.lessons.map((l) => ({ task: t, lesson: l })));
     expect(lessons.length).toBeGreaterThan(0);
@@ -59,10 +112,10 @@ describe('demo sample plan', () => {
     }
   });
 
-  it('keeps a course without a verified lesson link free of lessons', () => {
+  it('keeps a course without verified lesson links free of lessons', () => {
     const excel = plan.tasks.find((t) => t.id === 'excel')!;
     expect(excel.lessons).toEqual([]);
-    expect(excel.url).toBeUndefined();
+    expect(excel.url).toBe('https://www.coursera.org/specializations/excel');
     expect(excel.notes ?? '').toMatch(/needs check/i);
   });
 
