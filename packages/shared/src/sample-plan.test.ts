@@ -71,18 +71,31 @@ describe('demo sample plan', () => {
       expect(item, `${t.id} refers to a catalog item`).toBeDefined();
       if (!item) continue;
       const notes = t.notes ?? '';
-      // PL-300 is url_verified in the catalog: its task carries the catalog url and no "not verified" note.
-      // (Other demo tasks have the same stale note; ADR 017 leaves them for a later pass.)
-      if (t.id === 'pl300-exam') {
-        expect(item.url_verified).toBe(true);
-        expect(t.url).toBe(item.url);
-        expect(notes).not.toMatch(/link not yet verified/i);
+      // Practice templates have no catalog link or price to claim.
+      if (item.url === null) {
+        expect(t.url, `${t.id} has no catalog link`).toBeUndefined();
+        continue;
       }
-      // A "per catalog: N USD" price only for a verified price, and it must equal the catalog price.
-      const fee = /per catalog: (\d+(?:\.\d+)?) USD/i.exec(notes);
-      if (fee) {
-        expect(item.price_verified, `${t.id} price note`).toBe(true);
-        expect(Number(fee[1]), `${t.id} price`).toBe(item.price);
+      if (item.url_verified) {
+        expect(t.url, `${t.id} url`).toBe(item.url);
+        expect(notes, `${t.id} link note`).not.toMatch(/link not yet verified/i);
+      } else {
+        expect(t.url, `${t.id} unverified link`).toBeUndefined();
+        expect(notes, `${t.id} link note`).toMatch(/needs check: link/i);
+      }
+      if (!item.price_verified) {
+        const flag = item.price === null ? /price varies/i : /needs check: price/i;
+        expect(notes, `${t.id} price note`).toMatch(flag);
+      }
+      // Any amount in the notes ("75 USD", "$75", "USD 1,200") must be the catalog price.
+      const amounts = [
+        ...notes.matchAll(
+          /(\d[\d,]*(?:\.\d+)?)\s*USD|USD\s*(\d[\d,]*(?:\.\d+)?)|\$\s*(\d[\d,]*(?:\.\d+)?)/gi,
+        ),
+      ];
+      for (const m of amounts) {
+        const amount = Number((m[1] ?? m[2] ?? m[3] ?? '').replace(/,/g, ''));
+        expect(amount, `${t.id} price amount`).toBe(item.price);
       }
     }
   });
@@ -99,10 +112,10 @@ describe('demo sample plan', () => {
     }
   });
 
-  it('keeps a course without a verified lesson link free of lessons', () => {
+  it('keeps a course without verified lesson links free of lessons', () => {
     const excel = plan.tasks.find((t) => t.id === 'excel')!;
     expect(excel.lessons).toEqual([]);
-    expect(excel.url).toBeUndefined();
+    expect(excel.url).toBe('https://www.coursera.org/specializations/excel');
     expect(excel.notes ?? '').toMatch(/needs check/i);
   });
 

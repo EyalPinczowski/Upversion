@@ -55,7 +55,8 @@
       "provider": "SQLBolt",
       "externalRef": "catalog:sqlbolt",
       "source": "import",
-      "notes": "Needs check: link not yet verified; confirm it on the provider's site before relying on it. Needs check: price not verified.",
+      "url": "https://sqlbolt.com/",
+      "notes": "Needs check: price not verified.",
       "lessons": [
         {
           "title": "SQL Lesson 1: SELECT queries 101",
@@ -74,7 +75,8 @@
       "provider": "HackerRank",
       "externalRef": "catalog:hackerrank-sql-basic",
       "source": "import",
-      "notes": "Needs check: link not yet verified; confirm it on the provider's site before relying on it.",
+      "url": "https://www.hackerrank.com/skills-verification/sql_basic",
+      "notes": "Needs check: price not verified.",
       "splittable": false,
       "isCertificate": true,
       "certificateName": "HackerRank SQL (Basic) skills certificate"
@@ -110,7 +112,8 @@
       "provider": "HackerRank",
       "externalRef": "catalog:hackerrank-sql-intermediate",
       "source": "import",
-      "notes": "Needs check: link not yet verified; confirm it on the provider's site before relying on it.",
+      "url": "https://www.hackerrank.com/skills-verification/sql_intermediate",
+      "notes": "Needs check: price not verified.",
       "splittable": false,
       "isCertificate": true,
       "certificateName": "HackerRank SQL (Intermediate) skills certificate"
@@ -198,7 +201,8 @@
       "provider": "Macquarie University / Coursera",
       "externalRef": "catalog:excel-skills-for-business",
       "source": "import",
-      "notes": "Needs check: link not yet verified; confirm it on the provider's site before relying on it. Subscription (catalog: 59 USD per month); cost depends on months used.",
+      "url": "https://www.coursera.org/specializations/excel",
+      "notes": "Subscription (catalog: 59 USD per month); cost depends on months used. Needs check: price not verified.",
       "isCertificate": true,
       "certificateName": "Excel Skills for Business Specialization certificate"
     },
