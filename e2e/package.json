@@ -14,9 +14,9 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
-    "@playwright/test": "1.63.0",
+    "@playwright/test": "1.65.0",
     "@types/pg": "^8.23.1",
-    "jose": "^6.2.14",
-    "playwright-core": "1.63.0"
+    "jose": "^6.2.17",
+    "playwright-core": "1.65.0"
   }
 }
