@@ -32,6 +32,8 @@ const BLOCKING_WARNINGS: ReadonlySet<ScheduleWarning['kind']> = new Set([
   'anchor_at_risk',
   'anchor_in_past',
   'dependency_cycle',
+  // Two fixed blocks (anchored exams) on top of each other cannot both happen.
+  'fixed_overlap',
 ]);
 
 export interface FitRun {
@@ -110,7 +112,15 @@ export function fitRoots(ctx: BuildContext, compose: Compose, roots: Root[]): Fi
   let runs = 1;
   const droppedForTime: string[] = [];
   while (!run.fits && runs < MAX_FIT_RUNS && ctx.engineRuns < MAX_TOTAL_ENGINE_RUNS) {
-    const id = nextToDrop(draft, true);
+    const roots = current;
+    const snapshot = draft;
+    // Only an item whose whole drop (itself and everything that needs it) is optional may go: a
+    // core item that needs an optional-marked prerequisite is never trimmed through it.
+    const id = nextToDrop(draft, true, (candidate) =>
+      droppedBy(ctx, roots, candidate).every(
+        (r) => snapshot.resolved.byId.get(r)?.tier === 'optional',
+      ),
+    );
     if (!id) break;
     droppedForTime.push(...droppedBy(ctx, current, id));
     current = rootsWithout(ctx, current, id);

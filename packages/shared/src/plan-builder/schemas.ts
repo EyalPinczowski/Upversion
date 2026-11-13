@@ -217,6 +217,11 @@ export const CostReportSchema = z.object({
    * as one month, because there is no schedule to count months from.
    */
   assumedOneMonth: z.array(z.string()),
+  /**
+   * True when the plan does not fit before the deadline: the cost counts only what is scheduled up
+   * to the deadline, so subscriptions (and the total) may be higher once the plan runs longer.
+   */
+  mayBeHigher: z.boolean(),
   /** Items whose price is unknown ("+ N prices to check"). */
   pricesToCheck: z.number().int(),
   lines: z.array(CostLineSchema),
@@ -262,6 +267,7 @@ export const FitOptionsSchema = z.object({
 export const BuildWarningSchema = z.object({
   code: z.enum([
     'subscription_months_assumed',
+    'cost_may_be_higher',
     'thin_role',
     'no_free_items',
     'catalog_gap',

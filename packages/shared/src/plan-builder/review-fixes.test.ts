@@ -84,7 +84,8 @@ describe('B1: far deadlines', () => {
     const compose = composeFor(ctx);
     const outcome = fitRoots(ctx, compose, roots);
     fitOptions(ctx, compose, outcome);
-    expect(ctx.engineRuns).toBeLessThanOrEqual(MAX_TOTAL_ENGINE_RUNS + 10);
+    expect(ctx.engineRuns).toBeGreaterThan(1);
+    expect(ctx.engineRuns).toBeLessThanOrEqual(40);
 
     // Once the budget of runs is used up, the trim loop stops after its first run.
     const used = createContext(

@@ -165,6 +165,7 @@ export function computeCost(members: readonly Member[], span: SpanOf): CostRepor
     estimated,
     unverifiedPriceCount,
     assumedOneMonth: assumedOneMonth.sort(),
+    mayBeHigher: false,
     pricesToCheck,
     lines,
     subscriptionMonths,

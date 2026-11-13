@@ -12,7 +12,8 @@ export type BuildRequestIssueCode =
   | 'not_a_certificate'
   | 'exam_date_too_late'
   | 'exam_date_out_of_range'
-  | 'deadline_too_far';
+  | 'deadline_too_far'
+  | 'exam_dates_overlap';
 
 export interface BuildRequestIssue {
   code: BuildRequestIssueCode;
@@ -120,6 +121,33 @@ export function validateBuildRequest(
         message: `The ${e.catalogId} exam must end by 23:59`,
         id: e.catalogId,
       });
+    }
+  }
+  // Two exams cannot happen at the same time (each takes its exam block from its start time).
+  const slots = request.examDates.flatMap((e) => {
+    const item = index.byId.get(e.catalogId);
+    if (!item || item.type !== 'cert_exam') return [];
+    const start = parseTime(e.start);
+    return [
+      {
+        id: e.catalogId,
+        date: e.date,
+        start,
+        end: start + hoursToMinutes(examBlockHours(item.est_hours)),
+      },
+    ];
+  });
+  for (let i = 0; i < slots.length; i++) {
+    for (let j = i + 1; j < slots.length; j++) {
+      const a = slots[i]!;
+      const b = slots[j]!;
+      if (a.date === b.date && a.start < b.end && b.start < a.end) {
+        issues.push({
+          code: 'exam_dates_overlap',
+          message: `The ${a.id} and ${b.id} exams overlap on ${a.date}`,
+          id: b.id,
+        });
+      }
     }
   }
   if (compareDates(request.deadline, request.startDate) <= 0) {

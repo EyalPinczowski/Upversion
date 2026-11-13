@@ -251,7 +251,7 @@ export function buildPlan(input: BuildInputShape, catalog: BuildCatalog): BuildD
       deadline: request.deadline,
       finishDate: fits ? final.run.finishDate : (options?.finishOn.date ?? null),
       totalHours: round2(taskList.reduce((s, t) => s + t.estHours, 0)),
-      cost: limited.cost,
+      cost: fits ? limited.cost : { ...limited.cost, mayBeHigher: true },
       skillsAsked: targets.length,
       skillsCovered: [...coveredFinal].sort(),
       skillsAlreadyCovered: targets
@@ -328,6 +328,13 @@ function buildWarnings(
     out.push({
       code: 'subscription_months_assumed',
       message: `A subscription that is not scheduled is counted as one month (${assumedOneMonth.join(', ')}).`,
+    });
+  }
+  if (!fits) {
+    out.push({
+      code: 'cost_may_be_higher',
+      message:
+        'The cost covers only what fits before the deadline; subscriptions may run longer and cost more.',
     });
   }
   if (!fits) {
