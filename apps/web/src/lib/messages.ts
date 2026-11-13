@@ -10,6 +10,9 @@ export function describeError(error: unknown, whenRefused: string): string {
     if (error.kind !== 'http') {
       return 'Can’t reach the server. Nothing was saved. Check your connection and try again.';
     }
+    if (error.status === 409 && error.code === 'plan_archived') {
+      return 'This plan is archived (read-only), so nothing can be changed. Restore it from the Plan page to make changes.';
+    }
     if (error.status === 422 || error.status === 409 || error.status === 413) {
       return error.message;
     }

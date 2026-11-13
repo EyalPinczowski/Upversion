@@ -10,9 +10,18 @@ export function PracticeSettings() {
     >
       <h3 id="practice-heading">Practice</h3>
       <PlanGate
+        banner={false}
         empty={<p className="text-muted">Import a plan from Today to add a job description.</p>}
       >
-        {(plan) => <JobDescriptionField key={plan.id} planId={plan.id} />}
+        {(plan) =>
+          plan.status === 'archived' ? (
+            <p className="text-muted">
+              This plan is archived (read-only), so its job description can’t be changed.
+            </p>
+          ) : (
+            <JobDescriptionField key={plan.id} planId={plan.id} />
+          )
+        }
       </PlanGate>
     </section>
   );

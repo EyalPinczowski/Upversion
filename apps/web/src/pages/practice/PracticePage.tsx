@@ -22,6 +22,7 @@ import { QueryView } from '../../components/QueryView';
 import { TaskTypeChip } from '../../components/TaskChips';
 import { Button, ErrorText, linkClass } from '../../components/ui';
 import { describeError, newId } from '../../lib/messages';
+import { useReadOnlyPlan } from '../../plan/context';
 import { PlanGate } from '../../plan/PlanGate';
 import { isSessionId, readStoredSession, writeStoredSession } from './session-store';
 import { formatMinutes } from '../briefing/day-utils';
@@ -70,6 +71,7 @@ function StartPanel({
   notice: string | null;
   onStarted: (sessionId: string) => void;
 }) {
+  const readOnly = useReadOnlyPlan();
   const start = useStartSession(planId, task.id);
   const queryClient = useQueryClient();
   const usage = useAiUsage();
@@ -109,6 +111,16 @@ function StartPanel({
   }
 
   const planned = Math.round(task.estHours * 60);
+  if (readOnly) {
+    return (
+      <Panel>
+        <p className="font-bold">
+          This plan is archived (read-only), so a new practice can’t be started. Restore the plan to
+          practise.
+        </p>
+      </Panel>
+    );
+  }
   return (
     <div className="space-y-4">
       {notice ? <p className="text-muted">{notice}</p> : null}
@@ -185,6 +197,7 @@ function ActiveSession({
   onFinished: (result: FinishedSession) => void;
   onAbandoned: () => void;
 }) {
+  const readOnly = useReadOnlyPlan();
   const { session } = detail;
   const external = session.channel === 'external';
   const inApp = session.channel === 'in_app';
@@ -281,16 +294,18 @@ function ActiveSession({
               {(data) => <PromptPanel prompt={data} />}
             </QueryView>
           </Panel>
-          <Panel>
-            <details>
-              <summary className="min-h-11 cursor-pointer py-2 font-bold">
-                About the role (job description)
-              </summary>
-              <div className="pt-3">
-                <JobDescriptionField planId={planId} />
-              </div>
-            </details>
-          </Panel>
+          {readOnly ? null : (
+            <Panel>
+              <details>
+                <summary className="min-h-11 cursor-pointer py-2 font-bold">
+                  About the role (job description)
+                </summary>
+                <div className="pt-3">
+                  <JobDescriptionField planId={planId} />
+                </div>
+              </details>
+            </Panel>
+          )}
           <Panel>
             <PasteFeedback onFinish={open} />
           </Panel>

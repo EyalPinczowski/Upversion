@@ -3,6 +3,7 @@ import { isApiError } from '../api/errors';
 import type { Task } from '../api/client';
 import { useDeleteTask } from '../api/hooks';
 import { describeError } from '../lib/messages';
+import { useReadOnlyPlan } from '../plan/context';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Button, ErrorText } from './ui';
 
@@ -27,6 +28,8 @@ export function DeleteTask({
   const [open, setOpen] = useState(false);
   const [dependents, setDependents] = useState<readonly Dependent[] | null>(null);
   const remove = useDeleteTask(planId, onDeleted);
+  // An archived plan is read-only: a task cannot be deleted from it.
+  const readOnly = useReadOnlyPlan();
 
   function close() {
     setOpen(false);
@@ -47,6 +50,7 @@ export function DeleteTask({
     );
   }
 
+  if (readOnly) return null;
   const blocked = dependents !== null;
   const failure =
     remove.error && !(isApiError(remove.error) && remove.error.code === 'has_dependents')
