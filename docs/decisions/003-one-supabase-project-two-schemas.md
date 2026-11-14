@@ -1,6 +1,6 @@
 # 003 – One Supabase project, two schemas, per-environment roles
 
-**Status:** Planned · built in Phase 0 and v0.1
+**Status:** Accepted · built in Phase 0 and v0.1
 
 ## Context
 There are two environments: Operational (`main`) and R&D (`rnd`). The free Supabase plan allows a limited number of projects (**needs check**), and the user accounts are shared. R&D must never be able to read or write Operational data, even through a bug.

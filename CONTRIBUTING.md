@@ -50,8 +50,8 @@ Set these in GitHub under **Settings → Rules → Rulesets**, which can allow a
 **Ruleset `rnd`** (target: branch `rnd`)
 - Restrict deletions and block force pushes.
 - Require a pull request before merging: 0 required approvals, allowed merge method **squash** only, require conversation resolution.
-- Require status checks: `shared`, `web`, `api`, `db`, `catalog-drift`, `gitleaks`, `analyze (javascript-typescript)`, `analyze (python)`. Don't require the branch to be up to date.
-- The `e2e` job (Playwright, see `e2e/README.md`) runs on every pull request but is **not required yet**. Add it to this list after it has been stable for a while.
+- Require status checks: `shared`, `web`, `api`, `db`, `catalog-drift`, `gitleaks`, `analyze (javascript-typescript)`, `analyze (python)`, `e2e`. Don't require the branch to be up to date.
+- `e2e` (Playwright, see `e2e/README.md`) is required since the owner's decision of 2026-11-14 (ADR 018). The maintainer adds it to the ruleset by hand.
 - No bypass actors.
 
 **Ruleset `main`** (target: branch `main`)

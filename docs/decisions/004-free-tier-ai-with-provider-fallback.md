@@ -1,6 +1,6 @@
 # 004 – Free-tier AI with provider fallback, and AI as an optional extra
 
-**Status:** Planned · built with practices (v0.3)
+**Status:** Accepted · built with practices (v0.3); the providers changed in ADR 013, and ADR 017 amends it for the plan builder
 
 ## Context
 The app must cost nothing. A Claude subscription cannot be used by an app (no API), and the free tiers of AI providers have daily limits that can change (**needs check** against each provider's own documentation, including whether a card is required).

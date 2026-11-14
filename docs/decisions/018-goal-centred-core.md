@@ -1,0 +1,86 @@
+# 018 – Goal-centred core: goal strip, Goal screen, a 4-screen first run
+
+**Status:** Accepted (owner, 2026-11-14) for the redesign as Phase B, the wording rule and the process changes; Q1–Q3 (section 9) are open, each with a recommended default. Read on `rnd` at `02bd0f9`. Input: an independent review of the whole project (2026-11-14); its claims used here were checked against the repo, and the rest is marked **needs check**.
+
+## 1. Context
+- The goal is "skills tied to what I want to become" (spec 1), but after "Start this plan" the app shows tasks and hours, not progress towards the role. The data exists: builder tasks carry `externalRef: "catalog:<id>"`, catalog items list `skills`, `roles.json` weights skills 1–5, `user_profiles.skills` holds starting levels with a `source`, practice sessions have a 0–10 `score`.
+- Gaps (checked): `skill_depth` is empty on 178 of 178 catalog items; imported plans (the owner's real plan) carry no per-task skill link; `plans.summary` (jsonb, written once at insert) already holds `skillIds` (plan file) and, for builder plans, `targetRoleIds` and `builderVersion`, but no starting levels.
+- First run today: welcome dialog and tour, 8 setup questions, CV, calendar, then the 5-step builder (ADR 015, 017): about 15 screens before any value.
+- Plan builder state: shared (#116) and API (#117) are on `rnd`; the web (PR #118) and the optional AI explanations (PR #119) are open. The owner considers #119 finished: it ships with `FEATURE_PLAN_BUILDER_AI` **off** by default.
+
+## 2. Decision (owner, 2026-11-14)
+1. **No release of `rnd` to `main` yet**; keep building. The reviewer recommended releasing first: `rnd` is 85 commits and 17 migrations (0002–0018) ahead of `main` (v0.0), so the first release grows riskier as Phase B lands. Recorded as a risk with a standing "release readiness" item (section 7); it does not override the owner.
+2. **Plan builder AI explanations** are done and ship off by default.
+3. **Phase B = this redesign.** Five destinations: **Today · Week · Plan · Goal · Settings**. A 4-screen first run replaces the welcome tour and the long setup. CV tailoring stays behind `FEATURE_CV_TAILOR` with no navigation entry.
+4. **Wording:** the number is **"plan coverage"** (share of this plan's work for the goal that is done), never "readiness" or "qualified".
+5. **Levels:** the app only **suggests** a level update; the user approves it (spec 12.2: suggestions, never self-marking).
+6. **Process:** three review tiers by risk, one-page ADRs with at most three owner questions, e2e required in CI (CLAUDE.md "Process").
+
+## 3. Target design
+**Core loop:** goal (roles + skills + starting levels) → gap → plan → Today → evidence (hours, finished items, practice scores, certificates) → Goal screen → suggested level update or plan change, approved by the user → back to the plan.
+
+**First run (after sign-in and Terms; questions come from `questions.json`, never hard-coded):**
+1. "What are you aiming for?" `target_role` (1–2), `target_skills`; optional job-post match in the browser (ADR 016).
+2. "Where are you now?" `skill_levels` for those skills only; link "Pre-fill from my CV" (in-browser import, ADR 015).
+3. "How much time and money?" `days_per_week`, `hours_per_day`, deadline (`timeframe`), `budget`.
+4. Draft plan (the builder's draft step, ADR 017 §1.5): fit, cost, skills covered, "Start this plan".
+Certificates and interview prep use the builder defaults and can be changed on step 4. Answers are saved to the profile; levels the user sets are saved with `source: 'manual'`.
+
+```
+TODAY                                          GOAL
++--------------------------------------------+ +----------------------------------------------+
+| Product Operations · ends 14 Feb   [Goal >]| | Product Operations       [Change] [Rebuild]  |
+| Plan coverage ████████░░░░ 41%             | | Plan coverage 41% · 38 of 92 h · 1 of 2 certs|
++--------------------------------------------+ +----------------------------------------------+
+| Today 3.0 h planned · 1.0 h done   [Start] | | Skill (weight)  Start  Evidence     Left     |
+| 09:00 SQL basics 3   1.5 h   builds: SQL   | | SQL (5)         Basic  12 of 15 h   1 item   |
+| 11:00 Stakeholder    1.0 h   builds: Comm. | |   practice avg 7.5 (3)  [Suggest: Comfortable]|
+| [Connect your calendar]  (card, dismiss)   | | Excel (5)       Comf.  already covered       |
+| 1 suggestion waiting  [Review] [End day]   | | 12 h not linked to a skill                   |
++--------------------------------------------+ | Practice score trend (was Practice history)  |
+                                               +----------------------------------------------+
+```
+First-run steps 1–3 are one question group per screen with "Step n of 4" and Back; step 4 is the existing draft view.
+
+**Data (no new table):**
+- **Goal on the plan:** a `goal` object `{ targetRoleIds, skillIds, startLevels: {skillId: 0..3} }`, ids and numbers only, written when a plan is created (builder or import). Default: inside the existing `plans.summary` (no migration); alternative: an additive `plans.goal jsonb` column (Q1).
+- **Plan file:** optional per-task `skillIds` (taxonomy ids, validated like the plan-level `skillIds`). `formatVersion` stays `1`; old files parse unchanged.
+- **`skillProgress(tasks, catalog, goal, practiceScores)`** in `packages/shared`: pure, no I/O. A task's skills are its `skillIds`, else its catalog item's `skills`; its hours split evenly across those skills that are in the goal (no `skill_depth` exists). Per skill: planned hours, done hours (capped at estimate), items left, practice average. Plan coverage = done ÷ planned hours over goal-linked tasks. Unlinked hours are reported, never hidden.
+- **Level suggestion:** derived by `skillProgress` under the rule of Q3; approving it writes one profile skill (`source: 'manual'`).
+
+## 4. Keep, park, remove
+- **Keep:** the engine, builder, daily loop, Week, Plan, briefing ("Start study day"), "Change my CV" (Settings > Profile), in-browser CV import (as step 2's pre-fill).
+- **Move:** the other setup questions (`current_status`, `education`, `tools_known`, `time_of_day`) to Settings > Profile as optional (`setup` flags in `questions.py`, then `build.py`); calendar connect to a dismissible card on Today after a plan starts (hidden when `FEATURE_CALENDAR` is off or connected); Practice history into Goal (`/practice-history` redirects to `/goal`).
+- **Park:** CV tailoring (flag, no navigation entry).
+- **Remove (B5):** the welcome dialog and tour (`components/welcome/`, issue #97), the old setup wizard pages once the first run is on in `rnd`.
+
+## 5. Phases (Sonnet builders, one worktree each, PRs into `rnd`; flag `FEATURE_GOAL_CORE`, default off)
+| Phase | Scope | Size | Tier | Exit criteria |
+|---|---|---|---|---|
+| B1 data + shared | `goal` shape and schema, per-task `skillIds` in `PlanFileSchema`, `skillProgress` + level-suggestion rule, property tests | M | 2 | Same input, same output; hours conserved; coverage in 0–100; a fixture plan's table shown to the owner before B4 |
+| B2 API | write `goal` on build and import (Q2), `GET /api/v1/plans/{id}/progress`, approve a level suggestion; OpenAPI and client regenerated | M | 1 if a migration (Q1) or the import archive path changes, else 2 | Route tests incl. another user's plan → 404; canary: `goal` holds ids and numbers only |
+| B3 web first run | 4 screens, answers and levels saved, redirect for users with no plan | M | 2 | e2e: sign-in to "Start this plan" in 4 screens; axe clean; 360 px |
+| B4 web Today + Goal | goal strip, "builds:" tags, calendar card, Goal screen, fifth nav item | M | 2 | e2e: log work, Goal shows it; "readiness" appears nowhere in copy |
+| B5 clean-up | remove tour and old setup, move questions to Settings, spec 3.0/3.1/8 edits | S | 3 | No dead routes; questions still from `questions.json`; drift check green |
+
+## 6. Tests and acceptance
+- Property tests for `skillProgress`; unit tests for the suggestion rule (never above level 2, never for a skill without evidence).
+- e2e (required): first run → "Start this plan"; plan builder draft → start (with #118); Goal after logging work; calendar connect and sync against a fake Google (B2/B4, Tier 1).
+- A plan without a goal (all existing plans) shows Today as now, with a "Set a goal" link; nothing breaks.
+
+## 7. Risks and needs check
+- **Release gap (owner chose to keep building).** Release readiness, kept in the roadmap: a CI job that applies all `rnd` migrations on top of `main`'s level, a release checklist of about ten lines, a smoke session on real services, a restore drill, and the privacy-policy truth pass. Not started until the owner asks.
+- Coverage as a vanity number: the B1 fixture table is shown to the owner first. Even split may mislead: compare with hand-set depth for one role before B4.
+- A shorter first run may give worse plans: diff builder drafts for five roles with and without the dropped answers.
+- **Needs check:** the builder's default window when `time_of_day` is unanswered; whether config can point the Google provider's base URLs (`google-provider.ts` takes them as parameters) at a fake only in the e2e stack; whether `e2e` is stable enough to require today (it runs on every PR, `CONTRIBUTING.md`); 50 of 178 links and 104 of 178 prices are unverified, so drafts stay honest but thin for some roles.
+
+## 8. Spec edits (applied in the PR that builds each part)
+Spec 3.0 Step 0 and "Multiple plans" (Q2), 3.1 (goal strip), 8 (screens: Goal; Practice history merged), 9 (new acceptance tests).
+
+## 9. Owner questions
+- **Q1 Where the goal is stored.** Default: a `goal` key in the existing `plans.summary` (no migration, already under RLS). Alternative: additive `plans.goal jsonb` (migration, Tier 1).
+- **Q2 One active plan for imports too.** Default: yes, "Import a plan file" archives the active plan after the same confirm as the builder (changes spec 3.0 and ADR 017 §4.1), so the goal strip and calendar never pick between plans.
+- **Q3 When to suggest a level update.** Default: when every task building that skill is done, suggest one level up (at most to level 2, "comfortable"; "could teach it" is never suggested); practice scores are shown as evidence but do not trigger it.
+
+## Consequences
+The Goal screen and goal strip make the stated goal visible with no AI and no new table. The first run shrinks from about 15 screens to 4 after sign-in. Phase B adds one flag and removes the tour and old setup at its end. The release risk grows until the owner releases.
