@@ -33,6 +33,11 @@ export function costLines(cost: Cost): string[] {
       `+ ${cost.pricesToCheck} ${cost.pricesToCheck === 1 ? 'price' : 'prices'} to check (not in the total).`,
     );
   }
+  if (cost.lines.some((l) => l.kind === 'subscription')) {
+    lines.push(
+      'Courses on the same subscription each show the whole subscription price. Do not add them up: the total counts a subscription once per month.',
+    );
+  }
   if (cost.mayBeHigher) {
     lines.push(
       'The total may be higher: this draft does not fit before your finish date, so subscriptions are counted only up to it.',
@@ -48,7 +53,8 @@ export function itemCostText(item: Item): string {
   if (cost.amount === null) return 'Price varies – check';
   const base = cost.kind === 'certificate' ? `Exam fee ${money(cost.amount)}` : money(cost.amount);
   if (cost.kind === 'subscription') {
-    return `Subscription, ${money(cost.amount)} per period${cost.months ? ` for ${cost.months} ${cost.months === 1 ? 'period' : 'periods'}` : ''}`;
+    const text = `Subscription, ${money(cost.amount)} per period${cost.months ? ` for ${cost.months} ${cost.months === 1 ? 'period' : 'periods'}` : ''}`;
+    return item.needsCheckPrice ? `${text} (price not checked)` : text;
   }
   return item.needsCheckPrice ? `${base} (price not checked)` : base;
 }

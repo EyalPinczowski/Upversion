@@ -513,6 +513,147 @@ describe('the draft step', () => {
     expect(callsTo(api, PREVIEW)).toHaveLength(2);
   });
 
+  describe('exam dates', () => {
+    const exam = item({
+      catalogId: 'sql-exam',
+      title: 'SQL exam',
+      kind: 'exam',
+      taskIds: ['x-sql-exam'],
+      isCertificate: true,
+      cost: { amount: 100, kind: 'certificate' },
+    });
+    const outOfRange = () =>
+      json(
+        {
+          error: {
+            code: 'unprocessable',
+            message: 'x',
+            requestId: 'r',
+            issues: [{ code: 'exam_date_out_of_range', id: 'sql-exam' }],
+          },
+        },
+        422,
+      );
+    /** Good until an exam date is in the request, then 422. */
+    const strict = (request: BuildRequestBody) =>
+      request.examDates?.length ? outOfRange() : json(draft({}, [exam]));
+
+    it('keeps the last draft and the exam date field on screen after a 422, and Clear exam dates recovers', async () => {
+      const api = open({ preview: (b) => strict(b) });
+      await toDraft();
+      await screen.findByText('SQL exam');
+      await user.type(screen.getByLabelText('Date of SQL exam'), '2030-01-01');
+      expect(await screen.findByText(/exam date is outside the plan’s dates/)).toBeVisible();
+      // Nothing vanished: the draft, the date field and its value are still there.
+      expect(screen.getByRole('heading', { name: 'SQL exam' })).toBeVisible();
+      expect(screen.getByLabelText('Date of SQL exam')).toHaveValue('2030-01-01');
+      expect(screen.getByRole('button', { name: 'Start this plan' })).toBeDisabled();
+      await user.click(screen.getByRole('button', { name: 'Clear exam dates' }));
+      await waitFor(() => expect(screen.queryByText(/outside the plan’s dates/)).toBeNull(), WAIT);
+      expect((await body(callsTo(api, PREVIEW).at(-1)!)).examDates).toEqual([]);
+      await waitFor(
+        () => expect(screen.getByRole('button', { name: 'Start this plan' })).toBeEnabled(),
+        WAIT,
+      );
+    });
+
+    it('limits the date field to the plan dates', async () => {
+      open({ preview: () => json(draft({}, [exam])) });
+      await toDraft();
+      const field = await screen.findByLabelText('Date of SQL exam');
+      expect(field).toHaveAttribute('min', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
+      expect(field).toHaveAttribute('max', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
+      expect(Number(field.getAttribute('max')!.replaceAll('-', ''))).toBeGreaterThan(
+        Number(field.getAttribute('min')!.replaceAll('-', '')),
+      );
+    });
+
+    it('drops the exam date when the exam is removed', async () => {
+      const api = open({ preview: () => json(draft({}, [exam])) });
+      await toDraft();
+      await screen.findByText('SQL exam');
+      await user.type(screen.getByLabelText('Date of SQL exam'), '2026-12-01');
+      await waitFor(() => expect(callsTo(api, PREVIEW).length).toBe(2), WAIT);
+      await user.click(screen.getByRole('button', { name: /Remove/ }));
+      await waitFor(() => expect(callsTo(api, PREVIEW).length).toBe(3), WAIT);
+      const sent = await body(callsTo(api, PREVIEW)[2]!);
+      expect(sent.exclude).toEqual(['sql-exam']);
+      expect(sent.examDates).toEqual([]);
+    });
+  });
+
+  it('marks an unchecked subscription price and warns not to add group prices up', async () => {
+    const base = draft({}, [
+      item({
+        catalogId: 'plus-a',
+        title: 'Plus course A',
+        taskIds: ['c-plus-a'],
+        cost: { amount: 59, kind: 'subscription', months: 2 },
+        needsCheckPrice: true,
+      }),
+    ]);
+    open({
+      preview: () =>
+        json({
+          ...base,
+          summary: {
+            ...base.summary,
+            cost: {
+              ...base.summary.cost,
+              total: 118,
+              estimated: true,
+              unverifiedPriceCount: 1,
+              lines: [
+                {
+                  catalogId: 'plus-a',
+                  kind: 'subscription',
+                  amount: 59,
+                  priceVerified: false,
+                  periods: 2,
+                },
+              ],
+            },
+          },
+        }),
+    });
+    await toDraft();
+    expect(
+      await screen.findByText(/Subscription, \$59 per period for 2 periods \(price not checked\)/),
+    ).toBeVisible();
+    expect(screen.getByText(/Do not add them up/)).toBeVisible();
+  });
+
+  it('says so, instead of sending a bad request, when more than 30 items would be left out', async () => {
+    const ids = Array.from({ length: 31 }, (_, n) => `drop-${n}`);
+    const api = open({
+      preview: () =>
+        json({
+          ...draft(),
+          fits: false,
+          options: {
+            ...fitOptions(),
+            essentials: { possible: true, droppedItemIds: ids, lostSkillIds: [] },
+          },
+        }),
+    });
+    await toDraft();
+    await user.click(await screen.findByRole('button', { name: 'Keep only the essentials' }));
+    expect(await screen.findByText(/at most 30 items/)).toBeVisible();
+    await new Promise((r) => setTimeout(r, 800));
+    expect(callsTo(api, PREVIEW)).toHaveLength(1);
+  });
+
+  it('Change my CV leads back to the builder, and says what is not kept', async () => {
+    open();
+    await chooseRole();
+    await next();
+    await stepHeading('Your skills');
+    await user.click(screen.getByRole('link', { name: 'Change my CV' }));
+    const back = await screen.findByRole('link', { name: 'Back to the plan builder' });
+    expect(back).toHaveAttribute('href', '/plan/new');
+    expect(screen.getByText(/is not kept/)).toBeVisible();
+  });
+
   it('has no axe violations on the draft step', async () => {
     open();
     await toDraft();
@@ -704,6 +845,59 @@ describe('starting the plan', () => {
     expect(a!.id).toMatch(UUID);
     expect(b!.id).toBe(a!.id);
     expect(b).toEqual(a);
+  });
+
+  it('a lost answer after the plan was created ends in that plan: no second try, no dialog about archiving it', async () => {
+    const api = open({
+      plans: [plan({ name: 'Old plan' })],
+      build: async (request) => {
+        const sent = await buildBody(request);
+        // The server created the plan and archived the old one, but the answer never arrived.
+        api.state.plans = [
+          plan({ id: sent.id, name: 'Operations plan' }),
+          plan({ name: 'Old plan', status: 'archived' }),
+        ];
+        throw new TypeError('network down');
+      },
+    });
+    await toDraft();
+    await screen.findByText('SQL for beginners');
+    await user.click(screen.getByRole('button', { name: 'Start this plan' }));
+    await user.click(await screen.findByRole('button', { name: 'Archive and start' }));
+    const sent = await buildBody(callsTo(api, BUILD)[0]!);
+    await waitFor(() => expect(window.localStorage.getItem('skillstack.plan')).toBe(sent.id), WAIT);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Plan' })).toBeVisible();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(callsTo(api, BUILD)).toHaveLength(1);
+  });
+
+  it('keeps the same id when the plans to archive changed between a lost answer and the retry', async () => {
+    let builds = 0;
+    const other = '99999999-9999-4999-8999-999999999999';
+    const api = open({
+      plans: [plan({ name: 'Old plan' })],
+      build: () => {
+        builds += 1;
+        if (builds === 1) {
+          // Lost answer; meanwhile the plan list is different (another plan is active now).
+          api.state.plans = [plan({ id: other, name: 'Imported meanwhile' })];
+          throw new TypeError('network down');
+        }
+        return json(plan({ id: NEW_PLAN_ID, name: 'Operations plan' }), 200);
+      },
+    });
+    await toDraft();
+    await screen.findByText('SQL for beginners');
+    await user.click(screen.getByRole('button', { name: 'Start this plan' }));
+    await user.click(await screen.findByRole('button', { name: 'Archive and start' }));
+    expect(await screen.findByText(/Can’t reach the server/)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Start this plan' }));
+    await user.click(await screen.findByRole('button', { name: 'Archive and start' }));
+    await waitFor(() => expect(callsTo(api, BUILD)).toHaveLength(2), WAIT);
+    const [a, b] = await Promise.all(callsTo(api, BUILD).map(buildBody));
+    expect(a!.replacesPlanIds).toEqual([OLD_PLAN_ID]);
+    expect(b!.replacesPlanIds).toEqual([other]);
+    expect(b!.id).toBe(a!.id);
   });
 
   it('keeps Start disabled while the draft is being updated', async () => {

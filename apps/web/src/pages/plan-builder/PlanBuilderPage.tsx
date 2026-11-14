@@ -7,6 +7,7 @@ import {
   PREVIEW_DEBOUNCE_MS,
   useBuildPlan,
   useBuildPreview,
+  useLastGood,
   useDebounced,
 } from '../../api/plan-builder-hooks';
 import { useProfile } from '../../api/profile-hooks';
@@ -104,6 +105,7 @@ function Builder({ profile }: { profile: ProfileView | null }) {
       ? 'Some earlier steps are unfinished. Go back and complete them.'
       : null;
   const draft = preview.data;
+  const lastGood = useLastGood(preview);
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -131,6 +133,7 @@ function Builder({ profile }: { profile: ProfileView | null }) {
             state={state}
             onChange={change}
             query={preview}
+            lastGood={lastGood}
             updating={updating}
             blocker={blocker}
           />
@@ -188,8 +191,10 @@ function StartPlan({
   const [dialog, setDialog] = useState<{ notice: string | null } | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const statusRef = useRef<HTMLDivElement>(null);
-  // One id per body: repeating the same body after a lost answer is safe (the server answers with
-  // the stored plan); a different body (a new draft, another list of plans) is a different plan.
+  // One id per draft: repeating the request after a lost answer is safe (the server answers with
+  // the stored plan). The key is the request and the draft hash only, like the server's own hash of
+  // the body: the list of plans to archive is not part of it, because it can change between the two
+  // tries (the lost first try may already have archived them).
   const attempt = useRef<{ key: string; id: string } | null>(null);
   const active = plans.filter((p) => p.status === 'active');
 
@@ -199,23 +204,24 @@ function StartPlan({
 
   function submit(replacesPlanIds: string[]) {
     if (!request || !draftHash) return;
-    const key = JSON.stringify({ request, draftHash, replacesPlanIds });
+    const key = JSON.stringify({ request, draftHash });
     if (attempt.current?.key !== key) attempt.current = { key, id: newId() };
+    const id = attempt.current.id;
     setProblem(null);
     build.mutate(
-      { id: attempt.current.id, request, draftHash, replacesPlanIds },
+      { id, request, draftHash, replacesPlanIds },
       {
         onSuccess: (plan) => {
           setDialog(null);
           attempt.current = null;
           onStarted(plan.id);
         },
-        onError: (error) => void onFailed(error),
+        onError: (error) => void onFailed(error, id),
       },
     );
   }
 
-  async function onFailed(error: unknown) {
+  async function onFailed(error: unknown, id: string) {
     if (isApiError(error) && error.kind === 'http' && error.status === 409) {
       if (error.code === 'active_plan_changed') {
         const fresh = await refetchPlans();
@@ -248,6 +254,18 @@ function StartPlan({
       }
     }
     setDialog(null);
+    if (isApiError(error) && error.kind !== 'http') {
+      // The answer may have been lost after the plan was created: look at the plan list. If the plan
+      // with this id is there, it was created, and that is the end of it (no second try, no dialog
+      // about archiving the plan that was just made).
+      const fresh = await refetchPlans();
+      if (fresh?.some((p) => p.id === id)) {
+        attempt.current = null;
+        setProblem(null);
+        onStarted(id);
+        return;
+      }
+    }
     setProblem(
       isApiError(error) && error.kind !== 'http'
         ? 'Can’t reach the server. If your plan was created it will show in your plan list. Press Start this plan again to retry; it will not be created twice.'

@@ -7,7 +7,7 @@ import { expectNoAxeViolations } from '../test/axe';
 import { apiError, fakeAuth, installApi, json, renderApp, SESSION } from '../test/helpers';
 import { callsTo, usageBody } from '../test/builder-fixtures';
 import { openTasks, PLAN_ID, planSummary } from '../test/plan-fixtures';
-import { practiceRoutes, TASK_ID } from '../test/practice-fixtures';
+import { practiceRoutes, SESSION_ID, sessionBody, TASK_ID } from '../test/practice-fixtures';
 
 const OTHER_ID = '77777777-7777-4777-8777-777777777777';
 const BANNER = /This plan is archived \(read-only\)\. You can look at it/;
@@ -84,13 +84,19 @@ describe('an archived plan is read-only', () => {
     renderApp({ auth: fakeAuth(SESSION), path: '/' });
     expect(await screen.findByText(BANNER)).toBeVisible();
     await screen.findByRole('heading', { name: 'Today’s blocks' });
+    // Wait for the day controls to have rendered (read-only: only the briefing link), so that
+    // "absent" is not just "not loaded yet".
+    const dayControls = await screen.findByRole('region', { name: 'Study day' });
+    expect(within(dayControls).queryByRole('button')).toBeNull();
+    expect(within(dayControls).getByRole('link')).toBeVisible();
     for (const name of [
       /Start study day/,
+      /End day/,
       /Log time/,
       /Mark done/,
       /^Skip/,
       /Reopen/,
-      /Work ahead|Add hours/,
+      /^Work ahead$/,
     ]) {
       expect(screen.queryByRole('button', { name })).toBeNull();
     }
@@ -102,6 +108,7 @@ describe('an archived plan is read-only', () => {
     installApi(dayRoutes(plansBody('active')));
     renderApp({ auth: fakeAuth(SESSION), path: '/' });
     expect(await screen.findByRole('button', { name: /Start study day/ })).toBeVisible();
+    expect(await screen.findByRole('button', { name: 'Work ahead' })).toBeVisible();
     expect(screen.getAllByRole('button', { name: /Log time/ }).length).toBeGreaterThan(0);
     expect(screen.queryByText(/This plan is archived/)).toBeNull();
   });
@@ -209,6 +216,61 @@ describe('an archived plan is read-only', () => {
     installApi(practiceRoutes(plansBody('active')));
     renderApp({ auth: fakeAuth(SESSION), path: `/practice/${TASK_ID}` });
     expect(await screen.findByRole('button', { name: 'Start practice' })).toBeVisible();
+  });
+
+  it('briefing: no Start study day button on an archived plan (active plan: it is there)', async () => {
+    installApi(dayRoutes(plansBody('active')));
+    renderApp({ auth: fakeAuth(SESSION), path: '/briefing/2026-11-10' });
+    expect(await screen.findByRole('button', { name: 'Start study day' })).toBeVisible();
+  });
+
+  it('briefing, archived', async () => {
+    installApi(dayRoutes(plansBody('archived')));
+    renderApp({ auth: fakeAuth(SESSION), path: '/briefing/2026-11-10' });
+    expect(await screen.findByText(BANNER)).toBeVisible();
+    await screen.findByRole('heading', { name: 'Day briefing' });
+    await screen.findByRole('heading', { name: 'Intro to SQL', level: 3 });
+    expect(screen.queryByRole('button', { name: /Start study day/ })).toBeNull();
+  });
+
+  const inAppSession = () => {
+    const base = `/api/v1/plans/${PLAN_ID}`;
+    window.localStorage.setItem(`skillstack.practice.${PLAN_ID}.${TASK_ID}`, SESSION_ID);
+    const detail = {
+      ...sessionBody({ channel: 'in_app' }),
+      messages: [
+        {
+          id: '1',
+          role: 'assistant',
+          content: 'Tell me about a project.',
+          createdAt: '2026-11-10T09:01:00.000Z',
+        },
+        {
+          id: '2',
+          role: 'user',
+          content: 'I built a report.',
+          createdAt: '2026-11-10T09:02:00.000Z',
+        },
+      ],
+    };
+    return { [`GET ${base}/practice/sessions/${SESSION_ID}`]: () => json(detail) };
+  };
+
+  it('practice chat, active: the answer box and Send are there', async () => {
+    installApi(practiceRoutes({ ...plansBody('active'), ...inAppSession() }));
+    renderApp({ auth: fakeAuth(SESSION), path: `/practice/${TASK_ID}` });
+    expect(await screen.findByLabelText('Your answer')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeVisible();
+  });
+
+  it('practice chat, archived: no answer box or Send, the conversation and feedback stay', async () => {
+    installApi(practiceRoutes({ ...plansBody('archived'), ...inAppSession() }));
+    renderApp({ auth: fakeAuth(SESSION), path: `/practice/${TASK_ID}` });
+    expect(await screen.findByText(/the chat can’t continue/)).toBeVisible();
+    expect(screen.getByText('Tell me about a project.')).toBeVisible();
+    expect(screen.queryByLabelText('Your answer')).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Send/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Get AI feedback' })).toBeEnabled();
   });
 
   it('a 409 plan_archived from the server is explained, not shown as a failure', async () => {

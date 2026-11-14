@@ -11,6 +11,18 @@ export function usePlanBuilderEnabled(): boolean {
   return usage.data?.features.planBuilder === true;
 }
 
+/**
+ * The last draft that was answered for the current choices, kept while a newer request is pending
+ * or has failed, so an error never takes the draft (and its controls) off the screen.
+ */
+export function useLastGood<T>(query: { data: T | undefined; isPlaceholderData: boolean }) {
+  const [good, setGood] = useState<T | undefined>(undefined);
+  if (query.data !== undefined && !query.isPlaceholderData && query.data !== good) {
+    setGood(query.data);
+  }
+  return good;
+}
+
 /** The value, but only after it has stayed the same for `ms` milliseconds. */
 export function useDebounced<T>(value: T, ms: number): T {
   const [settled, setSettled] = useState(value);

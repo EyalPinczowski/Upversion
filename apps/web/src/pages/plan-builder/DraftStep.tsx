@@ -1,5 +1,6 @@
 import type { UseQueryResult } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { MAX_CERTIFICATE_OPT_INS, MAX_ID_LIST } from '@upversion/shared';
+import { useState, type ReactNode } from 'react';
 import type { BuildDraft } from '../../api/client';
 import { AlertIcon, CheckIcon, ClockIcon } from '../../components/icons';
 import { Button, ErrorText, TextField } from '../../components/ui';
@@ -83,6 +84,8 @@ function ItemRow({ item, tasks, state, remove, setTier, setExamDate }: { item: I
             <TextField
               label={`Date of ${item.title}`}
               type="date"
+              min={state.startDate}
+              max={state.deadline}
               value={exam?.date ?? ''}
               onChange={(event) =>
                 setExamDate(item.catalogId, event.target.value, exam?.start ?? '09:00')
@@ -153,19 +156,23 @@ export function DraftStep({
   state,
   onChange,
   query,
+  lastGood,
   updating,
   blocker,
 }: {
   state: BuilderState;
   onChange: (patch: Partial<BuilderState>) => void;
   query: UseQueryResult<BuildDraft>;
+  /** The last draft that worked, shown (with its controls) while a newer one failed. */
+  lastGood: BuildDraft | undefined;
   /** A newer request is waiting to be sent or in flight: the draft shown may be out of date. */
   updating: boolean;
   /** Why the draft cannot be made yet (a step before it is unfinished). */
   blocker: string | null;
 }) {
+  const [limitNote, setLimitNote] = useState<string | null>(null);
   if (blocker) return <ErrorText>{blocker}</ErrorText>;
-  const draft = query.data;
+  const draft = query.data ?? lastGood;
   if (!draft) {
     if (query.isError) {
       return (
@@ -188,15 +195,42 @@ export function DraftStep({
   const tasks = new Map(draft.plan.tasks.map((t) => [t.id, t]));
   const { summary } = draft;
 
+  // The request holds at most MAX_ID_LIST ids in each list: say so instead of failing with a 400.
+  const addExcluded = (ids: string[], extra: Partial<BuilderState> = {}) => {
+    const next = [...new Set([...state.exclude, ...ids])];
+    if (next.length > MAX_ID_LIST) {
+      setLimitNote(
+        `You can leave out at most ${MAX_ID_LIST} items one by one. To drop more, go back and change the role, the skills or the budget.`,
+      );
+      return;
+    }
+    setLimitNote(null);
+    onChange({ exclude: next, ...extra });
+  };
+  // An exam date belongs to its exam: it goes when the exam goes.
+  const withoutExamDate = (catalogId: string) =>
+    state.examDates.filter((e) => e.catalogId !== catalogId);
   const remove = (item: Item) => {
     if (item.origin === 'opt_in') {
-      onChange({ certificateOptIns: state.certificateOptIns.filter((c) => c !== item.catalogId) });
-    } else if (!state.exclude.includes(item.catalogId)) {
-      onChange({ exclude: [...state.exclude, item.catalogId] });
+      onChange({
+        certificateOptIns: state.certificateOptIns.filter((c) => c !== item.catalogId),
+        examDates: withoutExamDate(item.catalogId),
+      });
+    } else {
+      addExcluded([item.catalogId], { examDates: withoutExamDate(item.catalogId) });
     }
   };
-  const setTier = (item: Item, tier: 'core' | 'optional') =>
+  const setTier = (item: Item, tier: 'core' | 'optional') => {
+    if (
+      state.priorityOverrides[item.catalogId] === undefined &&
+      Object.keys(state.priorityOverrides).length >= MAX_ID_LIST
+    ) {
+      setLimitNote(`You can change at most ${MAX_ID_LIST} items between core and optional.`);
+      return;
+    }
+    setLimitNote(null);
     onChange({ priorityOverrides: { ...state.priorityOverrides, [item.catalogId]: tier } });
+  };
   const setExamDate = (catalogId: string, date: string, start: string) => {
     const others = state.examDates.filter((e) => e.catalogId !== catalogId);
     onChange({ examDates: date ? [...others, { catalogId, date, start }] : others });
@@ -214,7 +248,21 @@ export function DraftStep({
           </span>
         ) : null}
       </div>
-      {query.isError ? <ErrorText>{describeBuildError(query.error)}</ErrorText> : null}
+      {query.isError ? (
+        <div className="space-y-2">
+          <ErrorText>{describeBuildError(query.error)}</ErrorText>
+          <p className="text-muted">The draft below is the last one that worked.</p>
+          <div className="flex flex-wrap gap-3">
+            <RetryButton onClick={() => void query.refetch()} />
+            {state.examDates.length > 0 ? (
+              <Button onClick={() => onChange({ examDates: [] })}>Clear exam dates</Button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+      <div role="status" aria-live="polite" className="empty:hidden">
+        {limitNote ? <p className="font-bold">{limitNote}</p> : null}
+      </div>
 
       <section aria-labelledby="draft-summary" className="space-y-3">
         <Heading id="draft-summary">Here is what I understood</Heading>
@@ -282,7 +330,7 @@ export function DraftStep({
       </section>
 
       {!draft.fits && draft.options ? (
-        <FitOptions draft={draft} state={state} onChange={onChange} />
+        <FitOptions draft={draft} onExclude={addExcluded} onChange={onChange} />
       ) : null}
 
       {draft.overBudget ? (
@@ -297,11 +345,7 @@ export function DraftStep({
               <li key={id}>{draft.items.find((i) => i.catalogId === id)?.title ?? id}</li>
             ))}
           </ul>
-          <Button
-            onClick={() =>
-              onChange({ exclude: [...new Set([...state.exclude, ...draft.removeToFit])] })
-            }
-          >
+          <Button onClick={() => addExcluded(draft.removeToFit)}>
             Remove them to fit my budget
           </Button>
         </section>
@@ -332,11 +376,16 @@ export function DraftStep({
                   </p>
                 </div>
                 <Button
-                  onClick={() =>
+                  onClick={() => {
+                    if (state.certificateOptIns.length >= MAX_CERTIFICATE_OPT_INS) {
+                      setLimitNote(`You can add at most ${MAX_CERTIFICATE_OPT_INS} exams.`);
+                      return;
+                    }
+                    setLimitNote(null);
                     onChange({
                       certificateOptIns: [...new Set([...state.certificateOptIns, c.catalogId])],
-                    })
-                  }
+                    });
+                  }}
                 >
                   Include this exam<span className="sr-only">: {c.title}</span>
                 </Button>
@@ -393,11 +442,11 @@ export function DraftStep({
  */
 function FitOptions({
   draft,
-  state,
+  onExclude,
   onChange,
 }: {
   draft: BuildDraft;
-  state: BuilderState;
+  onExclude: (ids: string[]) => void;
   onChange: (patch: Partial<BuilderState>) => void;
 }): ReactNode {
   const options = draft.options;
@@ -420,13 +469,7 @@ function FitOptions({
                   ? `. You would lose: ${essentials.lostSkillIds.map(skillName).join(', ')}.`
                   : '.'}
               </p>
-              <Button
-                onClick={() =>
-                  onChange({
-                    exclude: [...new Set([...state.exclude, ...essentials.droppedItemIds])],
-                  })
-                }
-              >
+              <Button onClick={() => onExclude(essentials.droppedItemIds)}>
                 Keep only the essentials
               </Button>
             </>

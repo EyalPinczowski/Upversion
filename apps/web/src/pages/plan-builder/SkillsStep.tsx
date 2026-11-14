@@ -39,7 +39,7 @@ export function SkillsStep({
       </p>
       <p>
         Levels from a CV can be out of date.{' '}
-        <Link to="/settings/cv" className={linkClass}>
+        <Link to="/settings/cv" state={{ from: '/plan/new' }} className={linkClass}>
           Change my CV
         </Link>{' '}
         and come back to build a plan again; what you chose so far on this page is not kept.
