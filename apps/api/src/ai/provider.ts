@@ -16,12 +16,13 @@ import type { SafeAIRequest } from './safe-request';
 /** `paid` providers are refused unless the owner enables them explicitly (spec 12.2). */
 export type CostTier = 'free' | 'paid';
 
-/** What a model call is for. The same values are allowed by `ai_usage_daily` (migration 0017). */
+/** What a model call is for. The same values are allowed by `ai_usage_daily` (migrations 0017 and 0019). */
 export const AI_PURPOSES = [
   'practice_message',
   'practice_feedback',
   'day_overview',
   'cv_tailor',
+  'plan_explain',
 ] as const;
 export type AIPurpose = (typeof AI_PURPOSES)[number];
 

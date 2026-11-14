@@ -25,6 +25,7 @@ describe('loadConfig defaults', () => {
         profileSetup: false,
         cvTailor: false,
         planBuilder: false,
+        planBuilderAi: false,
       },
       calendar: { enabled: false, tokenKeys: [], google: null, cron: null },
       ai: {
@@ -33,14 +34,21 @@ describe('loadConfig defaults', () => {
         providerOrder: [],
         fakeProvider: false,
         budgets: {},
-        userCaps: { practice_message: 40, practice_feedback: 6, day_overview: 1, cv_tailor: 3 },
+        userCaps: {
+          practice_message: 40,
+          practice_feedback: 6,
+          day_overview: 1,
+          cv_tailor: 3,
+          plan_explain: 10,
+        },
         timeoutMs: 15000,
         turnTimeoutMs: 25000,
         historyChars: 12000,
         cvTailorDailyTotal: 20,
+        planExplainDailyTotal: 50,
       },
     });
-    expect(featureNames).toHaveLength(8);
+    expect(featureNames).toHaveLength(9);
   });
 });
 
@@ -108,12 +116,20 @@ describe('boolean variables', () => {
       profileSetup: false,
       cvTailor: false,
       planBuilder: false,
+      planBuilderAi: false,
     });
   });
 
   it('turns the plan builder on with FEATURE_PLAN_BUILDER=true', () => {
     expect(loadConfig({ FEATURE_PLAN_BUILDER: 'true' }).features.planBuilder).toBe(true);
     expect(loadConfig({}).features.planBuilder).toBe(false);
+  });
+
+  it('turns the plan builder AI on with FEATURE_PLAN_BUILDER_AI=true (default off)', () => {
+    expect(loadConfig({ FEATURE_PLAN_BUILDER_AI: 'true' }).features.planBuilderAi).toBe(true);
+    expect(loadConfig({}).features.planBuilderAi).toBe(false);
+    expect(loadConfig({}).ai.userCaps.plan_explain).toBe(10);
+    expect(loadConfig({}).ai.planExplainDailyTotal).toBe(50);
   });
 
   it.each(['1', 'yes', 'TRUE', 'True', 'on', ' true', ''])(
@@ -288,6 +304,7 @@ describe('AI configuration', () => {
       practice_feedback: 6,
       day_overview: 1,
       cv_tailor: 3,
+      plan_explain: 10,
     });
     expect(ai.cvTailorDailyTotal).toBe(20);
   });

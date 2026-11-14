@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import {
+  applyExplainLines,
   BuildRequestError,
   localDateOf,
   type BuildCatalog,
@@ -13,6 +14,7 @@ import { canonical, validateImport } from '../plans/import';
 import * as plansRepo from '../plans/repository';
 import type { PlanDetail } from '../plans/schemas';
 import type { createPlanService } from '../plans/service';
+import type { PlanExplainService } from './explain';
 import type { BuildBody } from './schemas';
 
 const notFound = () => new HttpError(404, 'not_found', 'Resource not found.');
@@ -47,6 +49,7 @@ export function createPlanBuilderService(
   plans: ReturnType<typeof createPlanService>,
   now: () => Date = () => new Date(),
   catalog: BuildCatalog = BUNDLED_CATALOG,
+  explainer: PlanExplainService | null = null,
 ) {
   /** Runs the pure builder. `today` is the current date in the plan's time zone (as the schedule does). */
   function run(request: BuildRequest): BuildDraft {
@@ -96,6 +99,23 @@ export function createPlanBuilderService(
     preview: (request: BuildRequest): BuildDraft => run(request),
 
     /**
+     * Optional AI lines for a draft (only with the explainer, i.e. FEATURE_PLAN_BUILDER_AI). The
+     * draft is rebuilt here and compared with `draftHash` before anything is sent anywhere.
+     */
+    async explain(userId: string, body: Pick<BuildBody, 'request' | 'draftHash'>) {
+      if (!explainer) throw notFound();
+      const draft = run(body.request);
+      if (draft.draftHash !== body.draftHash) {
+        throw new HttpError(
+          409,
+          'draft_changed',
+          'The plan changed since you previewed it. Preview it again.',
+        );
+      }
+      return explainer.explain(userId, draft, body.request);
+    },
+
+    /**
      * One transaction (the import service's): the per-user lock, then the idempotency check on
      * the request body, then a fresh draft compared with `draftHash`, then the check of the
      * active plans against `replacesPlanIds`, then archive and insert. Any failure rolls it all
@@ -119,7 +139,13 @@ export function createPlanBuilderService(
           await archive(ctx, userId, active, 'plan_builder', body.id);
           // The same checks as a file import (size limits, taxonomy ids, characters Postgres
           // cannot store), as a safety net: the draft is a valid plan file already.
-          const valid = validateImport(draft.plan as unknown as Record<string, unknown>, 'active');
+          // With AI explanations asked for: only the server's cached, re-checked answer is used.
+          const ai =
+            body.useAiExplanations === true && explainer
+              ? await explainer.cachedLines(ctx, userId, draft, body.request)
+              : null;
+          const plan = ai ? applyExplainLines(draft, ai) : draft.plan;
+          const valid = validateImport(plan as unknown as Record<string, unknown>, 'active');
           return {
             status: 'active',
             plan: valid.plan,

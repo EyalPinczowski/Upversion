@@ -79,6 +79,9 @@ const unavailableAIUsage: AIUsageStore = {
   async cvTailorTotalToday() {
     throw new Error('no database');
   },
+  async planExplainTotalToday() {
+    throw new Error('no database');
+  },
 };
 
 const HEALTH_URL = '/api/v1/health';
@@ -345,6 +348,15 @@ export function buildApp(config: Config, deps: AppDeps = {}) {
           db,
           now: deps.now,
           catalog: deps.planBuilderCatalog,
+          ai: config.features.planBuilderAi
+            ? {
+                gateway: aiGateway,
+                registry: aiRegistry,
+                usage: aiUsage,
+                userCap: config.ai.userCaps.plan_explain,
+                dailyTotal: config.ai.planExplainDailyTotal,
+              }
+            : undefined,
         });
       }
       v1.register(planRoutes, {
@@ -371,6 +383,7 @@ export function buildApp(config: Config, deps: AppDeps = {}) {
         features: {
           cvTailor: config.features.cvTailor,
           planBuilder: config.features.planBuilder,
+          planBuilderAi: config.features.planBuilder && config.features.planBuilderAi,
         },
       });
     },

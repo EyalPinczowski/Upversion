@@ -1,4 +1,5 @@
 import type { BuildCatalog } from '@upversion/shared';
+import { BUNDLED_CATALOG } from '@upversion/shared/plan-builder';
 import type { FastifyRequest } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { Database } from '../../db/database';
@@ -8,7 +9,19 @@ import { createAccountService } from '../accounts/service';
 import type { TokenVerifier } from '../accounts/token-verifier';
 import { planDetailSchema, planIdParams } from '../plans/schemas';
 import { createPlanService } from '../plans/service';
-import { buildBody, draftSchema, previewBody, restoreBody } from './schemas';
+import type { AIUsageStore } from '../../ai/budget';
+import type { AIGateway } from '../../ai/gateway';
+import type { AIRegistry } from '../../ai/registry';
+import { createUserLimiter } from '../practice/routes';
+import { createPlanExplainService } from './explain';
+import {
+  buildBody,
+  draftSchema,
+  explainBody,
+  explainResult,
+  previewBody,
+  restoreBody,
+} from './schemas';
 import { createPlanBuilderService } from './service';
 
 export interface PlanBuilderRoutesOptions {
@@ -18,7 +31,18 @@ export interface PlanBuilderRoutesOptions {
   now?: () => Date;
   /** Tests only: a different catalog than the bundled one. */
   catalog?: BuildCatalog;
+  /** Set only with FEATURE_PLAN_BUILDER_AI on: the explain route exists only then (404 otherwise). */
+  ai?: {
+    gateway: AIGateway;
+    registry: AIRegistry;
+    usage: AIUsageStore;
+    userCap: number;
+    dailyTotal: number;
+  };
 }
+
+/** Explain runs per user per minute (in memory, per API instance). */
+export const PLAN_EXPLAIN_PER_MINUTE = 5;
 
 const errors = {
   400: errorResponseSchema,
@@ -39,12 +63,27 @@ const tags = ['plan-builder'];
  */
 export const planBuilderRoutes: FastifyPluginAsyncZod<PlanBuilderRoutesOptions> = async (
   app,
-  { verifier, db, now, catalog },
+  { verifier, db, now, catalog, ai },
 ) => {
   installAccountGuard(app, verifier, db ? createAccountService(db) : null);
   const user = (request: FastifyRequest) => request.accountId!;
   // Without a database the guard already answered 503, so a handler never runs with `db` null.
-  const builder = createPlanBuilderService(db!, createPlanService(db!, now), now, catalog);
+  const explainer = ai
+    ? createPlanExplainService({
+        db: db!,
+        ...ai,
+        catalog: catalog ?? BUNDLED_CATALOG,
+        now: now ?? (() => new Date()),
+      })
+    : null;
+  const builder = createPlanBuilderService(
+    db!,
+    createPlanService(db!, now),
+    now,
+    catalog,
+    explainer,
+  );
+  const explainLimit = createUserLimiter(PLAN_EXPLAIN_PER_MINUTE, 60_000);
 
   app.post(
     '/plans/build/preview',
@@ -61,6 +100,27 @@ export const planBuilderRoutes: FastifyPluginAsyncZod<PlanBuilderRoutesOptions> 
     },
     async (request) => builder.preview(request.body),
   );
+
+  if (explainer) {
+    app.post(
+      '/plans/build/explain',
+      {
+        schema: {
+          tags,
+          summary: 'Optional AI wording for the "why this is here" lines of a draft',
+          description:
+            'Only on request, never on preview. The body has no free text: the server rebuilds the draft (409 `draft_changed` when `draftHash` differs) and gives a free-tier model only an allowlist of catalog fields (ids, titles, providers, skill names, role titles, hours, weights, level names, flags). Each returned line is checked; a line that names anything outside its item, or a number, a price, a link or a certificate that is not in the input, is replaced by the template line (`source: "template"`). Only Cloudflare Workers AI, then Groq as a backup, may receive the input; `providers` lists every one that did (empty for a cached answer). 429 `rate_limited` (5 per minute), `ai_user_cap` (10 per day), `ai_feature_cap` (50 per day for everyone). 503 `ai_unavailable`: keep the template lines; no run is spent when no provider was tried. 404 when FEATURE_PLAN_BUILDER_AI is off.',
+          security,
+          body: explainBody,
+          response: { 200: explainResult, ...errors, 503: errorResponseSchema },
+        },
+      },
+      async (request) => {
+        explainLimit(user(request));
+        return builder.explain(user(request), request.body);
+      },
+    );
+  }
 
   app.post(
     '/plans/build',

@@ -13,7 +13,7 @@ The app must cost nothing. A Claude subscription cannot be used by an app (no AP
 ## Decision
 Option 3, with AI strictly optional:
 - An `AIProvider` interface; each implementation declares `costTier: free | paid`, and a guard refuses paid providers unless enabled in settings.
-- **Deterministic first:** the rule-based plan builder is the default; templates write the day overview, the "why this is here" lines and LinkedIn posts; AI only improves them when the user asks.
+- **Deterministic first:** the rule-based plan builder is the default; templates write the day overview, the "why this is here" lines and LinkedIn posts; AI only improves them when the user asks (the plan builder's AI wording is the purpose `plan_explain`, on request only, with its own per-user and app-wide caps: see ADR 017 and `docs/api-plan-explain.md`).
 - **Cache** responses by a hash of the PII-free input, repair broken JSON locally before spending a retry, and auto-grade what can be graded without a model (SQL exercises, quizzes).
 - No personal details are ever sent to a model. Every user has a daily cap so one person cannot use the shared quota.
 

@@ -4023,6 +4023,311 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plans/build/explain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Optional AI wording for the "why this is here" lines of a draft
+         * @description Only on request, never on preview. The body has no free text: the server rebuilds the draft (409 `draft_changed` when `draftHash` differs) and gives a free-tier model only an allowlist of catalog fields (ids, titles, providers, skill names, role titles, hours, weights, level names, flags). Each returned line is checked; a line that names anything outside its item, or a number, a price, a link or a certificate that is not in the input, is replaced by the template line (`source: "template"`). Only Cloudflare Workers AI, then Groq as a backup, may receive the input; `providers` lists every one that did (empty for a cached answer). 429 `rate_limited` (5 per minute), `ai_user_cap` (10 per day), `ai_feature_cap` (50 per day for everyone). 503 `ai_unavailable`: keep the template lines; no run is spent when no provider was tried. 404 when FEATURE_PLAN_BUILDER_AI is off.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        request: {
+                            targetRoleIds: string[];
+                            /** @default [] */
+                            extraSkillIds?: string[];
+                            /** @default {} */
+                            skillLevels?: {
+                                [key: string]: number;
+                            };
+                            startDate: string;
+                            deadline: string;
+                            weekPattern: {
+                                windowStart: string;
+                                windowEnd: string;
+                                lunchStart?: string;
+                                lunchEnd?: string;
+                            } & {
+                                [key: string]: unknown;
+                            };
+                            budget: {
+                                /** @enum {string} */
+                                mode: "free" | "limit" | "flexible";
+                                amount?: number;
+                                maxItemPrice?: number;
+                            };
+                            /** @enum {string} */
+                            certPreference: "must" | "nice" | "none";
+                            /** @enum {string} */
+                            interviewPrep: "yes" | "later" | "no";
+                            /** @default [] */
+                            certificateOptIns?: string[];
+                            /** @default [] */
+                            examDates?: {
+                                catalogId: string;
+                                date: string;
+                                start: string;
+                            }[];
+                            /** @default [] */
+                            mustInclude?: string[];
+                            /** @default [] */
+                            exclude?: string[];
+                            /** @default {} */
+                            priorityOverrides?: {
+                                [key: string]: "core" | "optional";
+                            };
+                        };
+                        draftHash: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            lines: {
+                                itemId: string;
+                                text: string;
+                                /** @enum {string} */
+                                source: "ai" | "template";
+                            }[];
+                            providers: {
+                                id: string;
+                                label: string;
+                            }[];
+                            usage: {
+                                used: number;
+                                cap: number;
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/plans/build": {
         parameters: {
             query?: never;
@@ -15874,10 +16179,15 @@ export interface paths {
                                     used: number;
                                     cap: number;
                                 };
+                                planExplain: {
+                                    used: number;
+                                    cap: number;
+                                };
                             };
                             features: {
                                 cvTailor: boolean;
                                 planBuilder: boolean;
+                                planBuilderAi: boolean;
                             };
                             avoidedToday: number;
                             providers: {

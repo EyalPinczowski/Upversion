@@ -49,6 +49,8 @@ export interface AIUsageStore {
    * because RLS gives the app role only its own rows.
    */
   cvTailorTotalToday(userId: string): Promise<number>;
+  /** The same for `plan_explain` (migration 0019, `ai_plan_explain_usage_today`). */
+  planExplainTotalToday(userId: string): Promise<number>;
 }
 
 /**
@@ -132,6 +134,15 @@ export function createAIUsageStore(db: Database, now: () => Date = () => new Dat
       });
     },
 
+    planExplainTotalToday(userId) {
+      return db.withUser(userId, async (ctx) => {
+        const { rows } = await ctx.client.query<{ n: string }>(
+          `select ${ctx.schema}.ai_plan_explain_usage_today() as n`,
+        );
+        return Number(rows[0]?.n ?? 0);
+      });
+    },
+
     async snapshot(userId) {
       const at = now();
       const day = utcDay(at);
@@ -153,6 +164,7 @@ export function createAIUsageStore(db: Database, now: () => Date = () => new Dat
           practice_feedback: { used: 0, avoided: 0 },
           day_overview: { used: 0, avoided: 0 },
           cv_tailor: { used: 0, avoided: 0 },
+          plan_explain: { used: 0, avoided: 0 },
         };
         for (const row of own.rows) {
           user[row.purpose] = { used: row.requests, avoided: row.avoided };

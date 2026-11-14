@@ -10,6 +10,7 @@ export const featureNames = [
   'profileSetup',
   'cvTailor',
   'planBuilder',
+  'planBuilderAi',
 ] as const;
 
 export type FeatureName = (typeof featureNames)[number];
@@ -35,6 +36,8 @@ export const featureEnvShape = {
   FEATURE_CV_TAILOR: booleanString('false'),
   /** The rule-based plan builder and plan restore (ADR 017). Off: the routes do not exist (404). */
   FEATURE_PLAN_BUILDER: booleanString('false'),
+  /** Optional AI explanations in the plan builder (ADR 017 WP-4). Needs FEATURE_PLAN_BUILDER too. Off: the explain route does not exist (404). */
+  FEATURE_PLAN_BUILDER_AI: booleanString('false'),
 };
 
 export function toFeatures(e: z.infer<z.ZodObject<typeof featureEnvShape>>): Features {
@@ -47,5 +50,6 @@ export function toFeatures(e: z.infer<z.ZodObject<typeof featureEnvShape>>): Fea
     profileSetup: e.FEATURE_PROFILE_SETUP,
     cvTailor: e.FEATURE_CV_TAILOR,
     planBuilder: e.FEATURE_PLAN_BUILDER,
+    planBuilderAi: e.FEATURE_PLAN_BUILDER_AI,
   };
 }
