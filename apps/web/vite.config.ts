@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { fileURLToPath } from 'node:url';
 import { loadEnv } from 'vite';
 import { defineConfig } from 'vitest/config';
 import { cspMetaPlugin } from './src/build/csp';
@@ -17,6 +18,15 @@ export default defineConfig(({ mode }) => {
   }
   return {
     define: { __E2E__: JSON.stringify(e2e) },
+    resolve: {
+      // Zod with `jitless` already set, for every importer: see src/zod-jitless.ts.
+      alias: [
+        {
+          find: /^zod$/,
+          replacement: fileURLToPath(new URL('./src/zod-jitless.ts', import.meta.url)),
+        },
+      ],
+    },
     plugins: [
       react(),
       tailwindcss(),

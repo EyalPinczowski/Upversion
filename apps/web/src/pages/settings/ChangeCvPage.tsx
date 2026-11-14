@@ -1,6 +1,6 @@
 import { extractProfileFromText, type CvExtraction, type ProfileImport } from '@upversion/shared';
 import { useEffect, useId, useRef, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import type { ProfileView } from '../../api/client';
 import { useCvTailorEnabled } from '../../api/ai-hooks';
 import { useImportProfile, useProfile } from '../../api/profile-hooks';
@@ -26,6 +26,8 @@ function replaceInfo(profile: ProfileView): ReplaceInfo {
 
 function Changer({ profile }: { profile: ProfileView }) {
   const navigate = useNavigate();
+  // The plan builder links here with this exact marker; any other state is ignored.
+  const fromBuilder = (useLocation().state as { from?: unknown } | null)?.from === '/plan/new';
   const importProfile = useImportProfile();
   const tailorOn = useCvTailorEnabled();
   const [step, setStep] = useState<Step>('pick');
@@ -132,6 +134,16 @@ function Changer({ profile }: { profile: ProfileView }) {
 
   return (
     <div className="space-y-6">
+      {fromBuilder ? (
+        <p>
+          <Link to="/plan/new" className={`${linkClass} inline-flex min-h-11 items-center`}>
+            Back to the plan builder
+          </Link>
+          <span className="block text-muted">
+            What you chose there is not kept: you start the builder again, now with your new skills.
+          </span>
+        </p>
+      ) : null}
       <h1>Change my CV</h1>
       <section aria-labelledby="change-cv-heading" className="space-y-5">
         <h2 id="change-cv-heading" ref={headingRef} tabIndex={-1}>

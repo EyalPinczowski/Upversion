@@ -432,9 +432,18 @@ export function TimeSettings() {
     >
       <h3 id="time-heading">Study time</h3>
       <PlanGate
+        banner={false}
         empty={<p className="text-muted">Import a plan from Today to set when you study.</p>}
       >
-        {(plan) => <Editor key={plan.id} planId={plan.id} />}
+        {(plan) =>
+          plan.status === 'archived' ? (
+            <p className="text-muted">
+              This plan is archived (read-only), so its study time can’t be changed.
+            </p>
+          ) : (
+            <Editor key={plan.id} planId={plan.id} />
+          )
+        }
       </PlanGate>
     </section>
   );

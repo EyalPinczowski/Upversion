@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import { useBriefing, type Briefing, type BriefingTask } from '../../api/briefing-hooks';
 import type { DayState } from '../../api/client';
 import { useDay, useStartDay } from '../../api/hooks';
+import { useReadOnlyPlan } from '../../plan/context';
 import { TaskTypeChip } from '../../components/TaskChips';
 import { AlertIcon, CheckIcon } from '../../components/icons';
 import { Button, ErrorText, linkClass } from '../../components/ui';
@@ -197,6 +198,7 @@ function StartDay({
 }) {
   const navigate = useNavigate();
   const start = useStartDay(planId);
+  const readOnly = useReadOnlyPlan();
   if (!state) return null;
   if (state.frozen || state.status === 'ended') {
     return (
@@ -207,6 +209,8 @@ function StartDay({
     );
   }
   const started = state.status === 'started';
+  // An archived plan is read-only: no start of the day (the banner says why).
+  if (readOnly && !started) return null;
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-3">

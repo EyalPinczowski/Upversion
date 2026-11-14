@@ -9,6 +9,8 @@ const errorBodySchema = z.object({
     sessionId: z.string().optional(),
     fallbacks: z.array(z.string()).optional(),
     dependents: z.array(z.object({ id: z.string(), title: z.string() })).optional(),
+    /** 422 `unprocessable` from the plan builder: codes (and the ids the request named), no text. */
+    issues: z.array(z.object({ code: z.string(), id: z.string().optional() })).optional(),
   }),
 });
 
@@ -38,6 +40,8 @@ export class ApiError extends Error {
     public readonly fallbacks?: readonly string[],
     /** The tasks that depend on the one being deleted, on 409 `has_dependents`. */
     public readonly dependents?: readonly { id: string; title: string }[],
+    /** The plan builder's 422 issues. */
+    public readonly issues?: readonly { code: string; id?: string }[],
   ) {
     super(message);
     this.name = 'ApiError';
@@ -46,7 +50,8 @@ export class ApiError extends Error {
   static fromBody(status: number, body: unknown): ApiError {
     const parsed = errorBodySchema.safeParse(body);
     if (parsed.success) {
-      const { code, message, requestId, sessionId, fallbacks, dependents } = parsed.data.error;
+      const { code, message, requestId, sessionId, fallbacks, dependents, issues } =
+        parsed.data.error;
       return new ApiError(
         'http',
         status,
@@ -56,6 +61,7 @@ export class ApiError extends Error {
         sessionId,
         fallbacks,
         dependents,
+        issues,
       );
     }
     return new ApiError('http', status, 'unknown', `The server answered with status ${status}.`);

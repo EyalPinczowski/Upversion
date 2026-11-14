@@ -1,5 +1,6 @@
 import type { Task } from '../../api/client';
 import { Button } from '../../components/ui';
+import { useReadOnlyPlan } from '../../plan/context';
 
 /**
  * The explicit actions the person may choose on a task, by its status: log time, mark done or
@@ -24,6 +25,9 @@ export function TaskActions({
   onSkip: () => void;
   onReopen: () => void;
 }) {
+  // An archived plan is read-only: no log, done, skip or reopen (the banner says why).
+  const readOnly = useReadOnlyPlan();
+  if (readOnly) return null;
   // A finished or skipped task can only be reopened, never logged against.
   const closed = task.status === 'done' || task.status === 'skipped';
   return (
