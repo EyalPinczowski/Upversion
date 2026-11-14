@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { CheckIcon, LockIcon } from '../../components/icons';
 import { Button, ErrorText } from '../../components/ui';
 import { describeError } from '../../lib/messages';
+import { useReadOnlyPlan } from '../../plan/context';
 import { BriefingLink, ReviewLink } from './day-destinations';
 
 type Message = { tone: 'ok'; text: string } | { tone: 'error'; text: string };
@@ -23,6 +24,7 @@ export function DayControls({
   date: string;
   day: DayState;
 }) {
+  const readOnly = useReadOnlyPlan();
   const start = useStartDay(planId);
   const end = useEndDay(planId);
   const [confirming, setConfirming] = useState(false);
@@ -63,6 +65,15 @@ export function DayControls({
       {message?.tone === 'error' ? <ErrorText>{message.text}</ErrorText> : null}
     </div>
   );
+
+  // An archived plan is read-only: no start or end of the day (the banner says why).
+  if (readOnly && day.status !== 'ended') {
+    return (
+      <section aria-label="Study day" className="space-y-3">
+        <BriefingLink date={date} />
+      </section>
+    );
+  }
 
   let content;
   if (day.status === 'ended') {

@@ -6,6 +6,7 @@ import { useReview, type ReviewResult } from '../../api/review-hooks';
 import { QueryView } from '../../components/QueryView';
 import { linkClass } from '../../components/ui';
 import { formatDate } from '../../lib/format';
+import { useReadOnlyPlan } from '../../plan/context';
 import { PlanGate } from '../../plan/PlanGate';
 import { validDate } from '../briefing/day-utils';
 import { DayQueryView } from '../briefing/DayQueryView';
@@ -20,6 +21,7 @@ function ReviewContent({ planId, date }: { planId: string; date: string }) {
   const review = useReview(planId, date);
   const tasks = useTasks(planId);
   const [result, setResult] = useState<ReviewResult | null>(null);
+  const readOnly = useReadOnlyPlan();
 
   const titles = useMemo(() => {
     const map = new Map<string, string>();
@@ -57,13 +59,19 @@ function ReviewContent({ planId, date }: { planId: string; date: string }) {
               }
               return (
                 <>
-                  <ReviewForm
-                    planId={planId}
-                    date={date}
-                    rows={rows}
-                    initial={stored}
-                    onSaved={setResult}
-                  />
+                  {readOnly ? (
+                    <p className="font-bold">
+                      This plan is archived (read-only), so the review can’t be changed.
+                    </p>
+                  ) : (
+                    <ReviewForm
+                      planId={planId}
+                      date={date}
+                      rows={rows}
+                      initial={stored}
+                      onSaved={setResult}
+                    />
+                  )}
                   {result ? (
                     <SavedReview planId={planId} date={date} result={result} titleOf={titleOf} />
                   ) : null}
@@ -74,7 +82,7 @@ function ReviewContent({ planId, date }: { planId: string; date: string }) {
         )}
       </DayQueryView>
       <DayPractice planId={planId} date={date} titleOf={titleOf} />
-      <SuggestionsPanel planId={planId} titleOf={titleOf} />
+      {readOnly ? null : <SuggestionsPanel planId={planId} titleOf={titleOf} />}
       <ReviewTrend planId={planId} date={date} />
     </>
   );

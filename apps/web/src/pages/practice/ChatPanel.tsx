@@ -3,6 +3,7 @@ import { isApiError } from '../../api/errors';
 import { useSendMessage, type PracticeSession, type SessionDetail } from '../../api/practice-hooks';
 import { Button, ErrorText } from '../../components/ui';
 import { describeError, newId } from '../../lib/messages';
+import { useReadOnlyPlan } from '../../plan/context';
 import { AI_CAN_BE_WRONG, aiDownReason, REDACTION_NOTICE, type AiDown } from './ai-state';
 
 const MAX_LENGTH = 4000;
@@ -106,6 +107,7 @@ export function ChatPanel({
   onRetryAi: () => void;
   onAskFeedback: () => void;
 }) {
+  const readOnly = useReadOnlyPlan();
   const send = useSendMessage(planId, session.id);
   const [draft, setDraft] = useState('');
   const attempt = useRef<{ id: string; content: string } | null>(null);
@@ -164,38 +166,50 @@ export function ChatPanel({
 
       {aiDown ? <AiUnavailableNotice reason={aiDown} onRetry={onRetryAi} /> : null}
 
-      <form onSubmit={submit} className="space-y-2">
-        <label htmlFor={textareaId} className="block font-bold">
-          Your answer
-        </label>
-        <p id={hintId} className="text-muted">
-          Emails, phone numbers and links are removed before sending. Names are not always caught,
-          so leave them out.
-        </p>
-        <textarea
-          id={textareaId}
-          aria-describedby={hintId}
-          value={draft}
-          maxLength={MAX_LENGTH}
-          rows={4}
-          disabled={!!aiDown}
-          readOnly={send.isPending}
-          onChange={(e) => setDraft(e.target.value)}
-          className="min-h-11 w-full rounded-sm border border-border bg-surface px-3 py-2 text-text disabled:opacity-60"
-        />
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" variant="primary" disabled={!!aiDown || send.isPending}>
-            {label}
-          </Button>
-          <Button disabled={!spoke || !!aiDown || send.isPending} onClick={onAskFeedback}>
+      {readOnly ? (
+        <div className="space-y-2">
+          <p className="font-bold">
+            This plan is archived (read-only), so the chat can’t continue. You can still ask for
+            feedback or end the practice.
+          </p>
+          <Button disabled={!spoke || !!aiDown} onClick={onAskFeedback}>
             Get AI feedback
           </Button>
         </div>
-        <p role="status" className="text-muted">
-          {send.isPending ? 'Reply on its way' : ''}
-        </p>
-        {problem ? <ErrorText>{problem}</ErrorText> : null}
-      </form>
+      ) : (
+        <form onSubmit={submit} className="space-y-2">
+          <label htmlFor={textareaId} className="block font-bold">
+            Your answer
+          </label>
+          <p id={hintId} className="text-muted">
+            Emails, phone numbers and links are removed before sending. Names are not always caught,
+            so leave them out.
+          </p>
+          <textarea
+            id={textareaId}
+            aria-describedby={hintId}
+            value={draft}
+            maxLength={MAX_LENGTH}
+            rows={4}
+            disabled={!!aiDown}
+            readOnly={send.isPending}
+            onChange={(e) => setDraft(e.target.value)}
+            className="min-h-11 w-full rounded-sm border border-border bg-surface px-3 py-2 text-text disabled:opacity-60"
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit" variant="primary" disabled={!!aiDown || send.isPending}>
+              {label}
+            </Button>
+            <Button disabled={!spoke || !!aiDown || send.isPending} onClick={onAskFeedback}>
+              Get AI feedback
+            </Button>
+          </div>
+          <p role="status" className="text-muted">
+            {send.isPending ? 'Reply on its way' : ''}
+          </p>
+          {problem ? <ErrorText>{problem}</ErrorText> : null}
+        </form>
+      )}
       <p className="text-muted">{AI_CAN_BE_WRONG}</p>
     </section>
   );
