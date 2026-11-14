@@ -15,6 +15,7 @@ import { Button, ErrorText, ProgressBar } from '../../components/ui';
 import { CalendarStep } from './CalendarStep';
 import { CvReviewStep } from './CvReviewStep';
 import { CvStep } from './CvStep';
+import { BuildPlanLink } from '../../plan/BuildPlanLink';
 import { DoneStep } from './DoneStep';
 import { isAnswered } from './question-model';
 import { QuestionStep } from './QuestionStep';
@@ -316,6 +317,7 @@ function Wizard({ profile }: { profile: ProfileView }) {
 
         {step === DONE ? (
           <DoneStep
+            entry={<BuildPlanLink variant="primary">Build my first plan</BuildPlanLink>}
             questions={questions}
             answers={answers}
             profile={profile}

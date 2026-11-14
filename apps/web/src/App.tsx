@@ -33,6 +33,11 @@ const SetupPage = lazy(() =>
 const TailorCvPage = lazy(() =>
   import('./pages/cv-tailor/TailorCvPage').then((m) => ({ default: m.TailorCvPage })),
 );
+// The plan builder page: its own chunk, loaded when the route opens. The builder code itself
+// (`@upversion/shared/plan-builder`) is never imported by the web: the API runs it.
+const PlanBuilderPage = lazy(() =>
+  import('./pages/plan-builder/PlanBuilderPage').then((m) => ({ default: m.PlanBuilderPage })),
+);
 const ChangeCvPage = lazy(() =>
   import('./pages/settings/ChangeCvPage').then((m) => ({ default: m.ChangeCvPage })),
 );
@@ -80,6 +85,14 @@ export function App({
                     <Route index element={<TodayPage apiUrl={env.apiUrl} />} />
                     <Route path="week" element={<WeekPage />} />
                     <Route path="plan" element={<PlanPage />} />
+                    <Route
+                      path="plan/new"
+                      element={
+                        <Suspense fallback={<Loading label="Loading…" />}>
+                          <PlanBuilderPage />
+                        </Suspense>
+                      }
+                    />
                     <Route path="plan/:taskId" element={<TaskDetailPage />} />
                   </Route>
                   <Route path="briefing/:date" element={<BriefingPage />} />

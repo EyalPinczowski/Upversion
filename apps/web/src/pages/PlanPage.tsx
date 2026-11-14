@@ -12,6 +12,7 @@ import { PracticeSettings } from './settings/PracticeSettings';
 import { TimeSettings } from './settings/TimeSettings';
 import { useActivePlan } from '../plan/context';
 import { PlanGate, PlanSwitcher } from '../plan/PlanGate';
+import { BuildPlanLink } from '../plan/BuildPlanLink';
 
 /** The plan: its curriculum, and the settings that belong to it. */
 export function PlanPage() {
@@ -74,22 +75,28 @@ export function PlanPage() {
   }, [activeId, reset]);
   return (
     <div className="space-y-6">
-      <h1 ref={heading} tabIndex={-1}>
-        Plan
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 ref={heading} tabIndex={-1}>
+          Plan
+        </h1>
+        <BuildPlanLink />
+      </div>
       <div role="status" className="font-bold text-ok empty:hidden">
         {deleted ? 'Plan deleted.' : tasksDeleted > 0 ? 'Task deleted.' : null}
       </div>
       <PlanSwitcher />
       <PlanGate
         empty={
-          <p className="text-muted">
-            No plan yet. Import one from{' '}
-            <Link to="/" className={linkClass}>
-              Today
-            </Link>
-            .
-          </p>
+          <div className="space-y-3">
+            <p className="text-muted">
+              No plan yet. Import one from{' '}
+              <Link to="/" className={linkClass}>
+                Today
+              </Link>
+              .
+            </p>
+            <BuildPlanLink variant="primary">Build a plan</BuildPlanLink>
+          </div>
         }
       >
         {(plan) => (

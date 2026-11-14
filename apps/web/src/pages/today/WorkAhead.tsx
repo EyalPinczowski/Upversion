@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Button, ErrorText, TextField } from '../../components/ui';
 import { formatHours } from '../../lib/format';
 import { describeError } from '../../lib/messages';
+import { useReadOnlyPlan } from '../../plan/context';
 import {
   addedMinutes,
   EXTRA_HOUR_CHOICES,
@@ -41,6 +42,7 @@ export function WorkAhead({
   schedule: Schedule;
   tasksById: Map<string, Task>;
 }) {
+  const readOnly = useReadOnlyPlan();
   const plan = usePlan(planId);
   const preview = usePreviewSchedule(planId);
   const save = useSaveTimeSettings(planId);
@@ -57,7 +59,7 @@ export function WorkAhead({
   }, [message]);
 
   const data = plan.data;
-  if (!data?.weekPattern) return null;
+  if (readOnly || !data?.weekPattern) return null;
   const cap = todayCapacity(data.weekPattern, data.overrides, schedule.today);
   const titleOf = (id: string) => tasksById.get(id)?.title ?? id;
 
