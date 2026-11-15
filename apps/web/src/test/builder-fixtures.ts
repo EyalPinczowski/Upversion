@@ -16,8 +16,9 @@ export const usageBody = (planBuilder: boolean): AiUsage => ({
     practiceFeedback: { used: 0, cap: 10 },
     dayOverview: { used: 0, cap: 0 },
     cvTailor: { used: 0, cap: 3 },
+    planExplain: { used: 0, cap: 10 },
   },
-  features: { cvTailor: false, planBuilder },
+  features: { cvTailor: false, planBuilder, planBuilderAi: false },
   avoidedToday: 0,
   providers: [],
 });

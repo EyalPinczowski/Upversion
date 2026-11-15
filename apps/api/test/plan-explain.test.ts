@@ -1,9 +1,11 @@
 import {
-  PLAN_EXPLAIN_ITEM_KEYS,
-  PLAN_EXPLAIN_ROOT_KEYS,
-  PLAN_EXPLAIN_SKILL_KEYS,
+  BuildRequestSchema,
+  planExplainInput,
+  PLAN_EXPLAIN_SYSTEM,
+  planExplainUserMessage,
+  type PlanExplainInput,
 } from '@upversion/shared';
-import type { PlanExplainInput } from '@upversion/shared';
+import { BUNDLED_CATALOG } from '@upversion/shared/plan-builder';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app';
 import type { AIProvider } from '../src/ai/provider';
@@ -336,11 +338,23 @@ describe.skipIf(!dbAvailable)(
       expect(sent).not.toMatch(/[\w.+-]+@[\w-]+\.[\w.-]+/);
       // The user message is exactly the allowlist: the keys at every level.
       const input = inputOf(sent);
-      expect(Object.keys(input).sort()).toEqual([...PLAN_EXPLAIN_ROOT_KEYS]);
+      expect(Object.keys(input).sort()).toEqual(['items', 'roles']);
       for (const item of input.items) {
-        expect(Object.keys(item).sort()).toEqual([...PLAN_EXPLAIN_ITEM_KEYS]);
+        expect(Object.keys(item).sort()).toEqual([
+          'baseline',
+          'certificate',
+          'free',
+          'hours',
+          'id',
+          'kind',
+          'origin',
+          'provider',
+          'skills',
+          'tier',
+          'title',
+        ]);
         for (const s of item.skills) {
-          expect(Object.keys(s).sort()).toEqual([...PLAN_EXPLAIN_SKILL_KEYS]);
+          expect(Object.keys(s).sort()).toEqual(['extra', 'level', 'name', 'weight']);
         }
       }
       // Everything in it is the catalog's: the titles equal the draft's.
@@ -374,13 +388,26 @@ describe.skipIf(!dbAvailable)(
       const cached = await rows<{ purpose: string }>(`select purpose from rnd.ai_cache`);
       expect(cached).toEqual([{ purpose: 'plan_explain' }]);
       await app!.close();
+      // The cap IS reached: ai_plan_explain_usage_today() sums by the database's own today, so the
+      // row is dated with it (the usage store's clock is the test clock, 2026-11-01).
+      await rows(
+        `insert into rnd.ai_usage_daily (user_id, day, purpose, requests)
+         values ($1, (now() at time zone 'utc')::date, 'plan_explain', 5)`,
+        [B],
+      );
       await start({ env: { AI_PLAN_EXPLAIN_DAILY_TOTAL: '1' } });
+      const other = await explain({ ...REQUEST, budget: { mode: 'free' }, certPreference: 'none' });
+      expect(other.statusCode).toBe(429); // the cap is real: an uncached draft is refused
+      expect(other.json().error.code).toBe('ai_feature_cap');
       const again = await explain();
       expect(again.statusCode).toBe(200);
       expect(again.json().providers).toEqual([]);
       expect(again.json().lines).toEqual(first.json().lines);
       expect(fetched).toHaveLength(1);
-      expect(await usageRows()).toEqual([{ user_id: A, requests: 1 }]);
+      expect(await usageRows()).toEqual([
+        { user_id: A, requests: 1 },
+        { user_id: B, requests: 5 },
+      ]);
     });
 
     it('answers 409 draft_changed with zero provider calls and no run spent', async () => {
@@ -620,6 +647,68 @@ describe.skipIf(!dbAvailable)(
       });
       expect(res.statusCode).toBe(201);
       expect(fetched).toHaveLength(0);
+    });
+
+    it('when the app-wide total cannot be read: 503 ai_unavailable, nothing sent, no run spent', async () => {
+      await start();
+      await rows(
+        'alter function rnd.ai_plan_explain_usage_today() rename to ai_plan_explain_usage_today_x',
+      );
+      try {
+        const res = await explain();
+        expect(res.statusCode).toBe(503);
+        expect(res.json().error.code).toBe('ai_unavailable');
+        expect(fetched).toHaveLength(0);
+        expect(await usageRows()).toEqual([]);
+      } finally {
+        await rows(
+          'alter function rnd.ai_plan_explain_usage_today_x() rename to ai_plan_explain_usage_today',
+        );
+      }
+    });
+
+    it('a cache read that fails during a build saves the templates (201), not a 500', async () => {
+      await start();
+      const hash = await draftHash();
+      await rows('alter table rnd.ai_cache rename to ai_cache_x');
+      try {
+        const res = await send(BUILD, {
+          id: 'b0000000-0000-4000-8000-000000000007',
+          request: REQUEST,
+          draftHash: hash,
+          replacesPlanIds: [],
+          useAiExplanations: true,
+        });
+        expect(res.statusCode).toBe(201);
+        expect(fetched).toHaveLength(0);
+      } finally {
+        await rows('alter table rnd.ai_cache_x rename to ai_cache');
+      }
+    });
+
+    it('sends as many items as the window allows, down to a single one', async () => {
+      const preview = (
+        await (async () => {
+          await start();
+          return send(PREVIEW, REQUEST);
+        })()
+      ).json();
+      await app!.close();
+      const request = BuildRequestSchema.parse(REQUEST);
+      const one = planExplainInput(preview, request, BUNDLED_CATALOG, 1);
+      const two = planExplainInput(preview, request, BUNDLED_CATALOG, 2);
+      const len = (i: PlanExplainInput) =>
+        PLAN_EXPLAIN_SYSTEM.length + planExplainUserMessage(i).length;
+      expect(len(one)).toBeLessThan(len(two));
+      const tight = {
+        ...cloudflare(),
+        maxContextChars: len(one) + 1,
+      } as AIProvider;
+      await start({ providers: [tight] });
+      const res = await send(EXPLAIN, { request: REQUEST, draftHash: preview.draftHash });
+      expect(res.statusCode).toBe(200);
+      expect(inputOf(fetched[0]!.body).items).toHaveLength(1);
+      expect(res.json().lines).toHaveLength(preview.items.length);
     });
 
     it('shows the flag and the meter on the usage endpoint', async () => {

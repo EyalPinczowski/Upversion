@@ -170,6 +170,7 @@ export type ExplainRejection =
   | 'price'
   | 'certificate'
   | 'unknown_name'
+  | 'assurance'
   | 'overclaim'
   | 'injection';
 
@@ -233,42 +234,86 @@ function stripNames(text: string, names: readonly string[]): string {
 
 const URL_LIKE =
   /(?:https?:|www\.|\/\/|[\p{L}\p{N}-]{2,}\.[\p{L}]{2,}(?![\p{L}\p{N}])|\.[\p{L}]{2,}\/)/iu;
+/**
+ * Strict on purpose: ANY mention of price, cost, money or "free" is refused, because whether it is
+ * true depends on a price the catalog may not have verified. The template line carries the price
+ * facts; the AI line never does.
+ */
 const PRICE_RE =
-  /(?:[$€£₪¥]|\b(?:usd|eur|ils|dollars?|euros?|shekels?|prices?|priced|pricing|costs?|costly|cheap\w*|affordabl\w*|discount\w*|fees?|subscriptions?|paid|pay|pays|payment|money)\b)/iu;
+  /(?:[$€£₪¥]|\b(?:usd|eur|ils|dollars?|euros?|shekels?|prices?|priced|pricing|costs?|costly|cost-?free|cheap\w*|affordabl\w*|discount\w*|fees?|subscriptions?|paid|pays?|payment|money|free|gratis|complimentary|charge[sd]?|nothing|zero|budget\w*|sale|deals?|bargain\w*|offers?|offered|premium|trial|worth)\b)/iu;
+/**
+ * Verification and assurance wording: a line must never say a link, price or detail is checked,
+ * confirmed, current, safe, official or trusted (the catalog marks unverified items "needs check").
+ */
+const ASSURANCE_RE =
+  /\b(?:verif\w*|confirm\w*|up[\s-]*to[\s-]*date|current\w*|latest|newest|safe\w*|secur\w*|trust\w*|official\w*|recogni[sz]\w*|accredit\w*|guarantee\w*|reliabl\w*|legit\w*|check\w*|needs?\s+check|valid\w*|authentic\w*|endors\w*|approv\w*|certified|renown\w*|reputable|leading|world[\s-]*class|top|best|proven|genuine|real|actual\w*|accurate\w*|correct\w*)\b/iu;
+const CONTACT_RE =
+  /\b(?:linkedin|contact\w*|ask\w*|e-?mail\w*|messag\w*|call\w*|phone\w*|dm|follow\w*|subscribe\w*|visit\w*|click\w*|sign\s?up|regist\w*|enrol\w*|enroll\w*|apply|applying|refund\w*|support|instructor\w*|teacher\w*|professor\w*|mentor\w*|universit\w*|college\w*|school\w*)\b/iu;
 const CERT_RE =
   /\b(?:certificates?|certificat\w*|certified|certify|certifications?|exams?|diplomas?|degrees?|badges?|credentials?|accredit\w*)\b/iu;
 const OVERCLAIM_RE =
-  /\b(?:guarantee[sd]?|promise[sd]?|hired|hiring|job offers?|salary|salaries|earn|income|expert|master(?:y|ed)?|fluent|best|top-rated|number one)\b/iu;
+  /\b(?:promise[sd]?|hired|hiring|job offers?|salary|salaries|earn|income|expert|master(?:y|ed)?|fluent|number one)\b/iu;
 const INJECTION_RE =
   /(?:\b(?:ignore|disregard|forget|override)\b.{0,40}\b(?:instruction|prompt|rules?|above|previous|earlier)|system prompt|as an ai\b|language model|\bi (?:cannot|can't|can not|am unable|am sorry|apologi[sz]e)\b|^\s*(?:sorry|unfortunately)\b)/iu;
 const NUMBER_WORDS =
   /\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|sixty|hundred|thousand|million|dozen|half|twice|double|triple)\b/iu;
-const FREE_RE = /\bfree\b/iu;
-// Letters, numbers, punctuation and spaces only: no markup characters, symbols, emoji or control characters.
-const ALLOWED_CHARS = /^[\p{L}\p{N}\p{P}\p{Zs}]*$/u;
+// Latin letters, numbers, punctuation and spaces only: no markup, symbols, emoji, other scripts or control characters.
+const ALLOWED_CHARS = /^[\p{Script=Latin}\p{N}\p{P}\p{Zs}]*$/u;
 const MARKUP = /[`*_#<>[\]{}|\\~^@=+]/u;
 
-function numeralsOf(text: string): Set<string> {
-  return new Set(text.match(/\d+(?:\.\d+)?/gu) ?? []);
-}
+/** Words any line may use besides the item's own words: function words and a few plain teaching words. */
+const COMMON_WORDS = new Set(
+  `a an the and or but so yet nor to of in on at for with without by from as into onto up down out over under about around
+   across after before during until while once then than too very much many more most less least also just only even still
+   again already soon later next first second last each every all any some both either neither other another such same
+   is are was were be been being am it its this that these those there here now how what which who whom whose when where why
+   i me my we us our you your yours he she him her his they them their will would can could shall should may might must do does
+   did done have has had having not no yes if else because since though although whether
+   s ll re ve d t m
+   skill skills basic basics step steps learn learns learning learned teach teaches teaching taught build builds building built
+   practice practise practises practising course courses lesson lessons item items plan plans role roles target targets goal goals
+   need needs needed get gets getting started start starts ready solid strong foundation foundations understand understands
+   understanding cover covers covering covered introduce introduces introduction work works working hands confidence
+   comfortable short quick focused key core main important essential help helps helping make makes making let lets use uses using
+   prepare prepares preparing practical daily day week weeks days towards toward along way move moving progress ahead fit fits
+   good great useful lay lays gain gains develop develops grow grows deepen deepens sharpen sharpens train trains topic topics
+   concept concepts tool tools data one path stage stages part parts piece pieces gap gaps level levels weight weights
+   rated rate rates early beginning begin begins fundamentals fundamental ground groundwork complete finishes finish finishing
+   well easy easily clear clearly simple simply new`
+    .split(/\s+/u)
+    .filter((w) => w.length > 0),
+);
 
-/** The numbers an item's own line may use: its hours, weights and its baseline's numbers. */
-function allowedNumbers(entry: PlanExplainItem): Set<string> {
-  const set = numeralsOf(entry.baseline);
-  const add = (n: number) => {
-    set.add(String(n));
-    if (Number.isInteger(n)) set.add(`${n}.0`);
-  };
-  add(entry.hours);
-  for (const s of entry.skills) add(s.weight);
-  return set;
+const wordsOf = (text: string): string[] =>
+  text
+    .normalize('NFKC')
+    .toLowerCase()
+    .match(/\p{L}+/gu) ?? [];
+
+/* eslint-disable no-misleading-character-class */
+const INVISIBLE =
+  /[\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180b-\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\u3164\ufe00-\ufe0f\ufeff\uffa0]/gu;
+/* eslint-enable no-misleading-character-class */
+
+/** The numeral and the unit word after it ("6 hours"), as `6|hours`; `6|` when no word follows. */
+function numeralKeys(text: string): string[] {
+  const keys: string[] = [];
+  for (const m of text.matchAll(/(\d+(?:\.\d+)?)(?:[ \t]+(\p{L}+))?/gu)) {
+    keys.push(`${m[1]}|${(m[2] ?? '').toLowerCase()}`);
+  }
+  return keys;
 }
 
 /**
  * Checks one line the model wrote for one item. Returns the cleaned text, or why it was refused.
- * A refused line is replaced by the template line by the caller. The checks, in order: length and
- * characters, links and personal details, prices, certificates, spelled-out and written numbers,
- * names of anything outside the item's own entry, over-claims, and instructions or refusals.
+ * A refused line is replaced by the template line by the caller. The text is normalised first
+ * (NFKC, invisible characters removed), then checked in order: length and characters, links and
+ * personal details, instructions, price/cost/"free" words (any mention), verification and
+ * assurance wording, contact words, certificates, numbers (only a numeral+unit that the template
+ * line itself has), catalog names outside the item, over-claims, and finally a strict vocabulary:
+ * every word must belong to the item (title, provider, skills, roles, template words) or be a
+ * common function or teaching word, and no capitalised word may appear inside a sentence unless it
+ * belongs to the item. A false drop only means the template line stays.
  */
 export function checkExplainLine(
   rawText: string,
@@ -278,8 +323,10 @@ export function checkExplainLine(
   options: RedactOptions = {},
 ): ExplainCheck {
   let text = rawText
+    .normalize('NFKC')
+    .replace(INVISIBLE, '')
     // eslint-disable-next-line no-control-regex
-    .replace(/[\u0000-\u001f\u007f]+/gu, ' ')
+    .replace(/[\u0000-\u001f\u007f-\u009f]+/gu, ' ')
     .replace(/\s+/gu, ' ')
     .trim();
   // A pair of quotes around the whole sentence is decoration.
@@ -298,21 +345,46 @@ export function checkExplainLine(
     return { ok: false, reason: 'personal' };
   }
   if (INJECTION_RE.test(text)) return { ok: false, reason: 'injection' };
-  if (PRICE_RE.test(rest) || (!entry.free && FREE_RE.test(rest))) {
-    return { ok: false, reason: 'price' };
-  }
+  if (PRICE_RE.test(rest)) return { ok: false, reason: 'price' };
+  if (ASSURANCE_RE.test(rest)) return { ok: false, reason: 'assurance' };
+  if (CONTACT_RE.test(rest)) return { ok: false, reason: 'unknown_name' };
   if (!entry.certificate && entry.kind !== 'exam' && CERT_RE.test(rest)) {
     return { ok: false, reason: 'certificate' };
   }
-  const allowed = allowedNumbers(entry);
-  for (const n of rest.match(/\d+(?:\.\d+)?/gu) ?? []) {
-    if (!allowed.has(n)) return { ok: false, reason: 'number' };
+  const templateKeys = new Set(
+    numeralKeys(entry.baseline.normalize('NFKC')).flatMap((k) => [k, `${k.split('|')[0]}|`]),
+  );
+  for (const key of numeralKeys(rest)) {
+    if (!templateKeys.has(key)) return { ok: false, reason: 'number' };
   }
   if (NUMBER_WORDS.test(rest)) return { ok: false, reason: 'number' };
   for (const m of foreignMatchers(catalog)) {
     if (m.re.test(rest)) return { ok: false, reason: 'unknown_name' };
   }
   if (OVERCLAIM_RE.test(rest)) return { ok: false, reason: 'overclaim' };
+
+  // Strict vocabulary: the item's own words plus common words; capitalised words only if the item's.
+  const own = new Set(
+    wordsOf(
+      [
+        entry.title,
+        entry.provider,
+        ...entry.skills.map((s) => s.name),
+        ...input.roles,
+        entry.baseline,
+      ].join(' '),
+    ),
+  );
+  for (const m of rest.matchAll(/\p{L}+/gu)) {
+    const word = m[0];
+    const lower = word.toLowerCase();
+    const before = rest.slice(0, m.index).trimEnd();
+    const sentenceStart = before === '' || /[.!?:]$/u.test(before);
+    const tail = word.slice(1);
+    const capitalised = word !== lower && !(sentenceStart && tail === tail.toLowerCase());
+    if (capitalised && !own.has(lower)) return { ok: false, reason: 'unknown_name' };
+    if (!own.has(lower) && !COMMON_WORDS.has(lower)) return { ok: false, reason: 'unknown_name' };
+  }
   return { ok: true, text };
 }
 

@@ -70,7 +70,7 @@ export function createPlanExplainService(deps: PlanExplainDeps) {
       return p ? [p.maxContextChars] : [];
     });
     const limit = windows.length > 0 ? Math.min(...windows) : Infinity;
-    for (let max = 30; max >= 1; max -= 2) {
+    for (let max = 30; max >= 1; max = max > 2 ? max - 2 : max - 1) {
       const input = planExplainInput(draft, request, catalog, max);
       const user = planExplainUserMessage(input);
       if (PLAN_EXPLAIN_SYSTEM.length + user.length > limit) continue;
@@ -129,7 +129,9 @@ export function createPlanExplainService(deps: PlanExplainDeps) {
         await usage.noteAvoided(userId, PURPOSE).catch(() => undefined);
         raw = hit;
       } else {
-        const total = await usage.planExplainTotalToday(userId);
+        // When the total cannot be read, nothing is sent and no run is spent (503, templates stay).
+        const total = await usage.planExplainTotalToday(userId).catch(() => null);
+        if (total === null) throw unavailable();
         if (total >= deps.dailyTotal) {
           throw new HttpError(
             429,
@@ -183,7 +185,17 @@ export function createPlanExplainService(deps: PlanExplainDeps) {
       const known = await identifiers(ctx, userId);
       const prepared = prepare(known, draft, request);
       if (!prepared) return null;
-      const raw = await readCached(ctx, userId, cacheKey(prepared.safe), deps.now());
+      // A failed read must not fail the build: a savepoint keeps the build's transaction usable
+      // and the templates are saved instead.
+      let raw: string | null;
+      try {
+        await ctx.client.query('savepoint plan_explain_cache');
+        raw = await readCached(ctx, userId, cacheKey(prepared.safe), deps.now());
+        await ctx.client.query('release savepoint plan_explain_cache');
+      } catch {
+        await ctx.client.query('rollback to savepoint plan_explain_cache').catch(() => undefined);
+        return null;
+      }
       if (raw === null) return null;
       return explainedLines(raw, draft, prepared.input, catalog, { knownIdentifiers: known }).lines;
     },
