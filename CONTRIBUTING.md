@@ -51,7 +51,7 @@ Set these in GitHub under **Settings → Rules → Rulesets**, which can allow a
 - Restrict deletions and block force pushes.
 - Require a pull request before merging: 0 required approvals, allowed merge method **squash** only, require conversation resolution.
 - Require status checks: `shared`, `web`, `api`, `db`, `catalog-drift`, `gitleaks`, `analyze (javascript-typescript)`, `analyze (python)`, `e2e`. Don't require the branch to be up to date.
-- `e2e` (Playwright, see `e2e/README.md`) is required since the owner's decision of 2026-11-14 (ADR 018). The maintainer adds it to the ruleset by hand.
+- `e2e` (Playwright, see `e2e/README.md`) is required since the owner's decision of 2026-11-14 (ADR 018). The owner adds it to the ruleset by hand; until then GitHub does not enforce it, and Claude checks that `e2e` passed before merging.
 - No bypass actors.
 
 **Ruleset `main`** (target: branch `main`)

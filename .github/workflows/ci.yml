@@ -138,8 +138,8 @@ jobs:
 
   # Playwright tests of the three core flows against the real stack: the built API, the e2e build
   # of the web app, the real migrations on Postgres. No Supabase, Render or Vercel and no outside
-  # network: the sign-in keys are generated during the run (see e2e/README.md). Not a required
-  # check yet (CONTRIBUTING.md): it becomes one once it has proven stable.
+  # network: the sign-in keys are generated during the run (see e2e/README.md). A required check
+  # (ADR 018); adding it to the rulesets is an owner action (CONTRIBUTING.md).
   e2e:
     name: e2e
     runs-on: ubuntu-latest
