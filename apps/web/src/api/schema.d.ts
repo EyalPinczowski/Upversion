@@ -3727,6 +3727,7 @@ export interface paths {
                                      */
                                     source: "manual" | "import" | "builder" | "auto";
                                     externalRef?: string;
+                                    skillIds?: string[];
                                 }[];
                                 skillIds?: string[];
                             };
@@ -4200,6 +4201,7 @@ export interface paths {
                                  */
                                 source: "manual" | "import" | "builder" | "auto";
                                 externalRef?: string;
+                                skillIds?: string[];
                             }[];
                         };
                     };
@@ -4304,6 +4306,7 @@ export interface paths {
                                  */
                                 source: "manual" | "import" | "builder" | "auto";
                                 externalRef?: string;
+                                skillIds?: string[];
                             }[];
                         };
                     };
@@ -4621,6 +4624,7 @@ export interface paths {
                                  */
                                 source: "manual" | "import" | "builder" | "auto";
                                 externalRef?: string;
+                                skillIds?: string[];
                             }[];
                         };
                     };
@@ -4941,6 +4945,7 @@ export interface paths {
                                  */
                                 source: "manual" | "import" | "builder" | "auto";
                                 externalRef?: string;
+                                skillIds?: string[];
                             }[];
                         };
                     };
@@ -5045,6 +5050,7 @@ export interface paths {
                                  */
                                 source: "manual" | "import" | "builder" | "auto";
                                 externalRef?: string;
+                                skillIds?: string[];
                             }[];
                         };
                     };
@@ -5580,6 +5586,7 @@ export interface paths {
                                  */
                                 source: "manual" | "import" | "builder" | "auto";
                                 externalRef?: string;
+                                skillIds?: string[];
                             }[];
                         };
                     };

@@ -1,4 +1,4 @@
-import type { Task } from '../schemas';
+import { MAX_TASK_SKILL_IDS, type Task } from '../schemas';
 import type { CatalogItem } from './catalog';
 import { linkNeedsCheck, showsLink, type BuildContext } from './context';
 import type { Ordering } from './order';
@@ -160,6 +160,8 @@ export function composeTasks(ctx: BuildContext, resolved: Resolved, ordering: Or
       provider: item.provider,
       source: 'builder',
       externalRef: `catalog:${item.id}`,
+      // The skills the item builds (ADR 018), so progress needs no catalog lookup later.
+      skillIds: [...new Set(item.skills)].slice(0, MAX_TASK_SKILL_IDS),
       ...(showsLink(item) && item.url ? { url: item.url } : {}),
     };
     const linkNote = linkNeedsCheck(item) ? NEEDS_CHECK_LINK : undefined;
@@ -218,6 +220,8 @@ export function composeTasks(ctx: BuildContext, resolved: Resolved, ordering: Or
           notes: "Pick a date and book the exam on the provider's own page.",
           source: 'builder',
           externalRef: `catalog:${item.id}`,
+          // Booking builds no skill: an empty list stops progress from falling back to the item.
+          skillIds: [],
         }),
       );
       const date = ctx.request.examDates.find((e) => e.catalogId === item.id);

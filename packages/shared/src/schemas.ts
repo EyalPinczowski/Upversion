@@ -30,6 +30,15 @@ export const LessonSchema = z.object({
 
 export const PinnedStartSchema = z.object({ date: LocalDateSchema, start: TimeSchema });
 
+/** A taxonomy skill id: lowercase letters, digits and hyphens (same pattern as catalog ids). */
+export const SkillIdSchema = z
+  .string()
+  .max(80)
+  .regex(/^[a-z0-9][a-z0-9-]*$/, { message: 'Expected a skill id' });
+
+/** Most skills one task can build (catalog items list at most 4). */
+export const MAX_TASK_SKILL_IDS = 10;
+
 export const TaskSchema = z
   .object({
     id: z.string().min(1),
@@ -58,6 +67,13 @@ export const TaskSchema = z
     notes: z.string().optional(),
     source: TaskSourceSchema.default('manual'),
     externalRef: z.string().optional(),
+    /**
+     * Optional taxonomy skills this task builds (ADR 018). Absent: the skills are read from the
+     * catalog item named by `externalRef`. An empty list means "builds no skill" (e.g. booking).
+     * Unknown ids are not rejected here (like the plan-level `skillIds`); progress ignores ids
+     * that are not in the goal.
+     */
+    skillIds: z.array(SkillIdSchema).max(MAX_TASK_SKILL_IDS).optional(),
   })
   .superRefine((task, ctx) => {
     if (task.isAnchor && (!task.anchorDate || !task.anchorStartTime)) {
