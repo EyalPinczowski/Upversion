@@ -85,6 +85,9 @@ function memoryUsage(log: string[] = []) {
     async cvTailorTotalToday() {
       return [...users].reduce((n, [key, v]) => (key.endsWith(':cv_tailor') ? n + v : n), 0);
     },
+    async planExplainTotalToday() {
+      return [...users].reduce((n, [key, v]) => (key.endsWith(':plan_explain') ? n + v : n), 0);
+    },
     async snapshot() {
       throw new Error('not used');
     },
@@ -141,7 +144,13 @@ function setup(
   const config: GatewayConfig = {
     providerOrder: providers.map((p) => p.id),
     budgets: Object.fromEntries(providers.map((p) => [p.id, 100])),
-    userCaps: { practice_message: 5, practice_feedback: 2, day_overview: 1, cv_tailor: 3 },
+    userCaps: {
+      practice_message: 5,
+      practice_feedback: 2,
+      day_overview: 1,
+      cv_tailor: 3,
+      plan_explain: 10,
+    },
     timeoutMs: 1000,
     turnTimeoutMs: 5000,
     historyChars: 12000,
@@ -483,7 +492,13 @@ describe('budgets and caps', () => {
   it('stops a user at the cap (429) while another user still succeeds', async () => {
     const calls: string[] = [];
     const { gateway } = setup([provider('one', ok(), calls)], {
-      userCaps: { practice_message: 2, practice_feedback: 2, day_overview: 1, cv_tailor: 3 },
+      userCaps: {
+        practice_message: 2,
+        practice_feedback: 2,
+        day_overview: 1,
+        cv_tailor: 3,
+        plan_explain: 10,
+      },
     });
     await gateway.generate({ userId: USER_A, request: request() });
     await gateway.generate({ userId: USER_A, request: request() });
@@ -508,7 +523,13 @@ describe('budgets and caps', () => {
 
   it('treats a cap of 0 as no calls allowed', async () => {
     const { gateway } = setup([provider('one', ok())], {
-      userCaps: { practice_message: 0, practice_feedback: 0, day_overview: 0, cv_tailor: 3 },
+      userCaps: {
+        practice_message: 0,
+        practice_feedback: 0,
+        day_overview: 0,
+        cv_tailor: 3,
+        plan_explain: 10,
+      },
     });
     await expect(gateway.generate({ userId: USER_A, request: request() })).rejects.toBeInstanceOf(
       AIUserCapError,
@@ -655,7 +676,13 @@ describe('the paid and fake providers', () => {
       config: {
         providerOrder: ['paid'],
         budgets: { paid: 10 },
-        userCaps: { practice_message: 5, practice_feedback: 5, day_overview: 5, cv_tailor: 3 },
+        userCaps: {
+          practice_message: 5,
+          practice_feedback: 5,
+          day_overview: 5,
+          cv_tailor: 3,
+          plan_explain: 10,
+        },
         timeoutMs: 100,
         turnTimeoutMs: 200,
         historyChars: 1000,
@@ -881,7 +908,13 @@ describe('providers option and the budget check before the user’s reservation 
   it('still answers 429 at the user cap before any provider is reserved', async () => {
     const calls: string[] = [];
     const { gateway, usage } = setup([provider('one', ok('x'), calls)], {
-      userCaps: { practice_message: 5, practice_feedback: 2, day_overview: 1, cv_tailor: 1 },
+      userCaps: {
+        practice_message: 5,
+        practice_feedback: 2,
+        day_overview: 1,
+        cv_tailor: 1,
+        plan_explain: 10,
+      },
     });
     await gateway.generate({ userId: USER_A, request: cv() });
     await expect(gateway.generate({ userId: USER_A, request: cv() })).rejects.toBeInstanceOf(

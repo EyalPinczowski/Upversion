@@ -117,6 +117,10 @@ const envSchema = z.object({
   // CV tailoring (ADR 016): runs per user per UTC day, and across all users (counted in the database).
   AI_USER_DAILY_CV_TAILOR: intBetween(0, 1000, 3),
   AI_CV_TAILOR_DAILY_TOTAL: intBetween(0, 100_000, 20),
+  // Plan builder explanations (ADR 017 WP-4): runs per user per UTC day, and across all users.
+  // Both defaults are needs check against the providers' free quotas (docs/setup/ai-providers.md).
+  AI_USER_DAILY_PLAN_EXPLAIN: intBetween(0, 1000, 10),
+  AI_PLAN_EXPLAIN_DAILY_TOTAL: intBetween(0, 100_000, 50),
   // Google Calendar (v0.3b). Off unless the owner sets it; needs token keys when on.
   FEATURE_CALENDAR: booleanString('false'),
   // Newest first, "v2:<base64>,v1:<base64>", each key 32 bytes. Server-only secret: never logged.
@@ -151,6 +155,7 @@ export interface AIConfig extends AISettings {
   userCaps: Record<AIPurpose, number>;
   /** CV tailoring runs per UTC day across all users (counted from ai_usage_daily). */
   cvTailorDailyTotal: number;
+  planExplainDailyTotal: number;
   /** One provider attempt. */
   timeoutMs: number;
   /** A whole turn, across fallbacks. */
@@ -375,8 +380,10 @@ function loadAIConfig(e: z.infer<typeof envSchema>, env: NodeJS.ProcessEnv): AIC
       practice_feedback: e.AI_USER_DAILY_PRACTICE_FEEDBACK,
       day_overview: e.AI_USER_DAILY_OVERVIEW,
       cv_tailor: e.AI_USER_DAILY_CV_TAILOR,
+      plan_explain: e.AI_USER_DAILY_PLAN_EXPLAIN,
     },
     cvTailorDailyTotal: e.AI_CV_TAILOR_DAILY_TOTAL,
+    planExplainDailyTotal: e.AI_PLAN_EXPLAIN_DAILY_TOTAL,
     timeoutMs: e.AI_TIMEOUT_MS,
     turnTimeoutMs: e.AI_TURN_TIMEOUT_MS,
     historyChars: e.AI_HISTORY_CHARS,

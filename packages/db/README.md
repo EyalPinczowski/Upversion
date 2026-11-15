@@ -35,6 +35,8 @@ Migration 0017 (CV tailoring, ADR 016): additive. `ai_usage_daily.purpose` also 
 
 Migration 0018 (scheduled calendar sync, `docs/calendar-cron.md`): additive. `calendar_connections.auto_sync boolean not null default true` (the user's switch; the app login may update it) and `calendar_users_due(p_older_than interval, p_limit integer)`, a SECURITY DEFINER function that returns user ids only (connected, token and app calendar present, auto_sync on, account active, last sync missing or older than the interval; never-synced first, then oldest; limit clamped to 1..100). EXECUTE only for the app role. Tests: `test/calendar-cron-schema.test.ts` and `test/convention.test.ts`.
 
+Migration 0019 (plan builder explanations, ADR 017 WP-4): additive. `ai_usage_daily.purpose` and `ai_cache.purpose` also accept `plan_explain` (both checks, `ai_usage_daily_purpose_check` and `ai_cache_purpose_check`, are dropped and re-added; `cv_tailor` is still rejected by `ai_cache`) and `ai_plan_explain_usage_today()`, a SECURITY DEFINER function (no argument, fixed to `plan_explain`) that returns today's (UTC) request sum over all users, the one number the app-wide cap needs. Tests: `test/plan-explain-schema.test.ts` (both schemas) and `test/convention.test.ts`.
+
 SQL tokens: `{{schema}} {{owner}} {{app}} {{app_user}} {{backup}}`. Anything else in `{{ }}` is an error.
 
 ## How the roles fit together (per schema `s`)

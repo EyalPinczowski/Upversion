@@ -49,8 +49,9 @@ const usageBody = (over: { used?: number; ai?: boolean; flag?: boolean } = {}): 
     practiceFeedback: { used: 0, cap: 10 },
     dayOverview: { used: 0, cap: 0 },
     cvTailor: { used: over.used ?? 0, cap: 3 },
+    planExplain: { used: 0, cap: 10 },
   },
-  features: { cvTailor: over.flag !== false, planBuilder: false },
+  features: { cvTailor: over.flag !== false, planBuilder: false, planBuilderAi: false },
   avoidedToday: 0,
   providers: [
     ['cloudflare-ai', 'Cloudflare Workers AI'],

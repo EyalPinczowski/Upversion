@@ -19,7 +19,7 @@ export interface AIRoutesOptions {
   /** The per-user daily caps (from config). */
   userCaps: Readonly<Record<AIPurpose, number>>;
   /** Feature flags the web reads here instead of probing a route. */
-  features: { cvTailor: boolean; planBuilder: boolean };
+  features: { cvTailor: boolean; planBuilder: boolean; planBuilderAi: boolean };
 }
 
 const meter = z.object({ used: z.number().int(), cap: z.number().int() });
@@ -34,9 +34,14 @@ const usageSchema = z.object({
     practiceFeedback: meter,
     dayOverview: meter,
     cvTailor: meter,
+    planExplain: meter,
   }),
   /** The flags only: `cvTailor` says nothing about whether a provider is available. */
-  features: z.object({ cvTailor: z.boolean(), planBuilder: z.boolean() }),
+  features: z.object({
+    cvTailor: z.boolean(),
+    planBuilder: z.boolean(),
+    planBuilderAi: z.boolean(),
+  }),
   avoidedToday: z.number().int(),
   providers: z.array(
     z.object({
@@ -105,8 +110,13 @@ export const aiRoutes: FastifyPluginAsyncZod<AIRoutesOptions> = async (
           practiceFeedback: entry('practice_feedback'),
           dayOverview: entry('day_overview'),
           cvTailor: entry('cv_tailor'),
+          planExplain: entry('plan_explain'),
         },
-        features: { cvTailor: features.cvTailor, planBuilder: features.planBuilder },
+        features: {
+          cvTailor: features.cvTailor,
+          planBuilder: features.planBuilder,
+          planBuilderAi: features.planBuilderAi,
+        },
         avoidedToday: Object.values(snap.user).reduce((n, u) => n + u.avoided, 0),
         providers,
       };

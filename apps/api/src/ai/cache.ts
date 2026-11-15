@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { Database } from '../db/database';
+import type { Database, UserContext } from '../db/database';
 import type { AIPurpose } from './provider';
 import type { SafeAIRequest } from './safe-request';
 
@@ -7,6 +7,8 @@ import type { SafeAIRequest } from './safe-request';
 export const CACHE_TTL_MS: Readonly<Partial<Record<AIPurpose, number>>> = {
   day_overview: 36 * 3600_000,
   practice_feedback: 7 * 24 * 3600_000,
+  // Plan builder explanations (ADR 017): the same draft gives the same request, so it hits.
+  plan_explain: 7 * 24 * 3600_000,
 };
 
 /** The database allows at most this many characters of cached text. */
@@ -31,6 +33,21 @@ export function cacheKey(request: SafeAIRequest): string {
     .digest('hex');
 }
 
+/** One cache read on an open transaction (RLS applies). Null when missing or expired. */
+export async function readCached(
+  ctx: UserContext,
+  userId: string,
+  key: string,
+  now: Date = new Date(),
+): Promise<string | null> {
+  const { rows } = await ctx.client.query<{ text: string }>(
+    `select text from ${ctx.schema}.ai_cache
+      where user_id = $1::uuid and key = $2::text and expires_at > $3::timestamptz`,
+    [userId, key, now],
+  );
+  return rows[0]?.text ?? null;
+}
+
 export interface AICache {
   get(userId: string, key: string): Promise<string | null>;
   put(userId: string, key: string, purpose: AIPurpose, text: string, ttlMs: number): Promise<void>;
@@ -40,14 +57,7 @@ export interface AICache {
 export function createAICache(db: Database, now: () => Date = () => new Date()): AICache {
   return {
     async get(userId, key) {
-      return db.withUser(userId, async (ctx) => {
-        const { rows } = await ctx.client.query<{ text: string }>(
-          `select text from ${ctx.schema}.ai_cache
-            where user_id = $1::uuid and key = $2::text and expires_at > $3::timestamptz`,
-          [userId, key, now()],
-        );
-        return rows[0]?.text ?? null;
-      });
+      return db.withUser(userId, (ctx) => readCached(ctx, userId, key, now()));
     },
 
     async put(userId, key, purpose, text, ttlMs) {

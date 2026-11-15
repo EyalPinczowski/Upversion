@@ -179,7 +179,13 @@ describe.skipIf(!dbAvailable)('AI usage, budgets and cache (real Postgres)', () 
         config: {
           providerOrder: [provider.id],
           budgets: { [provider.id]: over.budget ?? 10 },
-          userCaps: { practice_message: 5, practice_feedback: 2, day_overview: 1, cv_tailor: 3 },
+          userCaps: {
+            practice_message: 5,
+            practice_feedback: 2,
+            day_overview: 1,
+            cv_tailor: 3,
+            plan_explain: 10,
+          },
           timeoutMs: 1000,
           turnTimeoutMs: 3000,
           historyChars: 12000,
@@ -336,8 +342,9 @@ describe.skipIf(!dbAvailable)('AI usage, budgets and cache (real Postgres)', () 
           practiceFeedback: { used: 0, cap: 6 },
           dayOverview: { used: 0, cap: 1 },
           cvTailor: { used: 0, cap: 3 },
+          planExplain: { used: 0, cap: 10 },
         },
-        features: { cvTailor: false, planBuilder: false },
+        features: { cvTailor: false, planBuilder: false, planBuilderAi: false },
         avoidedToday: 0,
         providers: [
           {
