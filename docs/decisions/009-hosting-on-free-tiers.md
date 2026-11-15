@@ -1,6 +1,6 @@
 # 009 – Hosting on free tiers: Vercel, Render, Supabase
 
-**Status:** Planned · built in Phase 0
+**Status:** Accepted · built in Phase 0. Which service hosts the web app today (Vercel, or Cloudflare as "Option B" in `docs/setup/deployments.md`) is **needs check**
 
 ## Context
 Everything must run at $0, with an Operational and an R&D environment, for a small group of users. Free limits change. Supabase's are verified (see `docs/setup/supabase.md`: two free projects, 500 MB, 50,000 monthly users, pausing after a week of low activity). Vercel's and Render's are still **needs check** against their documentation before those services are created, including that no card is required.

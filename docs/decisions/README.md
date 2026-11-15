@@ -6,13 +6,13 @@ One short record per significant choice: the context, the options considered, th
 |---|---|---|
 | [001](001-dynamic-scheduling-as-pure-functions.md) | Dynamic scheduling as pure functions | Accepted |
 | [002](002-minimal-calendar-scopes-and-write-guard.md) | Minimal calendar scopes and a write guard | Accepted |
-| [003](003-one-supabase-project-two-schemas.md) | One Supabase project, two schemas, per-environment roles | Planned |
-| [004](004-free-tier-ai-with-provider-fallback.md) | Free-tier AI with provider fallback, and AI as an optional extra | Planned |
+| [003](003-one-supabase-project-two-schemas.md) | One Supabase project, two schemas, per-environment roles | Accepted (built in Phase 0 and v0.1) |
+| [004](004-free-tier-ai-with-provider-fallback.md) | Free-tier AI with provider fallback, and AI as an optional extra | Accepted (built in v0.3; providers changed in 013, amended by 017) |
 | [005](005-in-browser-demo-with-mocked-api.md) | In-browser demo with a mocked API | Planned |
 | [006](006-oauth-production-status-without-verification.md) | OAuth in production status, without Google verification at first | Accepted |
-| [007](007-catalog-grounded-plan-generation.md) | The AI picks from a verified catalog | Planned |
+| [007](007-catalog-grounded-plan-generation.md) | The AI picks from a verified catalog | Planned; amended by 017 (in v1 the rule-based builder picks the items, the AI only rewrites explanation text) |
 | [008](008-visual-design.md) | Visual design: Blocks direction, logo A | Accepted |
-| [009](009-hosting-on-free-tiers.md) | Hosting on free tiers: Vercel, Render, Supabase | Planned |
+| [009](009-hosting-on-free-tiers.md) | Hosting on free tiers: Vercel, Render, Supabase | Accepted (built in Phase 0; which service hosts the web app is needs check) |
 | [010](010-current-user-id.md) | Row-level security reads the user from `current_user_id()`, not `auth.uid()` | Accepted |
 | [011](011-account-provisioning-in-the-database.md) | Accounts are created and deleted by database functions, not by app-role writes | Accepted |
 | [012](012-aiprovider-seam.md) | The AIProvider seam, and a template-only day briefing in v0.2 | Accepted |
@@ -21,5 +21,6 @@ One short record per significant choice: the context, the options considered, th
 | [015](015-onboarding-setup-and-cv-import.md) | First-time setup and in-browser CV import | Accepted (owner, 2026-11-08) |
 | [016](016-cv-change-and-ai-tailoring.md) | Changing the CV after setup, and tailoring the CV to a job with AI | Accepted (owner, 2026-11-08). On 2026-11-12 the owner accepted the residual risk of undetected names and addresses, approved the 1.85 MB lazy PDF chunk budget and confirmed Groq is used only with Zero Data Retention on |
 | [017](017-plan-builder.md) | Plan builder v1: rule-based, catalog-grounded, optional AI explanations, archive the old active plan | Accepted (owner, 2026-11-12) |
+| [018](018-goal-centred-core.md) | Goal-centred core: goal strip, Goal screen, a 4-screen first run; review tiers, one-page ADRs, e2e required | Accepted (owner, 2026-11-14): Phase B, "plan coverage" wording, suggested-only level updates, AI explanations off by default, no release yet, the process changes, and Q1–Q3 (goal in `plans.summary`, imports also archive the active plan, level suggestions one step up to at most level 2). Spec 3.0, 3.1, 4, 8, 9 and ADR 017 §4.1 edits to do |
 
 Facts about third-party free plans change often. Anything in these records that has not been confirmed on the provider's own documentation is marked **needs check**.
