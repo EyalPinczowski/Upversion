@@ -606,6 +606,21 @@ describe.skipIf(!dbAvailable)('goal progress and task skill ids (real Postgres)'
       expect(await profileSkills(A)).toEqual([{ skillId: 'sql', level: 1, source: 'manual' }]);
     });
 
+    it('the approval is per plan: a new plan suggests the skill again', async () => {
+      await finishSql();
+      expect((await approve('A', SQL_UP)).statusCode).toBe(200);
+      expect(
+        (await importPlan('A', PLAN_2, planFile(), { replacesPlanIds: [PLAN] })).statusCode,
+      ).toBe(201);
+      await done('sql-a', PLAN_2);
+      await done('sql-b', PLAN_2);
+      const body = (await progress('A', PLAN_2)).json();
+      expect(body.suggestions).toMatchObject([{ skillId: 'sql', fromLevel: 1, toLevel: 2 }]);
+      const res = await approve('A', { planId: PLAN_2, skillId: 'sql', toLevel: 2 });
+      expect(res.statusCode).toBe(200);
+      expect(await profileSkills(A)).toEqual([{ skillId: 'sql', level: 2, source: 'manual' }]);
+    });
+
     it('a draft plan suggests nothing and approve answers 409 not_suggested', async () => {
       expect((await importPlan('A', PLAN, planFile(), { status: 'draft' })).statusCode).toBe(201);
       await done('sql-a');
