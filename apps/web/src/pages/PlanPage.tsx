@@ -157,7 +157,8 @@ function ManagePlans({
   // when its archive confirm refreshes the plan list.)
   const [confirmingFor, setConfirmingFor] = useState<string | null>(null);
   const confirming = confirmingFor === planId;
-  useEffect(() => setConfirmingFor(null), [planId]);
+  // Another plan: forget the question (also when the person switches back later).
+  if (confirmingFor !== null && confirmingFor !== planId) setConfirmingFor(null);
   const setConfirming = (open: boolean) => setConfirmingFor(open ? planId : null);
   return (
     <section aria-labelledby="manage-heading" className="space-y-4 border-t border-border pt-6">
