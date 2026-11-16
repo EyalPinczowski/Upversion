@@ -14,8 +14,12 @@ export const AI_STUB_PORT = port('E2E_AI_STUB_PORT', 4313);
 /** A second API process of the same build, with no AI provider configured. */
 export const API_NO_AI_PORT = port('E2E_API_NO_AI_PORT', 4314);
 
+/** A third API process of the same build with the first-run features on (support/first-run.ts). */
+export const API_FIRST_RUN_PORT = port('E2E_API_FIRST_RUN_PORT', 4315);
+
 export const API_URL = `http://127.0.0.1:${API_PORT}`;
 export const API_NO_AI_URL = `http://127.0.0.1:${API_NO_AI_PORT}`;
+export const API_FIRST_RUN_URL = `http://127.0.0.1:${API_FIRST_RUN_PORT}`;
 export const WEB_URL = `http://127.0.0.1:${WEB_PORT}`;
 
 /**

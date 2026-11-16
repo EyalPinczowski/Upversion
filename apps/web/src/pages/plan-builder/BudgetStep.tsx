@@ -48,58 +48,67 @@ export function BudgetStep({
   state,
   errors,
   onChange,
+  part = 'all',
 }: {
   state: BuilderState;
   errors: StepErrors;
   onChange: (patch: Partial<BuilderState>) => void;
+  /** The first run (ADR 018) asks for the money on one screen and the extras on another. */
+  part?: 'all' | 'money' | 'extras';
 }) {
   return (
     <div className="space-y-8">
-      <div className="space-y-3">
-        <Choice
-          questionId="budget"
-          value={state.budgetMode}
-          onPick={(budgetMode) => onChange({ budgetMode })}
-        />
-        <p className="text-muted">
-          Catalog prices are in US dollars. Prices change, so check each one before you pay.
-        </p>
-        {state.budgetMode === 'limit' ? (
-          <TextField
-            label="Most you want to spend in total (US dollars)"
-            type="number"
-            inputMode="decimal"
-            min={1}
-            step="any"
-            value={state.amount}
-            error={errors.amount}
-            onChange={(event) => onChange({ amount: event.target.value })}
+      {part !== 'extras' ? (
+        <div className="space-y-3">
+          <Choice
+            questionId="budget"
+            value={state.budgetMode}
+            onPick={(budgetMode) => onChange({ budgetMode })}
           />
-        ) : null}
-        {state.budgetMode !== 'free' ? (
-          <TextField
-            label="Most for a single course or exam (US dollars, optional)"
-            type="number"
-            inputMode="decimal"
-            min={1}
-            step="any"
-            value={state.maxItemPrice}
-            error={errors.maxItemPrice}
-            hint="For example, nothing over 150."
-            onChange={(event) => onChange({ maxItemPrice: event.target.value })}
+          <p className="text-muted">
+            Catalog prices are in US dollars. Prices change, so check each one before you pay.
+          </p>
+          {state.budgetMode === 'limit' ? (
+            <TextField
+              label="Most you want to spend in total (US dollars)"
+              type="number"
+              inputMode="decimal"
+              min={1}
+              step="any"
+              value={state.amount}
+              error={errors.amount}
+              onChange={(event) => onChange({ amount: event.target.value })}
+            />
+          ) : null}
+          {state.budgetMode !== 'free' ? (
+            <TextField
+              label="Most for a single course or exam (US dollars, optional)"
+              type="number"
+              inputMode="decimal"
+              min={1}
+              step="any"
+              value={state.maxItemPrice}
+              error={errors.maxItemPrice}
+              hint="For example, nothing over 150."
+              onChange={(event) => onChange({ maxItemPrice: event.target.value })}
+            />
+          ) : null}
+        </div>
+      ) : null}
+      {part !== 'money' ? (
+        <>
+          <Choice
+            questionId="certificates"
+            value={state.certPreference}
+            onPick={(certPreference) => onChange({ certPreference })}
           />
-        ) : null}
-      </div>
-      <Choice
-        questionId="certificates"
-        value={state.certPreference}
-        onPick={(certPreference) => onChange({ certPreference })}
-      />
-      <Choice
-        questionId="interview_prep"
-        value={state.interviewPrep}
-        onPick={(interviewPrep) => onChange({ interviewPrep })}
-      />
+          <Choice
+            questionId="interview_prep"
+            value={state.interviewPrep}
+            onPick={(interviewPrep) => onChange({ interviewPrep })}
+          />
+        </>
+      ) : null}
     </div>
   );
 }

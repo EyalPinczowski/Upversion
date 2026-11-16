@@ -7,6 +7,8 @@ import { PlanIcon, SettingsIcon, TodayIcon, WeekIcon } from '../components/icons
 import { Logo } from '../components/Logo';
 import { WelcomeGuide } from '../components/welcome/WelcomeGuide';
 import type { AppEnv } from '../env';
+import { FirstRunRedirect } from '../pages/first-run/FirstRunRedirect';
+import { useFirstRunState } from '../pages/first-run/use-first-run-state';
 import { SetupRedirect } from '../pages/setup/SetupRedirect';
 
 /** Moves focus to the page content after a route change, so keyboard and screen reader users start there. */
@@ -74,6 +76,7 @@ export function AppShell({ appEnv }: { appEnv: AppEnv }) {
   const main = useFocusMainOnNavigation();
   const { pathname } = useLocation();
   const wide = WIDE_PATHS.has(pathname);
+  const firstRun = useFirstRunState();
   return (
     <>
       <Header appEnv={appEnv} />
@@ -108,8 +111,9 @@ export function AppShell({ appEnv }: { appEnv: AppEnv }) {
         >
           <div className={wide ? 'max-w-3xl lg:max-w-none' : 'max-w-3xl'}>
             <CalendarWatcher />
-            <WelcomeGuide />
-            <SetupRedirect />
+            <WelcomeGuide suppressed={firstRun === 'pending' || firstRun === 'first-run'} />
+            <FirstRunRedirect state={firstRun} />
+            <SetupRedirect enabled={firstRun === 'legacy'} />
             <Outlet />
           </div>
         </main>

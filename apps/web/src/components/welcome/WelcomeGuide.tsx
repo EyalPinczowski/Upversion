@@ -46,9 +46,11 @@ function WelcomeDialog({
  * shell, so it never appears on the sign-in or legal pages; it also stays away from the calendar
  * callback. Dismissing it in any way (either button or Escape) counts as seen.
  */
-function Welcome({ userId }: { userId: string }) {
+function Welcome({ userId, suppressed }: { userId: string; suppressed: boolean }) {
   const { pathname } = useLocation();
-  const [seen, setSeen] = useState(() => hasSeenWelcome(userId));
+  const [seenHere, setSeen] = useState(() => hasSeenWelcome(userId));
+  // Other code (the first run) can mark it seen too; every navigation re-renders and reads it.
+  const seen = seenHere || hasSeenWelcome(userId);
   const [reopened, setReopened] = useState(false);
   const [touring, setTouring] = useState(false);
 
@@ -59,7 +61,8 @@ function Welcome({ userId }: { userId: string }) {
   }, []);
 
   const excluded = isWelcomeExcluded(pathname);
-  const showDialog = !touring && (reopened || (!seen && !excluded));
+  // `suppressed`: the first run is about to open (or is not known yet) and replaces the welcome.
+  const showDialog = !touring && (reopened || (!seen && !excluded && !suppressed));
 
   function dismiss() {
     markWelcomeSeen(userId);
@@ -103,8 +106,10 @@ function Welcome({ userId }: { userId: string }) {
   );
 }
 
-export function WelcomeGuide() {
+export function WelcomeGuide({ suppressed = false }: { suppressed?: boolean }) {
   const { state } = useAuth();
   if (state.status !== 'signedIn') return null;
-  return <Welcome key={state.session.userId} userId={state.session.userId} />;
+  return (
+    <Welcome key={state.session.userId} userId={state.session.userId} suppressed={suppressed} />
+  );
 }

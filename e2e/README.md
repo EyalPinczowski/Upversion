@@ -17,6 +17,7 @@ Playwright tests of the core flows (spec section 9) against the **real stack**, 
 | `tests/flow-5-practice-in-app.spec.ts`   | In-app chat: broken feedback JSON is saved as plain text; a 429 on the first provider shows "Continuing on ...", then AI feedback and done. |
 | `tests/flow-6-practice-no-ai.spec.ts`    | No AI provider: the chat is not offered; the AI going away mid-chat shows the fallbacks; a self-check (rubric) finishes the practice.       |
 | `tests/flow-7-import-over-active.spec.ts` | Import a plan while another is active: the archive confirm names it, cancel sends nothing, confirm archives the old plan (read-only).      |
+| `tests/flow-8-first-run.spec.ts`          | ADR 018 first run at 360 px: four screens (goal, where you are now, time and money, draft) from sign-in to a built plan on Today. Runs against a third API process with the profile and plan builder features on. |
 
 Every screen of every flow is also checked with axe-core (WCAG 2.x A and AA), and every test fails on a console error, an uncaught page error or a Content-Security-Policy violation.
 
@@ -56,7 +57,7 @@ The tokens are verified by the real API code (signature, issuer, audience, expir
 
 ## AI in the practice flows
 
-The API's own Groq and Cloudflare provider code runs (`AI_PROVIDERS=groq,cloudflare-ai`, made-up keys), but `support/ai-fetch-preload.mjs`, loaded into the e2e API process only, sends their two HTTPS addresses to `support/ai-stub.ts`, a scripted server on 127.0.0.1. By default it answers chat with one fixed line and feedback requests with valid JSON; a test queues a 429 or broken text with `scriptAi`. The fake provider (`AI_FAKE_PROVIDER`) is not used because it is a single provider with a fixed answer, so it cannot show a 429 or the switch to the next provider. A second API process of the same build has no provider at all ("AI off"); a test points the page at it with `switchToApiWithoutAi`. A provider that answered 429 stays in a cooldown for the rest of the run (the API's clock is fixed), so the 429 test is the last one that relies on the first provider.
+The API's own Groq and Cloudflare provider code runs (`AI_PROVIDERS=groq,cloudflare-ai`, made-up keys), but `support/ai-fetch-preload.mjs`, loaded into the e2e API process only, sends their two HTTPS addresses to `support/ai-stub.ts`, a scripted server on 127.0.0.1. By default it answers chat with one fixed line and feedback requests with valid JSON; a test queues a 429 or broken text with `scriptAi`. The fake provider (`AI_FAKE_PROVIDER`) is not used because it is a single provider with a fixed answer, so it cannot show a 429 or the switch to the next provider. A third API process (`api-first-run`, port 4315) has `FEATURE_PROFILE_SETUP` and `FEATURE_PLAN_BUILDER` on; the first-run test points the page at it with `switchToFirstRunApi`, because with both on every person with no plan is sent to the first run, which the demo-plan flows must not see. A second API process of the same build has no provider at all ("AI off"); a test points the page at it with `switchToApiWithoutAi`. A provider that answered 429 stays in a cooldown for the rest of the run (the API's clock is fixed), so the 429 test is the last one that relies on the first provider.
 
 ## How a run works
 
