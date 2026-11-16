@@ -5117,6 +5117,428 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/plans/{id}/goal-progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The goal, plan coverage per skill and level suggestions of a plan
+         * @description Read only. `goal` comes from the plan (or, for older plans, from its skill ids); `progress` is plan coverage per goal skill (a task’s skills are its own `skillIds`, else its catalog item’s) with the levels from the user’s profile; `suggestions` lists skills whose tasks are all done and whose level is below 2 (one level up). Practice scores are evidence only. `goal` and `progress` are null for a plan that names no skill; `suggestions` is empty for an archived plan. 404 for a plan that is not yours.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            planId: string;
+                            /** @enum {string} */
+                            planStatus: "draft" | "active" | "archived" | "done";
+                            goal: {
+                                targetRoleIds: string[];
+                                skillIds: string[];
+                                /** @default {} */
+                                startLevels: {
+                                    [key: string]: number;
+                                };
+                                deadline?: string;
+                                /** @enum {string} */
+                                createdFrom?: "builder" | "import" | "manual";
+                            } | null;
+                            progress: {
+                                /** @enum {string} */
+                                label: "plan coverage";
+                                skills: {
+                                    skillId: string;
+                                    plannedHours: number;
+                                    doneHours: number;
+                                    coverage: number;
+                                    tasksDone: number;
+                                    tasksTotal: number;
+                                    /** @enum {string} */
+                                    status: "not_started" | "in_progress" | "done";
+                                    level: number;
+                                    practice: {
+                                        average: number;
+                                        count: number;
+                                    } | null;
+                                }[];
+                                coverage: number;
+                                plannedHours: number;
+                                doneHours: number;
+                                unattributedHours: number;
+                                unattributedTasks: number;
+                            } | null;
+                            suggestions: {
+                                skillId: string;
+                                fromLevel: number;
+                                toLevel: number;
+                                /** @enum {string} */
+                                reason: "all_tasks_done";
+                                tasksDone: number;
+                                practice: {
+                                    average: number;
+                                    count: number;
+                                } | null;
+                            }[];
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/level-ups/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a suggested level update (writes one profile skill, source manual)
+         * @description The server recomputes the suggestions for the plan and accepts only one that is suggested right now: `toLevel` must be exactly one above the skill’s current level and at most 2. Writes that skill to the user’s profile with `source: manual`. 404 for a plan that is not yours; 409 `plan_archived` for an archived plan; 409 `not_suggested` when the update is not suggested (any more); 409 `profile_skills_full` when the profile holds 60 skills. Nothing is ever written without this call.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        planId: string;
+                        skillId: string;
+                        toLevel: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            skillId: string;
+                            fromLevel: number;
+                            level: number;
+                            /** @enum {string} */
+                            source: "manual";
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/plans/import": {
         parameters: {
             query?: never;
@@ -5128,7 +5550,7 @@ export interface paths {
         put?: never;
         /**
          * Import a plan file (idempotent on the client-generated plan id)
-         * @description The body is a plan file (formatVersion 1) plus `id` (a UUID chosen by the client) and an optional `status` of `draft` or `active` (default `active`). Creates the plan, its week pattern, day overrides and tasks in one transaction. 201 on creation; 200 with the stored plan when the same id and content are sent again; 409 when the id exists with different content.
+         * @description The body is a plan file (formatVersion 1) plus `id` (a UUID chosen by the client) and an optional `status` of `draft` or `active` (default `active`). Creates the plan, its week pattern, day overrides and tasks in one transaction. An `active` import archives the user’s active plans in the same transaction, after the same confirm as a build: `replacesPlanIds` must be exactly the set of the user’s active plans (omitted = none; 409 `active_plan_changed` otherwise). 201 on creation; 200 with the stored plan when the same id and content are sent again (nothing archived again); 409 when the id exists with different content.
          */
         post: {
             parameters: {
@@ -5144,6 +5566,7 @@ export interface paths {
                         id: string;
                         /** @enum {string} */
                         status?: "draft" | "active";
+                        replacesPlanIds?: string[];
                     } & {
                         [key: string]: unknown;
                     };

@@ -33,7 +33,7 @@ In **one transaction**, in this order:
 5. Those plans become `archived` (`updated_at` set) and each gets a `plan.archived` event `{ by: 'plan_builder', replacedBy: <new id> }`.
 6. The plan is inserted by the import service with `created_from = 'builder'`, status `active`, tasks `source = 'builder'`, `summary.targetRoleIds`, `summary.builderVersion` and a `plan.imported` event.
 
-Any failure rolls all of it back: the old plan stays active and no new plan exists. With no active plan nothing is archived (`replacesPlanIds: []`). Several active plans can exist today (import does not archive), and all of them must be listed.
+Any failure rolls all of it back: the old plan stays active and no new plan exists. With no active plan nothing is archived (`replacesPlanIds: []`). Several active plans can exist from before the one-active-plan import rule, and all of them must be listed. A plan file import now takes the same confirm and archive step (docs/api-plans.md).
 
 Two simultaneous builds with no active plan: the second waits on the lock, then finds the first one's plan active, and answers 409 `active_plan_changed`. Exactly one plan results.
 

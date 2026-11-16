@@ -86,3 +86,12 @@ First-run steps 1–3 are one question group per screen with "Step n of 4" and B
 
 ## Consequences
 The Goal screen and goal strip make the stated goal visible with no AI and no new table. The first run shrinks from about 15 screens to 4 after sign-in. Phase B adds one flag and removes the tour and old setup at its end. The release risk grows until the owner releases.
+
+## As built: B2 (API)
+- Migration `0020_task_skill_ids.sql`: `tasks.skill_ids text[]`, nullable, at most 10 ids; NULL = unknown (fall back to the catalog item), `[]` = builds no skill. RLS unchanged.
+- Import validates per-task `skillIds` against the taxonomy and **rejects** unknown ids with 422 (`tasks.N.skillIds.M`), the same as plan-level ones; repeats are dropped. Builder tasks store the catalog item's skills, booking tasks `[]`.
+- Import also archives the active plans (Q2): the import body takes `replacesPlanIds` (optional, default none), compared with the active set after the lock and the idempotency check, 409 `active_plan_changed` otherwise; a `draft` import archives nothing. The archive step is shared with the builder (`plans/replace.ts`). Existing clients that import while a plan is active now get 409 until the web sends the confirm.
+- The goal is written to `plans.summary.goal` on build (roles, extra skills, `skillLevels`, deadline) and on import (plan-level skill ids, else the tasks' skills; no start levels). Readers use `deriveGoal` for older plans.
+- Routes (flag-independent): `GET /api/v1/plans/{id}/goal-progress` and `POST /api/v1/me/level-ups/approve` (docs/api-goal-progress.md). The path differs from section 5, which said `/plans/{id}/progress` (that path already exists for the day schedule). Approve is refused for an archived plan.
+- Spec 3.0/3.1/4/8/9 and ADR 017 section 4.1 edits stay in B5, as the phase table says.
+- Open point for the owner: after an approval from 0 to 1 the rule offers 1 to 2 at once while all tasks stay done (B1 rule, Q3 text). Consider suggesting once per plan or per start level.

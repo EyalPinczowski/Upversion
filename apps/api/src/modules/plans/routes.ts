@@ -80,7 +80,7 @@ export const planRoutes: FastifyPluginAsyncZod<PlanRoutesOptions> = async (
         tags: ['plans'],
         summary: 'Import a plan file (idempotent on the client-generated plan id)',
         description:
-          'The body is a plan file (formatVersion 1) plus `id` (a UUID chosen by the client) and an optional `status` of `draft` or `active` (default `active`). Creates the plan, its week pattern, day overrides and tasks in one transaction. 201 on creation; 200 with the stored plan when the same id and content are sent again; 409 when the id exists with different content.',
+          'The body is a plan file (formatVersion 1) plus `id` (a UUID chosen by the client) and an optional `status` of `draft` or `active` (default `active`). Creates the plan, its week pattern, day overrides and tasks in one transaction. An `active` import archives the user’s active plans in the same transaction, after the same confirm as a build: `replacesPlanIds` must be exactly the set of the user’s active plans (omitted = none; 409 `active_plan_changed` otherwise). 201 on creation; 200 with the stored plan when the same id and content are sent again (nothing archived again); 409 when the id exists with different content.',
         security: [{ bearerAuth: [] }],
         body: importPlanBody,
         response: {
@@ -93,9 +93,9 @@ export const planRoutes: FastifyPluginAsyncZod<PlanRoutesOptions> = async (
       },
     },
     async (request, reply) => {
-      const { id, status, ...file } = request.body;
+      const { id, status, replacesPlanIds, ...file } = request.body;
       const valid = validateImport(file, status);
-      const result = await plans.importPlan(userId(request), id, valid);
+      const result = await plans.importPlan(userId(request), id, valid, replacesPlanIds);
       return reply.status(result.created ? 201 : 200).send(result.plan);
     },
   );

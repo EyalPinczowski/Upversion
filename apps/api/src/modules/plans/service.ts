@@ -1,6 +1,7 @@
 import {
   compareDates,
   localDateOf,
+  PLAN_SUMMARY_GOAL_KEY,
   type DayOverride,
   type PlanFile,
   type WeekPattern,
@@ -8,7 +9,8 @@ import {
 import type { Database, UserContext } from '../../db/database';
 import { HttpError } from '../../errors';
 import { requireWritablePlan } from './guard';
-import { summarize, type ValidImport } from './import';
+import { goalForImport, summarize, type ValidImport } from './import';
+import { archiveConfirmed } from './replace';
 import * as repo from './repository';
 import { MAX_OVERRIDES_PER_PLAN, type PlanDetail, type PlanSummary } from './schemas';
 
@@ -114,11 +116,28 @@ export function createPlanService(db: Database, now: () => Date = () => new Date
      * content answers 409. Two simultaneous first calls collide on the primary key; the loser
      * runs once more and then takes the "already imported" path.
      */
-    importPlan: (userId: string, planId: string, input: ValidImport): Promise<ImportResult> =>
+    importPlan: (
+      userId: string,
+      planId: string,
+      input: ValidImport,
+      replacesPlanIds: readonly string[] = [],
+    ): Promise<ImportResult> =>
       importFrom(userId, planId, {
         payloadHash: input.payloadHash,
         createdFrom: 'import',
-        prepare: async () => ({ status: input.status, plan: input.plan }),
+        prepare: async (ctx) => {
+          // ADR 018 Q2: an active import replaces the active plan, after the same confirm as a
+          // build. A draft is not active, so it archives nothing and needs no confirm.
+          if (input.status === 'active') {
+            await archiveConfirmed(ctx, userId, replacesPlanIds, 'import', planId);
+          }
+          const goal = goalForImport(input.plan);
+          return {
+            status: input.status,
+            plan: input.plan,
+            ...(goal ? { summaryExtra: { [PLAN_SUMMARY_GOAL_KEY]: goal } } : {}),
+          };
+        },
       }),
 
     /** The import transaction with a different source of the plan (the plan builder). */

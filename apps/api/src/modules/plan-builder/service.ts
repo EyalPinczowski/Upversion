@@ -2,16 +2,19 @@ import { createHash } from 'node:crypto';
 import {
   applyExplainLines,
   BuildRequestError,
+  createGoal,
   localDateOf,
+  PLAN_SUMMARY_GOAL_KEY,
   type BuildCatalog,
   type BuildDraft,
   type BuildRequest,
 } from '@upversion/shared';
 import { BUILDER_VERSION, buildPlan, BUNDLED_CATALOG } from '@upversion/shared/plan-builder';
-import type { Database, UserContext } from '../../db/database';
+import type { Database } from '../../db/database';
 import { HttpError } from '../../errors';
 import { canonical, validateImport } from '../plans/import';
 import * as plansRepo from '../plans/repository';
+import { activePlanChanged, archiveConfirmed, archivePlans, sameSet } from '../plans/replace';
 import type { PlanDetail } from '../plans/schemas';
 import type { createPlanService } from '../plans/service';
 import type { PlanExplainService } from './explain';
@@ -24,21 +27,6 @@ export interface BuildResult {
   created: boolean;
   plan: PlanDetail;
 }
-
-/** The ids as a sorted set, so the order and repeats in a request do not matter. */
-const asSet = (ids: readonly string[]) => [...new Set(ids)].sort();
-const sameSet = (a: readonly string[], b: readonly string[]) => {
-  const x = asSet(a);
-  const y = asSet(b);
-  return x.length === y.length && x.every((id, i) => id === y[i]);
-};
-
-const activePlanChanged = () =>
-  new HttpError(
-    409,
-    'active_plan_changed',
-    'Your active plans changed since you confirmed. Reload your plans and confirm again.',
-  );
 
 /**
  * The plan builder and plan restore (ADR 017). The user id is always the verified token's; no
@@ -80,20 +68,6 @@ export function createPlanBuilderService(
       )
       .digest('hex');
 
-  /** Archives the plans in `ids` (all of the user's active plans) and records why. */
-  async function archive(
-    ctx: UserContext,
-    userId: string,
-    ids: readonly string[],
-    by: 'plan_builder' | 'restore',
-    replacedBy: string,
-  ) {
-    for (const id of ids) {
-      await plansRepo.setPlanStatus(ctx, userId, id, 'archived');
-      await plansRepo.insertEvent(ctx, userId, id, 'plan.archived', { by, replacedBy });
-    }
-  }
-
   return {
     /** The draft for a request. Saves nothing. */
     preview: (request: BuildRequest): BuildDraft => run(request),
@@ -134,9 +108,7 @@ export function createPlanBuilderService(
               'The plan changed since you previewed it. Preview it again.',
             );
           }
-          const active = await plansRepo.lockActivePlanIds(ctx, userId);
-          if (!sameSet(active, body.replacesPlanIds)) throw activePlanChanged();
-          await archive(ctx, userId, active, 'plan_builder', body.id);
+          await archiveConfirmed(ctx, userId, body.replacesPlanIds, 'plan_builder', body.id);
           // The same checks as a file import (size limits, taxonomy ids, characters Postgres
           // cannot store), as a safety net: the draft is a valid plan file already.
           // With AI explanations asked for: only the server's cached, re-checked answer is used.
@@ -152,6 +124,14 @@ export function createPlanBuilderService(
             summaryExtra: {
               targetRoleIds: body.request.targetRoleIds,
               builderVersion: BUILDER_VERSION,
+              // ADR 018: the goal (ids and numbers only) lives in the summary, no new column.
+              [PLAN_SUMMARY_GOAL_KEY]: createGoal({
+                targetRoleIds: body.request.targetRoleIds,
+                skillIds: valid.plan.skillIds ?? [],
+                startLevels: body.request.skillLevels,
+                deadline: body.request.deadline,
+                createdFrom: 'builder',
+              }),
             },
             eventExtra: { createdFrom: 'builder', builderVersion: BUILDER_VERSION },
           };
@@ -176,7 +156,7 @@ export function createPlanBuilderService(
           throw new HttpError(409, 'plan_not_archived', 'Only an archived plan can be restored.');
         }
         if (!sameSet(active, replaces)) throw activePlanChanged();
-        await archive(ctx, userId, active, 'restore', planId);
+        await archivePlans(ctx, userId, active, 'restore', planId);
         await plansRepo.setPlanStatus(ctx, userId, planId, 'active');
         await plansRepo.insertEvent(ctx, userId, planId, 'plan.restored', { replaced: active });
         return (await plansRepo.loadPlan(ctx, userId, planId))!;

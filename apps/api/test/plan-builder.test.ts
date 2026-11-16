@@ -406,7 +406,9 @@ describe.skipIf(!dbAvailable)('plan builder, archive and restore (real Postgres)
 
     it('archives every active plan the user confirmed', async () => {
       await importDemo(OLD);
-      await importDemo(OLD_2);
+      // A second active plan can only exist from before the one-active-plan import rule.
+      await importDemo(OLD_2, 'draft');
+      await rows(`update rnd.plans set status = 'active' where id = $1`, [OLD_2]);
       const res = await callA('POST', '/plans/build', await bodyFor(NEW_1, [OLD_2, OLD]));
       expect(res.statusCode).toBe(201);
       expect(await statusOf(OLD)).toBe('archived');
