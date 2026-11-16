@@ -16,7 +16,7 @@ import { Button, ErrorText, linkClass, ProgressBar } from '../../components/ui';
 import { newId } from '../../lib/messages';
 import { dateInZone } from '../../lib/zoned-date';
 import { useActivePlan } from '../../plan/context';
-import { ArchiveDialog } from './ArchiveDialog';
+import { ArchiveDialog } from '../../plan/ArchiveDialog';
 import {
   browserTimeZone,
   describeBuildError,
