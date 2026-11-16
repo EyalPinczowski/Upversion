@@ -11,6 +11,7 @@ import {
   importBody,
   profileView,
   putAnswersBody,
+  putSkillsBody,
   setupBody,
 } from './schemas';
 import { createProfileService } from './service';
@@ -93,6 +94,23 @@ export const profileRoutes: FastifyPluginAsyncZod<ProfileRoutesOptions> = async 
       },
     },
     async (request) => service!.importCv(user(request), request.body),
+  );
+
+  app.put(
+    '/me/profile/skills',
+    {
+      schema: {
+        tags,
+        summary: 'Set skill levels by hand',
+        description:
+          'Body `{ levels: { [skillId]: 0..3 } }`: 1 to 20 taxonomy skill ids with integer levels. Each entry is saved as `source: manual` and replaces the existing entry for that skill whatever its source; other skills are kept. 400 for an unknown id, a level outside 0..3, more than 20 entries or any extra key. 409 `profile_skills_full` when the new skills would not fit.',
+        security,
+        querystring: emptyQuery,
+        body: putSkillsBody,
+        response: { 200: profileView, 409: errorResponseSchema, ...errors },
+      },
+    },
+    async (request) => service!.putSkills(user(request), request.body.levels),
   );
 
   app.patch(

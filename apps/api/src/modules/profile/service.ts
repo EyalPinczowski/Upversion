@@ -4,6 +4,7 @@ import {
   validateAnswer,
   type ProfileAnswers,
   type ProfileImport,
+  MAX_PROFILE_SKILLS,
   type ProfileSkill,
   type SetupStatusUpdate,
   type UserProfile,
@@ -94,6 +95,37 @@ export function createProfileService(db: Database, now: () => Date = () => new D
           { answers, skills, rolesHeld: input.rolesHeld, yearsExperience: input.yearsExperience },
           at,
         );
+      });
+    },
+
+    /**
+     * Levels the user sets by hand. Each entry replaces the existing one for that skill whatever
+     * its source (it is the user's own explicit input, ADR 018 section 3) and is saved as
+     * `manual`; other entries are kept. The row is locked so two requests cannot lose an update.
+     */
+    putSkills(userId: string, levels: Record<string, number>): Promise<UserProfile> {
+      return db.withUser(userId, async (ctx) => {
+        const repo = createProfileRepository(ctx);
+        const at = now();
+        const current = await repo.lock(userId, at);
+        const have = new Set(current.skills.map((s) => s.skillId));
+        const added = Object.keys(levels).filter((id) => !have.has(id)).length;
+        if (current.skills.length + added > MAX_PROFILE_SKILLS) {
+          throw new HttpError(
+            409,
+            'profile_skills_full',
+            'Your profile already holds the most skills it can.',
+          );
+        }
+        const skills: ProfileSkill[] = current.skills.map((s) =>
+          Object.hasOwn(levels, s.skillId)
+            ? { skillId: s.skillId, level: levels[s.skillId]!, source: 'manual' }
+            : s,
+        );
+        for (const [skillId, level] of Object.entries(levels)) {
+          if (!have.has(skillId)) skills.push({ skillId, level, source: 'manual' });
+        }
+        return repo.saveSkills(userId, skills, at);
       });
     },
 

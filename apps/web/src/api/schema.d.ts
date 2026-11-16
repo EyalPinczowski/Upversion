@@ -3180,6 +3180,199 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/profile/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set skill levels by hand
+         * @description Body `{ levels: { [skillId]: 0..3 } }`: 1 to 20 taxonomy skill ids with integer levels. Each entry is saved as `source: manual` and replaces the existing entry for that skill whatever its source; other skills are kept. 400 for an unknown id, a level outside 0..3, more than 20 entries or any extra key. 409 `profile_skills_full` when the new skills would not fit.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        levels: {
+                            [key: string]: number;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            answers: {
+                                [key: string]: unknown;
+                            };
+                            skills: {
+                                skillId: string;
+                                level: number;
+                                /** @enum {string} */
+                                source: "cv" | "setup" | "manual";
+                            }[];
+                            rolesHeld: {
+                                roleId: string | null;
+                                title: string;
+                                years: number | null;
+                            }[];
+                            yearsExperience: number | null;
+                            cvImportedAt: string | null;
+                            /** @enum {string} */
+                            setupStatus: "not_started" | "in_progress" | "completed" | "dismissed";
+                            setupStep: string | null;
+                            setupCompletedAt: string | null;
+                        };
+                    };
+                };
+                /** @description Default Response */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Default Response */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                code: string;
+                                message: string;
+                                requestId: string;
+                                fallbacks?: string[];
+                                sessionId?: string;
+                                dependents?: {
+                                    id: string;
+                                    title: string;
+                                }[];
+                                issues?: {
+                                    code: string;
+                                    id?: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/profile/setup": {
         parameters: {
             query?: never;
