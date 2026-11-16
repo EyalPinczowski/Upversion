@@ -39,3 +39,4 @@ export * from './cv-tailor/output';
 export * from './cv-tailor/schemas';
 export { CATALOG_QUESTIONS, CATALOG_TAXONOMY } from './profile/catalog';
 export * from './plan-builder/root';
+export * from './goal/index';
