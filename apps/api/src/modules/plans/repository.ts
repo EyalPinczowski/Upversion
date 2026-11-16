@@ -628,6 +628,20 @@ export async function setPlanStatus(
   );
 }
 
+/** Skill ids whose level-up was approved on this plan (one suggestion per plan and skill). */
+export async function approvedLevelUpSkills(
+  ctx: UserContext,
+  userId: string,
+  planId: string,
+): Promise<string[]> {
+  const { rows } = await ctx.client.query<{ skill_id: string }>(
+    `select distinct payload ->> 'skillId' as skill_id from ${ctx.schema}.events
+     where user_id = $1 and plan_id = $2 and type = 'level_up.approved'`,
+    [userId, planId],
+  );
+  return rows.map((r) => r.skill_id);
+}
+
 /**
  * Share-locks the plan's task rows until the transaction ends: a task cannot be completed,
  * reopened or edited by a concurrent request while the caller decides on what it just read.

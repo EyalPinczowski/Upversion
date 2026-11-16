@@ -1,11 +1,18 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { BUNDLED_CATALOG } from '@upversion/shared/plan-builder';
+import pg from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app';
 import { createDatabase, type Database } from '../src/db/database';
 import { createSupabaseVerifier } from '../src/modules/accounts/token-verifier';
-import { acceptCurrentLegal, dbAvailable, prepareDatabase, type TestDb } from './db-helpers';
+import {
+  acceptCurrentLegal,
+  dbAvailable,
+  prepareDatabase,
+  TEST_SUPERUSER_URL,
+  type TestDb,
+} from './db-helpers';
 import { testConfig } from './helpers';
 import { ISSUER, makeTestKeys, type TestKeys } from './tokens';
 
@@ -553,8 +560,8 @@ describe.skipIf(!dbAvailable)('goal progress and task skill ids (real Postgres)'
       expect(res.json()).toEqual({ skillId: 'sql', fromLevel: 0, level: 1, source: 'manual' });
       expect(await profileSkills(A)).toEqual([{ skillId: 'sql', level: 1, source: 'manual' }]);
       const body = (await progress()).json();
-      // The approved step is gone; the rule then offers the next one (1 -> 2), never above 2.
-      expect(body.suggestions).toMatchObject([{ skillId: 'sql', fromLevel: 1, toLevel: 2 }]);
+      // One suggestion per plan and skill: the approved skill is not offered again.
+      expect(body.suggestions).toEqual([]);
       expect(body.progress.skills.find((s: { skillId: string }) => s.skillId === 'sql').level).toBe(
         1,
       );
@@ -589,15 +596,47 @@ describe.skipIf(!dbAvailable)('goal progress and task skill ids (real Postgres)'
       expect(await tableCounts()).toEqual(before);
     });
 
-    it('can go from 1 to 2 but never above 2', async () => {
+    it('one suggestion per plan and skill: after 0 -> 1 there is no 1 -> 2 for the same tasks', async () => {
       await finishSql();
       expect((await approve('A', SQL_UP)).statusCode).toBe(200);
-      // All sql tasks are still done, so 1 -> 2 is suggested next...
-      expect((await approve('A', { ...SQL_UP, toLevel: 2 })).statusCode).toBe(200);
-      // ...and 2 is the cap: no 2 -> 3, whatever the client asks for.
-      expect((await approve('A', { ...SQL_UP, toLevel: 2 })).statusCode).toBe(409);
+      const next = await approve('A', { ...SQL_UP, toLevel: 2 });
+      expect(next.statusCode).toBe(409);
+      expect(next.json().error.code).toBe('not_suggested');
       expect((await approve('A', { ...SQL_UP, toLevel: 3 })).statusCode).toBe(400);
-      expect(await profileSkills(A)).toEqual([{ skillId: 'sql', level: 2, source: 'manual' }]);
+      expect(await profileSkills(A)).toEqual([{ skillId: 'sql', level: 1, source: 'manual' }]);
+    });
+
+    it('a draft plan suggests nothing and approve answers 409 not_suggested', async () => {
+      expect((await importPlan('A', PLAN, planFile(), { status: 'draft' })).statusCode).toBe(201);
+      await done('sql-a');
+      await done('sql-b');
+      expect((await progress()).json().suggestions).toEqual([]);
+      const res = await approve('A', SQL_UP);
+      expect(res.statusCode).toBe(409);
+      expect(res.json().error.code).toBe('not_suggested');
+      expect(await profileSkills(A)).toBeUndefined();
+    });
+
+    it('the task share lock: a reopen that commits just before the write wins (409, nothing written)', async () => {
+      await finishSql();
+      const holder = new pg.Client({ connectionString: TEST_SUPERUSER_URL });
+      await holder.connect();
+      try {
+        await holder.query('begin');
+        await holder.query(
+          `update rnd.tasks set status = 'pending', done_hours = 0 where plan_id = $1 and id = 'sql-b'`,
+          [PLAN],
+        );
+        const pending = approve('A', SQL_UP);
+        await new Promise((r) => setTimeout(r, 500));
+        await holder.query('commit');
+        const res = await pending;
+        expect(res.statusCode).toBe(409);
+        expect(res.json().error.code).toBe('not_suggested');
+      } finally {
+        await holder.end();
+      }
+      expect(await profileSkills(A)).toBeUndefined();
     });
 
     it('404 for another user’s plan and for a missing plan: nothing is written for anyone', async () => {

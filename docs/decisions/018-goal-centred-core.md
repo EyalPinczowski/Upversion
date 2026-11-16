@@ -94,4 +94,4 @@ The Goal screen and goal strip make the stated goal visible with no AI and no ne
 - The goal is written to `plans.summary.goal` on build (roles, extra skills, `skillLevels`, deadline) and on import (plan-level skill ids, else the tasks' skills; no start levels). Readers use `deriveGoal` for older plans.
 - Routes (flag-independent): `GET /api/v1/plans/{id}/goal-progress` and `POST /api/v1/me/level-ups/approve` (docs/api-goal-progress.md). The path differs from section 5, which said `/plans/{id}/progress` (that path already exists for the day schedule). Approve is refused for an archived plan.
 - Spec 3.0/3.1/4/8/9 and ADR 017 section 4.1 edits stay in B5, as the phase table says.
-- Open point for the owner: after an approval from 0 to 1 the rule offers 1 to 2 at once while all tasks stay done (B1 rule, Q3 text). Consider suggesting once per plan or per start level.
+- Resolved in review: one suggestion per plan and skill. A `level_up.approved` event on the plan stops that skill being suggested again there (`suggestLevelUps` takes the approved skills as a third argument). Only an `active` plan suggests.

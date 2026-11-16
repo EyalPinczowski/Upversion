@@ -22,7 +22,8 @@ Two routes. Both need a bearer token and accepted Terms (403 `terms_not_accepted
 - `skillId` must be a skill with a suggestion right now, and `toLevel` exactly that suggestion's level (one above the current one). The body schema allows only 1 or 2, so a level above 2 is 400, and a level the rule would not suggest is **409 `not_suggested`** (stale suggestion, skill not in the goal, tasks not all done, level already at the cap). Nothing is written then.
 - It writes that skill to `user_profiles.skills` with `source: 'manual'` (replacing the user's entry for the skill, keeping the others) and a `level_up.approved` event on the plan. **409 `profile_skills_full`** if a new skill would be the 61st.
 - A repeat of the same request is 409 `not_suggested`: after the write the step is no longer suggested.
-- The rule currently offers the next step (1 to 2) right after an approval while all tasks stay done; it never goes above 2.
+- One suggestion per plan and skill: once a level-up was approved on a plan (a `level_up.approved` event), that skill is not suggested again on that plan, so finishing the same tasks never earns a second step (and never above 2). Only an `active` plan suggests: a draft or archived plan has none (approve: 409 `not_suggested` for a draft, 409 `plan_archived` for an archived plan).
+- A goal holds at most 60 skills (`MAX_GOAL_SKILLS`): when an imported file names more (plan-level or through its tasks), the extra ones are left out of the goal, not rejected; their tasks then count as unattributed hours.
 
 ## Where the data lives
 

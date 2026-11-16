@@ -1,5 +1,6 @@
 import {
   deriveGoal,
+  MAX_PROFILE_SKILLS,
   skillProgress,
   suggestLevelUps,
   taskSkills,
@@ -18,7 +19,6 @@ import { createProfileRepository } from '../profile/repository';
 import type { GoalProgress } from './schemas';
 
 const notFound = () => new HttpError(404, 'not_found', 'Resource not found.');
-const MAX_PROFILE_SKILLS = 60;
 
 /** Profile skill levels as a plain map (the user's own ratings, any source). */
 const levelsOf = (profile: Pick<UserProfile, 'skills'>) =>
@@ -65,6 +65,7 @@ function compute(
   profile: Pick<UserProfile, 'skills'>,
   scores: PracticeScores,
   catalog: ProgressCatalog,
+  approved: readonly string[],
 ): Pick<GoalProgress, 'goal' | 'progress' | 'suggestions'> {
   const goal = deriveGoal(plan.summary);
   if (!goal) return { goal: null, progress: null, suggestions: [] };
@@ -76,8 +77,10 @@ function compute(
     catalog,
     practiceScores: scores,
   });
-  // An archived plan is read-only (ADR 017 4.1): it shows progress but suggests nothing.
-  const suggestions = plan.status === 'archived' ? [] : suggestLevelUps(progress, profileLevels);
+  // Only an active plan suggests (an archived one is read-only, ADR 017 4.1; a draft is not
+  // being followed yet), and a skill is suggested at most once per plan.
+  const suggestions =
+    plan.status === 'active' ? suggestLevelUps(progress, profileLevels, approved) : [];
   return { goal, progress, suggestions };
 }
 
@@ -99,10 +102,11 @@ export function createGoalService(
         if (!plan) throw notFound();
         const profile = await createProfileRepository(ctx).get(userId);
         const scores = await practiceScores(ctx, userId, plan, catalog);
+        const approved = await plansRepo.approvedLevelUpSkills(ctx, userId, planId);
         return {
           planId: plan.id,
           planStatus: plan.status,
-          ...compute(plan, profile, scores, catalog),
+          ...compute(plan, profile, scores, catalog, approved),
         };
       }),
 
@@ -123,7 +127,8 @@ export function createGoalService(
         const at = now();
         const profile = await profiles.lock(userId, at);
         const scores = await practiceScores(ctx, userId, plan, catalog);
-        const { suggestions } = compute(plan, profile, scores, catalog);
+        const approved = await plansRepo.approvedLevelUpSkills(ctx, userId, input.planId);
+        const { suggestions } = compute(plan, profile, scores, catalog, approved);
         const suggestion = suggestions.find(
           (s) => s.skillId === input.skillId && s.toLevel === input.toLevel,
         );

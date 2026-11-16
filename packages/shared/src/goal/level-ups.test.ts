@@ -54,6 +54,18 @@ describe('suggestLevelUps (owner rule, ADR 018 Q3)', () => {
     }
   });
 
+  it('skips skills already approved for the plan, only those', () => {
+    const levels = { sql: 1, excel: 0 };
+    const progress = skillProgress({
+      tasks: [done('1', 'sql'), done('2', 'excel')],
+      goal,
+      profileLevels: levels,
+    });
+    expect(suggestLevelUps(progress, levels, ['sql']).map((s) => s.skillId)).toEqual(['excel']);
+    expect(suggestLevelUps(progress, levels, new Set(['sql', 'excel']))).toEqual([]);
+    expect(suggestLevelUps(progress, levels)).toHaveLength(2);
+  });
+
   it('does not suggest while one task that builds the skill is still open', () => {
     expect(suggest([done('1', 'sql'), open('2', 'sql')], { sql: 0 })).toEqual([]);
   });
