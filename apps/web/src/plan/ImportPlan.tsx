@@ -85,6 +85,10 @@ export function ImportPlan() {
       onSuccess: (plan) => {
         attempt.current = null;
         setDialog(null);
+        // The form is done: empty it, so a second press never re-imports the same plan.
+        setText('');
+        setFileNote(null);
+        importPlan.reset();
         select(plan.id);
       },
       onError: (error) => void onFailed(error, planText),
@@ -96,6 +100,15 @@ export function ImportPlan() {
       if (error.code === 'active_plan_changed') {
         // The id was not used (nothing was created): keep it, refresh the list and ask again.
         const fresh = await refetch();
+        if (fresh.isError) {
+          // The list could not be re-read: keep the dialog (it names the plans last seen).
+          setDialog({
+            text: planText,
+            notice:
+              'Your active plans changed, but the plan list could not be refreshed. Check your connection and confirm again.',
+          });
+          return;
+        }
         const now = (fresh.data?.plans ?? []).filter((p) => p.status === 'active');
         if (now.length > 0) {
           setDialog({
@@ -105,6 +118,8 @@ export function ImportPlan() {
           });
         } else {
           setDialog(null);
+          // Only this note: the API's own 409 text would repeat it.
+          importPlan.reset();
           setStaleNote('Your plans changed in the meantime. Choose Import plan again.');
         }
         return;

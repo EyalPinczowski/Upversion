@@ -3,8 +3,9 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { ErrorText } from '../../components/ui';
 
 /**
- * Shown before "Start this plan" when other plans are active: names every plan that will be
- * archived. The ids sent as `replacesPlanIds` are exactly these plans'.
+ * Shown before "Start this plan" (plan builder) or "Import plan" (plan file) when other plans are
+ * active: names every plan that will be archived. The ids sent as `replacesPlanIds` are exactly
+ * these plans'.
  */
 export function ArchiveDialog({
   plans,

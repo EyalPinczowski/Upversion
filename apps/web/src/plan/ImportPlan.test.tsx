@@ -279,13 +279,61 @@ describe('plan import over an active plan', () => {
   it('active_plan_changed with nothing active now: asks to import again, no dialog', async () => {
     const { bodies } = openActive((_request, st) => {
       st.plans = [planSummary({ id: OLD_ID, name: 'Old plan', status: 'archived' })];
-      return apiError(409, 'active_plan_changed', 'x');
+      return apiError(409, 'active_plan_changed', 'Server says the active plans changed.');
     });
     const user = userEvent.setup();
     await pasteAndImport(user);
     await user.click(await screen.findByRole('button', { name: 'Archive and import' }));
     expect(await screen.findByText(/Your plans changed in the meantime/)).toBeVisible();
     expect(screen.queryByRole('alertdialog')).toBeNull();
+    // Only the one note: the API's own 409 text is not repeated.
+    expect(screen.queryByText(/Server says/)).toBeNull();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(bodies).toHaveLength(1);
+  });
+
+  it('empties the form after a success, so pressing Import again does not re-import it', async () => {
+    const { bodies } = openActive((_request, st) => {
+      st.plans = [
+        planSummary({ id: OLD_ID, name: 'Old plan', status: 'archived' }),
+        planSummary({ id: NEW_ID, name: 'New plan' }),
+      ];
+      return json(planDetail({ id: NEW_ID, name: 'New plan' }), 201);
+    });
+    const user = userEvent.setup();
+    await pasteAndImport(user);
+    await user.click(await screen.findByRole('button', { name: 'Archive and import' }));
+    expect(await screen.findByRole('heading', { name: 'New plan' })).toBeInTheDocument();
+    expect(pasteBox()).toHaveValue('');
+    await user.click(screen.getByRole('button', { name: 'Import plan' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(await screen.findByText(/Paste a plan or choose a plan file/)).toBeInTheDocument();
+    expect(bodies).toHaveLength(1);
+  });
+
+  it('if the plan list cannot be re-read, keeps the dialog with a short notice', async () => {
+    let lists = 0;
+    const bodies: Record<string, unknown>[] = [];
+    installApi(
+      planRoutes({
+        'GET /api/v1/plans': () => {
+          lists += 1;
+          return lists === 1
+            ? json({ plans: [planSummary({ id: OLD_ID, name: 'Old plan' })] })
+            : apiError(500, 'internal', 'boom');
+        },
+        [IMPORT]: async (request) => {
+          bodies.push((await request.clone().json()) as Record<string, unknown>);
+          return apiError(409, 'active_plan_changed', 'changed');
+        },
+      }),
+    );
+    renderApp({ auth: fakeAuth(SESSION), path: '/plan?tab=settings' });
+    const user = userEvent.setup();
+    await pasteAndImport(user);
+    await user.click(await screen.findByRole('button', { name: 'Archive and import' }));
+    expect(await screen.findByText(/could not be refreshed/)).toBeVisible();
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('Old plan');
     expect(bodies).toHaveLength(1);
   });
 

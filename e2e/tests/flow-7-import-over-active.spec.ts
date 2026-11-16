@@ -68,5 +68,15 @@ test('import over an active plan: confirm, the old plan is archived and stays re
       .getByRole('combobox', { name: 'Plan' })
       .selectOption({ label: `${DEMO} (Archived)` });
     await expect(page.getByLabel('Archived plan')).toContainText('archived (read-only)');
+    // The server enforces it: a write to the archived plan is refused with 409 plan_archived.
+    const oldId = (await (await api.get('/api/v1/plans')).json()).plans.find(
+      (p: { name: string }) => p.name === DEMO,
+    ).id as string;
+    const detail = await (await api.get(`/api/v1/plans/${oldId}`)).json();
+    const write = await api.put(`/api/v1/plans/${oldId}/week-pattern`, {
+      data: detail.weekPattern,
+    });
+    expect(write.status()).toBe(409);
+    expect((await write.json()).error.code).toBe('plan_archived');
   });
 });
