@@ -1,17 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { ROLES } from '../plan-builder/builder-model';
-import { enjoyOptions, resumeStep, savedStep, suggestRoles } from './first-run-model';
+import type { BuilderState } from '../plan-builder/builder-model';
+import { answersForStep, enjoyOptions, suggestRoles } from './first-run-model';
+import { resumeStep, savedStep } from './steps';
 
 describe('resumeStep', () => {
   it('reads a saved first-run step and ignores everything else', () => {
     expect(resumeStep(savedStep(1))).toBe(1);
     expect(resumeStep(savedStep(3))).toBe(3);
-    // The draft step is never saved, and the old wizard's steps are not ours.
-    expect(resumeStep('fr:4')).toBeNull();
+    // A stray fr:4 counts as the last question screen; the old wizard's steps are not ours.
+    expect(resumeStep('fr:4')).toBe(3);
+    expect(resumeStep('fr:9')).toBe(3);
     expect(resumeStep('fr:0')).toBeNull();
     expect(resumeStep('fr:x')).toBeNull();
     expect(resumeStep('q:current_status')).toBeNull();
     expect(resumeStep(null)).toBeNull();
+  });
+
+  it('never saves the draft step: leaving screen 3 saves fr:3, which resumes at 3', () => {
+    expect(savedStep(4)).toBe('fr:3');
+    expect(resumeStep(savedStep(4))).toBe(3);
+    expect(savedStep(0)).toBe('fr:1');
   });
 
   it('saved ids fit the 40 character limit', () => {
@@ -48,5 +57,29 @@ describe('suggestRoles', () => {
     expect(plain[0]).toBe('data-analyst');
     expect(leaning[0]).toBe('customer-success');
     expect(leaning).toHaveLength(plain.length);
+  });
+});
+
+describe('answersForStep', () => {
+  const state = (hours: string) =>
+    ({
+      weekdays: [1, 0],
+      hours,
+      timeOfDay: 'morning',
+      roleIds: [],
+      extraSkillIds: [],
+    }) as unknown as BuilderState;
+
+  it('sends hours_per_day only as a multiple of 0.5, never dropping the other answers', () => {
+    expect(answersForStep(3, state('2.5'))).toEqual({
+      days_per_week: [0, 1],
+      hours_per_day: 2.5,
+      time_of_day: 'morning',
+    });
+    expect(answersForStep(3, state('2.3'))).toEqual({
+      days_per_week: [0, 1],
+      time_of_day: 'morning',
+    });
+    expect(answersForStep(3, state('0.25'))).not.toHaveProperty('hours_per_day');
   });
 });

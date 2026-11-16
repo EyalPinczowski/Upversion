@@ -7,19 +7,6 @@ export const FIRST_RUN_STEPS = [
   { title: 'How much time and money?' },
   { title: 'Your draft plan' },
 ] as const;
-export const LAST_STEP = FIRST_RUN_STEPS.length;
-
-const SAVED_PREFIX = 'fr:';
-/** The step id saved in `setup_step` (at most 40 characters). The draft step is never saved. */
-export const savedStep = (step: number) => `${SAVED_PREFIX}${step}`;
-
-/** The step to resume at from a saved `setup_step`; null when it is not a first-run step. */
-export function resumeStep(saved: string | null | undefined): number | null {
-  if (!saved?.startsWith(SAVED_PREFIX)) return null;
-  const n = Number(saved.slice(SAVED_PREFIX.length));
-  return Number.isInteger(n) && n >= 1 && n < LAST_STEP ? n : null;
-}
-
 /** The profile answers each screen saves (ids of `questions.json` that the profile accepts). */
 export function answersForStep(step: number, s: BuilderState): Record<string, unknown> {
   if (step === 1) return { target_role: s.roleIds, target_skills: s.extraSkillIds };
@@ -27,7 +14,10 @@ export function answersForStep(step: number, s: BuilderState): Record<string, un
     const hours = Number(s.hours.trim().replace(',', '.'));
     return {
       days_per_week: [...s.weekdays].sort((a, b) => a - b),
-      ...(Number.isFinite(hours) && hours > 0 ? { hours_per_day: hours } : {}),
+      // Only a multiple of 0.5: one value the profile would refuse must not drop the other answers.
+      ...(Number.isFinite(hours) && hours >= 0.5 && hours <= 12 && (hours * 2) % 1 === 0
+        ? { hours_per_day: hours }
+        : {}),
       time_of_day: s.timeOfDay,
     };
   }
@@ -42,6 +32,7 @@ interface DiscoverOption {
 
 export const DISCOVER_ENJOY_ID = 'discover_enjoy';
 export const DISCOVER_STYLE_ID = 'discover_style';
+export const DISCOVER_PICK_ID = 'discover_pick';
 
 const question = (id: string) => CATALOG_QUESTIONS.find((q) => q.id === id);
 

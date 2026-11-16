@@ -32,13 +32,8 @@ import { StartPlan } from '../plan-builder/StartPlan';
 import { TargetStep } from '../plan-builder/TargetStep';
 import { TimeStep } from '../plan-builder/TimeStep';
 import { CvPrefill } from './CvPrefill';
-import {
-  answersForStep,
-  FIRST_RUN_STEPS,
-  LAST_STEP,
-  resumeStep,
-  savedStep,
-} from './first-run-model';
+import { answersForStep, FIRST_RUN_STEPS } from './first-run-model';
+import { LAST_STEP, resumeStep, savedStep } from './steps';
 import { RoleDiscovery } from './RoleDiscovery';
 
 const SAVE_NOTE =
@@ -169,7 +164,11 @@ function FirstRun({ profile }: { profile: ProfileView | null }) {
   }
 
   async function skip() {
-    if (userId) markFirstRunSkipped(userId);
+    if (userId) {
+      markFirstRunSkipped(userId);
+      // Skipping the first run replaces the welcome too, so it does not open on Today.
+      markWelcomeSeen(userId);
+    }
     if (writable) {
       try {
         await setSetup.mutateAsync({ status: 'dismissed', step: savedStep(step) });

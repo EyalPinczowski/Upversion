@@ -8,6 +8,7 @@ import {
 } from '../plan-builder/builder-model';
 import {
   DISCOVER_ENJOY_ID,
+  DISCOVER_PICK_ID,
   DISCOVER_STYLE_ID,
   enjoyMax,
   enjoyOptions,
@@ -94,9 +95,7 @@ export function RoleDiscovery({
         </div>
         {suggested && suggested.length > 0 ? (
           <fieldset className="space-y-1">
-            <legend className="font-bold">
-              These roles could fit. Tick one or two to aim for.
-            </legend>
+            <legend className="font-bold">{questionText(DISCOVER_PICK_ID)}</legend>
             {suggested.map((id) => {
               const on = state.roleIds.includes(id);
               return (

@@ -48,7 +48,9 @@ function WelcomeDialog({
  */
 function Welcome({ userId, suppressed }: { userId: string; suppressed: boolean }) {
   const { pathname } = useLocation();
-  const [seen, setSeen] = useState(() => hasSeenWelcome(userId));
+  const [seenHere, setSeen] = useState(() => hasSeenWelcome(userId));
+  // Other code (the first run) can mark it seen too; every navigation re-renders and reads it.
+  const seen = seenHere || hasSeenWelcome(userId);
   const [reopened, setReopened] = useState(false);
   const [touring, setTouring] = useState(false);
 

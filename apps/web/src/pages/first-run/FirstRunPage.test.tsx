@@ -76,7 +76,7 @@ describe('the first run', () => {
     const seen: string[] = [];
     open({ welcome: 'first-visit' }, (u) => seen.push(u));
     expect(await heading('What are you aiming for?')).toBeInTheDocument();
-    expect(seen.at(-1)).toBe('/start');
+    await waitFor(() => expect(seen.at(-1)).toBe('/start'));
     expect(screen.getByText('Step 1 of 4: What are you aiming for?')).toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '1');
     expect(screen.queryByRole('dialog', { name: 'Welcome to Upversion' })).toBeNull();
@@ -140,11 +140,11 @@ describe('the first run', () => {
     await pickRole();
     await next();
     const second = await heading('Where are you now?');
-    expect(seen.at(-1)).toBe('/start?step=2');
+    await waitFor(() => expect(seen.at(-1)).toBe('/start?step=2'));
     await waitFor(() => expect(second).toHaveFocus());
     await back();
     await heading('What are you aiming for?');
-    expect(seen.at(-1)).toBe('/start?step=1');
+    await waitFor(() => expect(seen.at(-1)).toBe('/start?step=1'));
     expect(screen.getByRole('checkbox', { name: 'Operations Associate / Analyst' })).toBeChecked();
     expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
     await next();
@@ -191,13 +191,41 @@ describe('the first run', () => {
     expect(setup.at(-1)!.body).toEqual({ status: 'in_progress', step: 'fr:2' });
   });
 
+  it('after screen 3 saves fr:3 (the draft is never a saved step), and a reload resumes at 3', async () => {
+    const api = open({
+      profile: {
+        setupStatus: 'in_progress',
+        setupStep: 'fr:3',
+        answers: { target_role: ['operations-associate'] },
+      },
+    });
+    await heading('How much time and money?');
+    await next();
+    await heading('Your draft plan');
+    const setup = (await profileCalls(api)).filter((c) => c.path.endsWith('/setup'));
+    expect(setup.at(-1)!.body).toEqual({ status: 'in_progress', step: 'fr:3' });
+  });
+
+  it('resumes at screen 3 from a stray saved fr:4', async () => {
+    open({
+      profile: {
+        setupStatus: 'in_progress',
+        setupStep: 'fr:4',
+        answers: { target_role: ['operations-associate'] },
+      },
+    });
+    await heading('How much time and money?');
+  });
+
   it('suggests 3 or 4 roles for "Not sure" and lets the person tick one', async () => {
     open();
     await heading('What are you aiming for?');
     await user.click(screen.getByText('Not sure which role? Help me choose'));
     await user.click(screen.getByRole('checkbox', { name: 'Finding answers in data and numbers' }));
     await user.click(screen.getByRole('button', { name: 'Suggest roles' }));
-    const group = await screen.findByRole('group', { name: /These roles could fit/ });
+    const group = await screen.findByRole('group', {
+      name: /Based on your answers, these roles could fit/,
+    });
     const boxes = within(group).getAllByRole('checkbox');
     expect(boxes.length).toBeGreaterThanOrEqual(3);
     expect(boxes.length).toBeLessThanOrEqual(4);
@@ -291,6 +319,16 @@ describe('who gets the first run', () => {
     // Stays on Today: no bounce back to the first run.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(seen.at(-1)).toBe('/');
+  });
+
+  it('Skip for now counts as seeing the welcome: no dialog on Today afterwards', async () => {
+    const seen: string[] = [];
+    open({ welcome: 'first-visit' }, (u) => seen.push(u));
+    await heading('What are you aiming for?');
+    await user.click(screen.getByRole('button', { name: 'Skip for now' }));
+    await waitFor(() => expect(seen.at(-1)).toBe('/'), WAIT);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(screen.queryByRole('dialog', { name: 'Welcome to Upversion' })).toBeNull();
   });
 
   it('does not redirect when the profile says setup was finished or skipped before', async () => {

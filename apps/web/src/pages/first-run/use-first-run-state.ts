@@ -3,7 +3,7 @@ import { usePlans } from '../../api/hooks';
 import { useProfile } from '../../api/profile-hooks';
 import { useAuth } from '../../auth/AuthProvider';
 import { hasSkippedFirstRun } from '../../lib/first-run';
-import { resumeStep } from './first-run-model';
+import { resumeStep } from './steps';
 
 /**
  * Who gets the first run (ADR 018):
