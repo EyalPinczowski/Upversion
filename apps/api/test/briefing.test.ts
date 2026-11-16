@@ -71,9 +71,14 @@ describe.skipIf(!dbAvailable)('day briefing (real Postgres)', () => {
 
   /** Imports a plan for user A, then backdates its creation so the fixed clock stays inside it. */
   const importPlan = async (id: string, file: Record<string, unknown>) => {
-    const res = await call('POST', '/plans/import', await asA(), { id, ...file });
+    // Imported as a draft and activated directly: an active import would archive the user's
+    // other active plan (ADR 018 Q2), and these tests keep two plans active side by side.
+    const res = await call('POST', '/plans/import', await asA(), { id, ...file, status: 'draft' });
     expect(res.statusCode).toBe(201);
-    await rows(`update rnd.plans set created_at = '2026-10-30T10:00:00Z' where id = $1`, [id]);
+    await rows(
+      `update rnd.plans set status = 'active', created_at = '2026-10-30T10:00:00Z' where id = $1`,
+      [id],
+    );
   };
 
   const BRIEFING = (date: string, plan = PLAN) => `/plans/${plan}/days/${date}/briefing`;

@@ -62,6 +62,7 @@ interface TaskRow {
   notes: string | null;
   source: Task['source'];
   external_ref: string | null;
+  skill_ids: string[] | null;
 }
 
 /** `time` columns come back as HH:MM:SS; the API speaks HH:MM. */
@@ -129,6 +130,9 @@ function toTask(row: TaskRow): Task {
     notes: row.notes ?? undefined,
     source: row.source,
     externalRef: row.external_ref ?? undefined,
+    // NULL (a row from before migration 0020) is "unknown": the field stays absent so readers
+    // fall back to the catalog. An empty array is kept: it means "builds no skill".
+    ...(row.skill_ids === null ? {} : { skillIds: row.skill_ids }),
   };
 }
 
@@ -422,6 +426,7 @@ const TASK_COLUMNS = [
   'notes',
   'source',
   'external_ref',
+  'skill_ids',
 ] as const;
 
 const TASK_CHUNK = 100;
@@ -465,6 +470,7 @@ export async function insertTasks(
         t.notes ?? null,
         t.source,
         t.externalRef ?? null,
+        t.skillIds ?? null,
       );
       const base = params.length - TASK_COLUMNS.length;
       return `(${TASK_COLUMNS.map((_, c) => `$${base + c + 1}`).join(', ')})`;
@@ -619,5 +625,34 @@ export async function setPlanStatus(
   await ctx.client.query(
     `update ${ctx.schema}.plans set status = $3, updated_at = now() where user_id = $1 and id = $2`,
     [userId, planId, status],
+  );
+}
+
+/** Skill ids whose level-up was approved on this plan (one suggestion per plan and skill). */
+export async function approvedLevelUpSkills(
+  ctx: UserContext,
+  userId: string,
+  planId: string,
+): Promise<string[]> {
+  const { rows } = await ctx.client.query<{ skill_id: string }>(
+    `select distinct payload ->> 'skillId' as skill_id from ${ctx.schema}.events
+     where user_id = $1 and plan_id = $2 and type = 'level_up.approved'`,
+    [userId, planId],
+  );
+  return rows.map((r) => r.skill_id);
+}
+
+/**
+ * Share-locks the plan's task rows until the transaction ends: a task cannot be completed,
+ * reopened or edited by a concurrent request while the caller decides on what it just read.
+ */
+export async function lockPlanTasksShared(
+  ctx: UserContext,
+  userId: string,
+  planId: string,
+): Promise<void> {
+  await ctx.client.query(
+    `select 1 from ${ctx.schema}.tasks where user_id = $1 and plan_id = $2 order by id for share`,
+    [userId, planId],
   );
 }

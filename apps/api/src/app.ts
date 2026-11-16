@@ -46,6 +46,7 @@ import { createSchedulingService } from './modules/scheduling/service';
 import { createDatabaseProbe } from './modules/health/probe';
 import { healthRoutes } from './modules/health/routes';
 import { planBuilderRoutes } from './modules/plan-builder/routes';
+import { goalRoutes } from './modules/goal/routes';
 import { planRoutes } from './modules/plans/routes';
 import { taskRoutes } from './modules/tasks/routes';
 import { installIdempotency } from './plugins/idempotency';
@@ -359,6 +360,7 @@ export function buildApp(config: Config, deps: AppDeps = {}) {
             : undefined,
         });
       }
+      v1.register(goalRoutes, { verifier, db, now: deps.now, catalog: deps.planBuilderCatalog });
       v1.register(planRoutes, {
         verifier,
         db,

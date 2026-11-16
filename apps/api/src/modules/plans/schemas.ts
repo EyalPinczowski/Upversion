@@ -8,6 +8,7 @@ import {
   type WeekPattern,
 } from '@upversion/shared';
 import { z } from 'zod';
+import { replacesPlanIds } from '../plan-builder/schemas';
 
 /** Limits that keep one import small enough for the free tiers. */
 export const MAX_IMPORT_BODY_BYTES = 512 * 1024;
@@ -35,6 +36,12 @@ export const importPlanBody = z.looseObject({
   id: z.uuid(),
   /** `active` unless the body says `draft`. */
   status: z.enum(['draft', 'active']).optional(),
+  /**
+   * Exactly the plans that are active now (what the user confirmed in the archive dialog), as for
+   * a build (ADR 018 Q2). Used only for an `active` import; omitted means none. A different set
+   * answers 409 `active_plan_changed`.
+   */
+  replacesPlanIds: replacesPlanIds.optional(),
 });
 
 export const planSummarySchema = z.object({

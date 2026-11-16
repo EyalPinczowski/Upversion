@@ -110,6 +110,16 @@ export function createProfileRepository(ctx: UserContext) {
       return toView(rows[0]!);
     },
 
+    /** Replaces the skills list (already validated by the caller); the row must exist (`lock`). */
+    async saveSkills(userId: string, skills: ProfileSkill[], now: Date): Promise<UserProfile> {
+      const { rows } = await ctx.client.query<ProfileRow>(
+        `update ${t} set skills = $2::jsonb, updated_at = $3 where user_id = $1
+         returning ${COLUMNS}`,
+        [userId, JSON.stringify(skills), now],
+      );
+      return toView(rows[0]!);
+    },
+
     async setSetup(
       userId: string,
       status: SetupStatus,

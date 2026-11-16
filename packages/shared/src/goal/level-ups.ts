@@ -20,13 +20,18 @@ export interface LevelSuggestion {
 /**
  * One suggestion per skill whose tasks are all done and whose current level is below the cap.
  * `profileLevels` (the user's own ratings) win over the level progress already used.
+ * `alreadyApproved` lists skills whose level-up the user already approved for this plan: a plan
+ * suggests a skill at most once, so finishing the same tasks never earns a second step.
  */
 export function suggestLevelUps(
   progress: Pick<PlanProgress, 'skills'>,
   profileLevels: Readonly<Record<string, number>> = {},
+  alreadyApproved: Iterable<string> = [],
 ): LevelSuggestion[] {
   const out: LevelSuggestion[] = [];
+  const approved = new Set(alreadyApproved);
   for (const s of progress.skills) {
+    if (approved.has(s.skillId)) continue;
     if (s.status !== 'done' || s.tasksTotal === 0 || s.tasksDone !== s.tasksTotal) continue;
     const rated = own(profileLevels, s.skillId);
     const current =

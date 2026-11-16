@@ -270,10 +270,12 @@ describe.skipIf(!dbAvailable)('plans and schedule (real Postgres, locally signed
       it('drops repeats and treats an empty list like a missing one', async () => {
         await importWithout({ skillIds: ['sql', 'python', 'sql'] });
         expect((await summaryOf()).skillIds).toEqual(['sql', 'python']);
-        await importWithout({ skillIds: [] }, PLAN_2);
+        await importWithout({ skillIds: [], status: 'draft' }, PLAN_2);
         expect('skillIds' in (await summaryOf(PLAN_2))).toBe(false);
         // [] hashes like a missing field, and a repeat hashes like the list without it.
-        expect((await importWithout({ skillIds: [] }, PLAN_2)).statusCode).toBe(200);
+        expect((await importWithout({ skillIds: [], status: 'draft' }, PLAN_2)).statusCode).toBe(
+          200,
+        );
         expect((await importWithout()).statusCode).toBe(409);
         expect((await importWithout({ skillIds: ['sql', 'python'] })).statusCode).toBe(200);
       });
@@ -388,7 +390,7 @@ describe.skipIf(!dbAvailable)('plans and schedule (real Postgres, locally signed
   describe('reading and deleting', () => {
     it('lists own plans as summaries and returns the detail', async () => {
       await importDemo();
-      await importDemo(asA, { name: 'Second' }, PLAN_2);
+      await importDemo(asA, { name: 'Second', status: 'draft' }, PLAN_2);
       const list = await call('GET', '/plans', await asA());
       expect(list.statusCode).toBe(200);
       const { plans } = list.json();

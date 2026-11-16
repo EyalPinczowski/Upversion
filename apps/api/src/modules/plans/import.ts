@@ -1,5 +1,11 @@
 import { createHash } from 'node:crypto';
-import { parsePlanFile, TAXONOMY_SKILL_IDS, type PlanFile } from '@upversion/shared';
+import {
+  createGoal,
+  parsePlanFile,
+  TAXONOMY_SKILL_IDS,
+  type Goal,
+  type PlanFile,
+} from '@upversion/shared';
 import { ZodError } from 'zod';
 import { HttpError } from '../../errors';
 import { MAX_OVERRIDES_PER_PLAN, MAX_TASKS_PER_PLAN } from './schemas';
@@ -56,6 +62,51 @@ function checkedSkillIds(ids: string[] | undefined): string[] | undefined {
 }
 
 /**
+ * A task's own skill ids (ADR 018): every id must be in the taxonomy, exactly like the plan-level
+ * ones (rejected with 422, never silently dropped, so what is stored is what the file said).
+ * Repeats are removed (first wins). `undefined` stays `undefined` (unknown: fall back to the
+ * catalog); `[]` stays `[]` (the task builds no skill, for example a booking task).
+ */
+function checkedTaskSkillIds(tasks: PlanFile['tasks']): PlanFile['tasks'] {
+  const bad: { path: string; id: string }[] = [];
+  const out = tasks.map((task, t) => {
+    if (task.skillIds === undefined) return task;
+    task.skillIds.forEach((id, i) => {
+      if (!TAXONOMY_SKILL_IDS.has(id)) bad.push({ path: `tasks.${t}.skillIds.${i}`, id });
+    });
+    return { ...task, skillIds: [...new Set(task.skillIds)] };
+  });
+  if (bad.length > 0) {
+    throw unprocessable(
+      `Invalid plan file. ${bad
+        .slice(0, 5)
+        .map((b) => b.path)
+        .join(
+          ', ',
+        )}: unknown skill id (first: "${bad[0]!.id.slice(0, 40)}"). Use ids from the skill taxonomy.`,
+    );
+  }
+  return out;
+}
+
+/**
+ * The goal an imported plan gets (ADR 018): the plan's skill ids, else the skills its tasks name,
+ * with no start levels (a file carries none) and the end date as deadline. Null when the file
+ * names no skill at all (a plan without a goal; readers then fall back to `deriveGoal`).
+ */
+export function goalForImport(plan: PlanFile): Goal | null {
+  const fromTasks = plan.tasks.flatMap((t) => t.skillIds ?? []);
+  const skillIds = plan.skillIds && plan.skillIds.length > 0 ? plan.skillIds : fromTasks;
+  if (skillIds.length === 0) return null;
+  return createGoal({
+    targetRoleIds: [],
+    skillIds,
+    ...(plan.endDate !== undefined ? { deadline: plan.endDate } : {}),
+    createdFrom: 'import',
+  });
+}
+
+/**
  * Everything beyond the shared schema that the database would otherwise reject with a 500:
  * blank names, an end before the start, duplicate override dates, characters Postgres cannot
  * store, and the size limits.
@@ -87,7 +138,7 @@ export function validateImport(
     throw unprocessable('Day overrides must have distinct dates.');
   }
   const skillIds = checkedSkillIds(plan.skillIds);
-  plan = { ...plan, skillIds };
+  plan = { ...plan, skillIds, tasks: checkedTaskSkillIds(plan.tasks) };
   // Postgres text and jsonb cannot hold a NUL character; JSON.stringify writes it as \u0000.
   if (JSON.stringify(plan).includes('\\u0000')) {
     throw unprocessable('The plan contains a character that cannot be stored.');

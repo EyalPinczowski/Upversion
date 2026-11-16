@@ -1269,11 +1269,22 @@ describe.skipIf(!dbAvailable)('calendar sync (real Postgres, stub Google)', () =
           'utf8',
         ),
       );
+      // An active import archives the active plans after the confirm (ADR 018 Q2).
+      const active = await rows<{ id: string }>(
+        `select id from rnd.plans where user_id = $1 and status = 'active'`,
+        [A],
+      );
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/plans/import',
         headers: await asUser(A),
-        payload: { id: newPlan, ...demo, startDate: SUN, endDate: undefined },
+        payload: {
+          id: newPlan,
+          ...demo,
+          startDate: SUN,
+          endDate: undefined,
+          replacesPlanIds: active.map((p) => p.id),
+        },
       });
       expect(res.statusCode).toBe(201);
       await waitFor(async () => {
