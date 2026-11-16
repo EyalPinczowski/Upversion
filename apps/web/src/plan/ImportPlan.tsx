@@ -6,7 +6,7 @@ import { useImportPlan } from '../api/hooks';
 import { AlertIcon } from '../components/icons';
 import { Button, ErrorText, TextAreaField } from '../components/ui';
 import { describeError, isConnectionProblem, newId } from '../lib/messages';
-import { ArchiveDialog } from '../pages/plan-builder/ArchiveDialog';
+import { ArchiveDialog } from './ArchiveDialog';
 import { useActivePlan } from './context';
 
 /** Splits the API's "Invalid plan file. a: b; c: d" message into a lead sentence and its issues. */

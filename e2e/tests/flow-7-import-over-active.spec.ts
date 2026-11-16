@@ -6,7 +6,27 @@ const SECOND_PLAN = JSON.stringify({
   formatVersion: 1,
   name: 'Second plan from a file',
   startDate: '2026-11-02',
-  tasks: [],
+  weekPattern: {
+    studyWeekdays: [0, 1, 2, 3, 4],
+    defaultHours: 7,
+    windowStart: '09:00',
+    windowEnd: '17:30',
+    lunchStart: '13:00',
+    lunchEnd: '14:00',
+    timezone: 'Asia/Jerusalem',
+  },
+  overrides: [],
+  tasks: [
+    {
+      id: 'setup',
+      title: 'Set up the study workspace',
+      type: 'admin',
+      estHours: 0.5,
+      order: 1,
+      dependsOn: [],
+      source: 'import',
+    },
+  ],
 });
 
 /**

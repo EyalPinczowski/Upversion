@@ -1,6 +1,6 @@
-import type { PlanSummary } from '../../api/client';
-import { ConfirmDialog } from '../../components/ConfirmDialog';
-import { ErrorText } from '../../components/ui';
+import type { PlanSummary } from '../api/client';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { ErrorText } from '../components/ui';
 
 /**
  * Shown before "Start this plan" (plan builder) or "Import plan" (plan file) when other plans are
