@@ -28,3 +28,5 @@ Two routes. Both need a bearer token and accepted Terms (403 `terms_not_accepted
 ## Where the data lives
 
 `tasks.skill_ids text[]` (migration 0020, nullable, at most 10 ids): NULL unknown, `[]` builds no skill. Import validates each id against the taxonomy (422 with `tasks.N.skillIds.M`, like the plan-level ids), the builder writes the catalog item's skills (`[]` for exam booking tasks), and `GET /plans/{id}` returns the field (absent when NULL). The goal is in `plans.summary.goal`; there is no new table.
+
+After an approved level-up on a plan, lowering the skill by hand (`PUT /me/profile/skills`) does not bring the suggestion back on that plan: user input wins, and a new plan suggests it again.

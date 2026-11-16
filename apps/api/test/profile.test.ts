@@ -637,11 +637,20 @@ describe.skipIf(!dbAvailable)('user profile (real Postgres, locally signed token
       expect(raw.roles_held ?? []).toEqual([]);
     });
 
-    it('does not lose updates when two different PUTs run at once', async () => {
-      const [r1, r2] = await Promise.all([put({ [skillIds[0]!]: 1 }), put({ [skillIds[1]!]: 2 })]);
-      expect([r1.statusCode, r2.statusCode]).toEqual([200, 200]);
+    it('serializes concurrent PUTs on the row lock and loses no update', async () => {
+      await seed(A, [{ skillId: skillIds[2], level: 1, source: 'cv' }]);
+      await testDb.admin(async (c) => {
+        await c.query('begin');
+        await c.query('select 1 from rnd.user_profiles where user_id = $1 for update', [A]);
+        const both = Promise.all([put({ [skillIds[0]!]: 1 }), put({ [skillIds[1]!]: 2 })]);
+        // Without `for update` in the repository the requests would read the stale row now.
+        await new Promise((r) => setTimeout(r, 500));
+        await c.query('commit');
+        const [r1, r2] = await both;
+        expect([r1.statusCode, r2.statusCode]).toEqual([200, 200]);
+      });
       const ids = (await skillsOf(A)).map((s) => s.skillId).sort();
-      expect(ids).toEqual([skillIds[0], skillIds[1]].sort());
+      expect(ids).toEqual([skillIds[0], skillIds[1], skillIds[2]].sort());
     });
 
     it('does not log levels or ids', async () => {
