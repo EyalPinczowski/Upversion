@@ -10,6 +10,7 @@ export function ArchiveDialog({
   plans,
   notice,
   busy,
+  action = 'start',
   onConfirm,
   onCancel,
 }: {
@@ -18,6 +19,8 @@ export function ArchiveDialog({
   /** Why the dialog is open again (the list changed under it), or an error of the last try. */
   notice: string | null;
   busy: boolean;
+  /** What happens after the archive: starting a built plan or importing a plan file. */
+  action?: 'start' | 'import';
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -25,7 +28,15 @@ export function ArchiveDialog({
   return (
     <ConfirmDialog
       title={many ? 'Archive your current plans?' : 'Archive your current plan?'}
-      confirmLabel={busy ? 'Starting…' : 'Archive and start'}
+      confirmLabel={
+        action === 'import'
+          ? busy
+            ? 'Importing…'
+            : 'Archive and import'
+          : busy
+            ? 'Starting…'
+            : 'Archive and start'
+      }
       cancelLabel="Cancel"
       busy={busy}
       onCancel={onCancel}

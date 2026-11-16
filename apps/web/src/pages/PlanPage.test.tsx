@@ -409,9 +409,12 @@ describe('Manage plans', () => {
     await user.click(screen.getByRole('textbox', { name: /paste the plan json/i }));
     await user.paste(JSON.stringify({ formatVersion: 1, name: 'Second plan', tasks: [] }));
     await user.click(screen.getByRole('button', { name: 'Import plan' }));
+    // The active plan is archived by the import: the same confirm as in the plan builder.
+    await user.click(await screen.findByRole('button', { name: 'Archive and import' }));
     expect(await screen.findByRole('heading', { name: 'Second plan' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Plan' })).toHaveValue(NEW_ID);
     expect(bodies).toHaveLength(1);
+    expect(bodies[0]!.replacesPlanIds).toEqual([PLAN_ID]);
   });
 });
 

@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { expectNoAxeViolations } from '../test/axe';
@@ -180,5 +180,132 @@ describe('plan import (empty state)', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Load the demo plan' }));
     expect(await screen.findByText('Day 8 of 18', { exact: false })).toBeInTheDocument();
+  });
+});
+
+describe('plan import over an active plan', () => {
+  const OLD_ID = PLAN_ID;
+  const OTHER_ID = '66666666-6666-4666-8666-666666666666';
+  const NEW_ID = '77777777-7777-4777-8777-777777777777';
+  const IMPORT = 'POST /api/v1/plans/import';
+
+  function openActive(
+    importHandler: (
+      request: Request,
+      state: { plans: ReturnType<typeof planSummary>[] },
+    ) => Response,
+  ) {
+    const state = { plans: [planSummary({ id: OLD_ID, name: 'Old plan' })] };
+    const bodies: Record<string, unknown>[] = [];
+    const api = installApi(
+      planRoutes({
+        'GET /api/v1/plans': () => json({ plans: state.plans }),
+        [IMPORT]: async (request) => {
+          bodies.push((await request.clone().json()) as Record<string, unknown>);
+          return importHandler(request, state);
+        },
+        [`GET /api/v1/plans/${NEW_ID}`]: () => json(planDetail({ id: NEW_ID, name: 'New plan' })),
+        [`GET /api/v1/plans/${NEW_ID}/tasks`]: () => json({ tasks: [] }),
+      }),
+    );
+    renderApp({ auth: fakeAuth(SESSION), path: '/plan?tab=settings' });
+    return { api, bodies, state };
+  }
+
+  async function pasteAndImport(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(await screen.findByText('Import another plan'));
+    await user.click(pasteBox());
+    await user.paste(MINIMAL_PLAN);
+    await user.click(screen.getByRole('button', { name: 'Import plan' }));
+  }
+
+  it('asks before archiving, names the plan, and sends its id as replacesPlanIds', async () => {
+    const { bodies, state } = openActive(() => {
+      state.plans = [
+        planSummary({ id: OLD_ID, name: 'Old plan', status: 'archived' }),
+        planSummary({ id: NEW_ID, name: 'New plan' }),
+      ];
+      return json(planDetail({ id: NEW_ID, name: 'New plan' }), 201);
+    });
+    const user = userEvent.setup();
+    await pasteAndImport(user);
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toHaveTextContent('Old plan');
+    expect(dialog).toHaveTextContent('will be archived');
+    expect(dialog).toHaveTextContent('read-only');
+    expect(bodies).toHaveLength(0);
+    // Cancel sends nothing.
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(bodies).toHaveLength(0);
+    await user.click(screen.getByRole('button', { name: 'Import plan' }));
+    await user.click(await screen.findByRole('button', { name: 'Archive and import' }));
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]!.replacesPlanIds).toEqual([OLD_ID]);
+    expect(await screen.findByRole('heading', { name: 'New plan' })).toBeInTheDocument();
+    // The plan list was refreshed: the old plan is now listed as archived.
+    expect(
+      within(screen.getByRole('combobox', { name: 'Plan' })).getByRole('option', {
+        name: 'Old plan (Archived)',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('active_plan_changed: refreshes the list and asks again with the right names', async () => {
+    let calls = 0;
+    const { bodies, state } = openActive((_request, st) => {
+      calls += 1;
+      if (calls === 1) {
+        st.plans = [planSummary({ id: OTHER_ID, name: 'Imported meanwhile' })];
+        return apiError(409, 'active_plan_changed', 'Your active plans changed.');
+      }
+      return json(planDetail({ id: NEW_ID, name: 'New plan' }), 201);
+    });
+    void state;
+    const user = userEvent.setup();
+    await pasteAndImport(user);
+    await user.click(await screen.findByRole('button', { name: 'Archive and import' }));
+    expect(await screen.findByText(/Your active plans changed in the meantime/)).toBeVisible();
+    const modal = screen.getByRole('alertdialog');
+    await waitFor(() => expect(modal).toHaveTextContent('Imported meanwhile'));
+    expect(modal).not.toHaveTextContent('Old plan');
+    await user.click(within(modal).getByRole('button', { name: 'Archive and import' }));
+    await waitFor(() => expect(bodies).toHaveLength(2));
+    expect(bodies[1]!.replacesPlanIds).toEqual([OTHER_ID]);
+    // The same plan id is kept: nothing was created by the refused first try.
+    expect(bodies[1]!.id).toBe(bodies[0]!.id);
+  });
+
+  it('active_plan_changed with nothing active now: asks to import again, no dialog', async () => {
+    const { bodies } = openActive((_request, st) => {
+      st.plans = [planSummary({ id: OLD_ID, name: 'Old plan', status: 'archived' })];
+      return apiError(409, 'active_plan_changed', 'x');
+    });
+    const user = userEvent.setup();
+    await pasteAndImport(user);
+    await user.click(await screen.findByRole('button', { name: 'Archive and import' }));
+    expect(await screen.findByText(/Your plans changed in the meantime/)).toBeVisible();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(bodies).toHaveLength(1);
+  });
+
+  it('with no active plan (only an archived one) imports at once with an empty list', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    installApi(
+      planRoutes({
+        'GET /api/v1/plans': () =>
+          json({ plans: [planSummary({ id: OLD_ID, name: 'Old plan', status: 'archived' })] }),
+        [IMPORT]: async (request) => {
+          bodies.push((await request.clone().json()) as Record<string, unknown>);
+          return json(planDetail({ id: NEW_ID, name: 'New plan' }), 201);
+        },
+      }),
+    );
+    renderApp({ auth: fakeAuth(SESSION), path: '/plan?tab=settings' });
+    const user = userEvent.setup();
+    await pasteAndImport(user);
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(bodies[0]!.replacesPlanIds).toEqual([]);
   });
 });

@@ -4,8 +4,9 @@ import type { ImportBody } from '../api/client';
 import { isApiError } from '../api/errors';
 import { useImportPlan } from '../api/hooks';
 import { AlertIcon } from '../components/icons';
-import { Button, TextAreaField } from '../components/ui';
+import { Button, ErrorText, TextAreaField } from '../components/ui';
 import { describeError, isConnectionProblem, newId } from '../lib/messages';
+import { ArchiveDialog } from '../pages/plan-builder/ArchiveDialog';
 import { useActivePlan } from './context';
 
 /** Splits the API's "Invalid plan file. a: b; c: d" message into a lead sentence and its issues. */
@@ -55,7 +56,8 @@ function parsePlanText(text: string): Parsed {
  * text is retried, so a lost connection never creates a second plan. The API checks the plan.
  */
 export function ImportPlan() {
-  const { select } = useActivePlan();
+  const { select, plans, query } = useActivePlan();
+  const { refetch } = query;
   const importPlan = useImportPlan();
   const [text, setText] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
@@ -63,31 +65,71 @@ export function ImportPlan() {
   // The id that goes with the text last sent; reused for a retry of the same text.
   const attempt = useRef<{ text: string; id: string } | null>(null);
   const fileId = useId();
+  // The archive confirm, like the plan builder's: an import is active, so it archives the active plans.
+  const [dialog, setDialog] = useState<{ text: string; notice: string | null } | null>(null);
+  const [staleNote, setStaleNote] = useState<string | null>(null);
+  const active = plans.filter((p) => p.status === 'active');
 
-  function send(planText: string) {
+  function send(planText: string, replacesPlanIds: string[]) {
     const parsed = parsePlanText(planText);
     if (!parsed.ok) {
+      setDialog(null);
       setLocalError(parsed.message);
       return;
     }
     setLocalError(null);
+    setStaleNote(null);
     if (attempt.current?.text !== planText) attempt.current = { text: planText, id: newId() };
-    const body: ImportBody = { ...parsed.body, id: attempt.current.id };
+    const body: ImportBody = { ...parsed.body, id: attempt.current.id, replacesPlanIds };
     importPlan.mutate(body, {
       onSuccess: (plan) => {
         attempt.current = null;
+        setDialog(null);
         select(plan.id);
       },
-      onError: (error) => {
-        // A conflict means this id is taken by other content: the next try gets a fresh id.
-        if (isApiError(error) && error.status === 409) attempt.current = null;
-      },
+      onError: (error) => void onFailed(error, planText),
     });
+  }
+
+  async function onFailed(error: unknown, planText: string) {
+    if (isApiError(error) && error.kind === 'http' && error.status === 409) {
+      if (error.code === 'active_plan_changed') {
+        // The id was not used (nothing was created): keep it, refresh the list and ask again.
+        const fresh = await refetch();
+        const now = (fresh.data?.plans ?? []).filter((p) => p.status === 'active');
+        if (now.length > 0) {
+          setDialog({
+            text: planText,
+            notice:
+              'Your active plans changed in the meantime. Check the names below and confirm again.',
+          });
+        } else {
+          setDialog(null);
+          setStaleNote('Your plans changed in the meantime. Choose Import plan again.');
+        }
+        return;
+      }
+      // A conflict means this id is taken by other content: the next try gets a fresh id.
+      attempt.current = null;
+    }
+    setDialog(null);
+  }
+
+  /** Asks first when plans are active; with none, imports at once. */
+  function start(planText: string) {
+    if (active.length > 0 && parsePlanText(planText).ok) {
+      importPlan.reset();
+      setLocalError(null);
+      setStaleNote(null);
+      setDialog({ text: planText, notice: null });
+    } else {
+      send(planText, []);
+    }
   }
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
-    send(text);
+    start(text);
   }
 
   async function onFile(event: ChangeEvent<HTMLInputElement>) {
@@ -104,10 +146,11 @@ export function ImportPlan() {
     }
   }
 
-  const error = importPlan.error;
+  const error = dialog ? null : importPlan.error;
   const message = error ? describeError(error, 'The plan could not be imported.') : null;
   const issues = message ? readableIssues(message) : null;
-  const conflict = isApiError(error) && error.status === 409;
+  const conflict =
+    isApiError(error) && error.status === 409 && error.code !== 'active_plan_changed';
 
   return (
     <div className="space-y-4">
@@ -150,6 +193,7 @@ export function ImportPlan() {
       </form>
 
       {issues ? <Problem lead={issues.lead} issues={issues.issues} /> : null}
+      {staleNote ? <ErrorText>{staleNote}</ErrorText> : null}
       {error && isConnectionProblem(error) ? (
         <p className="text-muted">Trying again is safe: the same plan is not added twice.</p>
       ) : null}
@@ -164,12 +208,27 @@ export function ImportPlan() {
           onClick={() => {
             setText(demoPlanText);
             setLocalError(null);
-            send(demoPlanText);
+            start(demoPlanText);
           }}
         >
           Load the demo plan
         </Button>
       </div>
+      {dialog ? (
+        <ArchiveDialog
+          plans={active}
+          notice={dialog.notice}
+          busy={importPlan.isPending}
+          action="import"
+          onCancel={() => setDialog(null)}
+          onConfirm={() =>
+            send(
+              dialog.text,
+              active.map((p) => p.id),
+            )
+          }
+        />
+      ) : null}
     </div>
   );
 }

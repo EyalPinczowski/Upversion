@@ -16,6 +16,7 @@ Playwright tests of the core flows (spec section 9) against the **real stack**, 
 | `tests/flow-4-practice-external.spec.ts` | Practice with another assistant: copy the prompt, paste a feedback block, finish, mark done on purpose.                                |
 | `tests/flow-5-practice-in-app.spec.ts`   | In-app chat: broken feedback JSON is saved as plain text; a 429 on the first provider shows "Continuing on ...", then AI feedback and done. |
 | `tests/flow-6-practice-no-ai.spec.ts`    | No AI provider: the chat is not offered; the AI going away mid-chat shows the fallbacks; a self-check (rubric) finishes the practice.       |
+| `tests/flow-7-import-over-active.spec.ts` | Import a plan while another is active: the archive confirm names it, cancel sends nothing, confirm archives the old plan (read-only).      |
 
 Every screen of every flow is also checked with axe-core (WCAG 2.x A and AA), and every test fails on a console error, an uncaught page error or a Content-Security-Policy violation.
 

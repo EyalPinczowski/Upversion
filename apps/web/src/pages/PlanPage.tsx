@@ -125,7 +125,6 @@ export function PlanPage() {
                     <PracticeSettings />
                     <SubjectsList planId={plan.id} />
                     <ManagePlans
-                      key={plan.id}
                       planId={plan.id}
                       name={plan.name}
                       remove={remove}
@@ -153,7 +152,12 @@ function ManagePlans({
   remove: ReturnType<typeof useDeletePlan>;
   onDeleteStart: () => void;
 }) {
-  const [confirming, setConfirming] = useState(false);
+  // Remembers which plan the delete question was opened for, so it never carries over to another
+  // plan. (Not a `key` on this component: the import form below must survive a change of plan, e.g.
+  // when its archive confirm refreshes the plan list.)
+  const [confirmingFor, setConfirmingFor] = useState<string | null>(null);
+  const confirming = confirmingFor === planId;
+  const setConfirming = (open: boolean) => setConfirmingFor(open ? planId : null);
   return (
     <section aria-labelledby="manage-heading" className="space-y-4 border-t border-border pt-6">
       <h3 id="manage-heading">Manage plans</h3>
