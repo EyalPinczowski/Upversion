@@ -54,7 +54,7 @@ export function requestWelcome(): void {
 }
 
 /** Routes where the welcome never opens, even though they sit inside the signed-in shell. */
-export const WELCOME_EXCLUDED_PATHS = ['/calendar/callback', '/setup'];
+export const WELCOME_EXCLUDED_PATHS = ['/calendar/callback', '/setup', '/start'];
 
 /** `/calendar/callback/` and `/calendar/callback` are the same page. */
 export function normalizePath(pathname: string): string {

@@ -14,9 +14,9 @@ import { isWelcomeExcluded, isWelcomeSettled, WELCOME_CHANGE_EVENT } from '../..
  *    people who stopped midway find "Finish setup" in Settings);
  *  - the welcome dialog and tour have been seen and are closed;
  *  - the current page is not /setup or the calendar callback.
- * Renders nothing.
+ * `enabled` is false while the first run (ADR 018) owns new people. Renders nothing.
  */
-export function SetupRedirect() {
+export function SetupRedirect({ enabled = true }: { enabled?: boolean }) {
   const { state } = useAuth();
   const profile = useProfile();
   const plans = usePlans();
@@ -32,6 +32,7 @@ export function SetupRedirect() {
 
   const userId = state.status === 'signedIn' ? state.session.userId : undefined;
   const eligible =
+    enabled &&
     userId !== undefined &&
     profile.data?.setupStatus === 'not_started' &&
     plans.isSuccess &&

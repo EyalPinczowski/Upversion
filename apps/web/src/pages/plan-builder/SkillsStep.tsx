@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { levelLabel, LEVEL_LABELS } from '@upversion/shared';
 import { linkClass } from '../../components/ui';
@@ -19,10 +20,13 @@ export function SkillsStep({
   state,
   prefill,
   onChange,
+  intro,
 }: {
   state: BuilderState;
   prefill: Prefill;
   onChange: (patch: Partial<BuilderState>) => void;
+  /** Replaces the two opening paragraphs (the first run words them differently, ADR 018). */
+  intro?: ReactNode;
 }) {
   const ids = relevantSkillIds(state);
   const weights = new Map<string, number>();
@@ -33,17 +37,21 @@ export function SkillsStep({
   }
   return (
     <div className="space-y-5">
-      <p>
-        Be honest: the plan only adds what is missing. Your changes here are used for this plan only
-        and are not saved to your profile.
-      </p>
-      <p>
-        Levels from a CV can be out of date.{' '}
-        <Link to="/settings/cv" state={{ from: '/plan/new' }} className={linkClass}>
-          Change my CV
-        </Link>{' '}
-        and come back to build a plan again; what you chose so far on this page is not kept.
-      </p>
+      {intro ?? (
+        <>
+          <p>
+            Be honest: the plan only adds what is missing. Your changes here are used for this plan
+            only and are not saved to your profile.
+          </p>
+          <p>
+            Levels from a CV can be out of date.{' '}
+            <Link to="/settings/cv" state={{ from: '/plan/new' }} className={linkClass}>
+              Change my CV
+            </Link>{' '}
+            and come back to build a plan again; what you chose so far on this page is not kept.
+          </p>
+        </>
+      )}
       <ul className="divide-y divide-border">
         {ids.map((id) => {
           const level = levelOf(state, prefill, id);

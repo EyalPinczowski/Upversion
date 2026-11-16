@@ -7,6 +7,8 @@ import { startAuthServer } from './support/auth-server';
 import { prepareDatabase } from './support/db';
 import {
   AI_STUB_PORT,
+  API_FIRST_RUN_PORT,
+  API_FIRST_RUN_URL,
   API_NO_AI_PORT,
   API_NO_AI_URL,
   API_PORT,
@@ -108,6 +110,18 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       cwd: REPO_ROOT,
       env: { ...apiEnv, PORT: String(API_NO_AI_PORT) },
     });
+    // The same build with the profile and plan builder features on: the first run (ADR 018). The
+    // other processes keep both off, so the demo-plan flows are not sent to the first run.
+    const apiFirstRun = startService('api-first-run', dir, 'node', ['apps/api/dist/server.js'], {
+      cwd: REPO_ROOT,
+      env: {
+        ...apiEnv,
+        PORT: String(API_FIRST_RUN_PORT),
+        FEATURE_PROFILE_SETUP: 'true',
+        FEATURE_PLAN_BUILDER: 'true',
+      },
+    });
+    services.push(apiFirstRun);
     services.push(apiNoAi);
     services.push(api);
 
@@ -151,6 +165,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
 
     await waitForHttp(`${API_URL}/api/v1/health`, api);
     await waitForHttp(`${API_NO_AI_URL}/api/v1/health`, apiNoAi);
+    await waitForHttp(`${API_FIRST_RUN_URL}/api/v1/health`, apiFirstRun);
     await waitForHttp(`http://127.0.0.1:${WEB_PORT}/`, web);
   } catch (error) {
     await teardown();

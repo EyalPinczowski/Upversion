@@ -30,6 +30,10 @@ const SetupPage = lazy(() =>
   import('./pages/setup/SetupPage').then((m) => ({ default: m.SetupPage })),
 );
 
+const FirstRunPage = lazy(() =>
+  import('./pages/first-run/FirstRunPage').then((m) => ({ default: m.FirstRunPage })),
+);
+
 const TailorCvPage = lazy(() =>
   import('./pages/cv-tailor/TailorCvPage').then((m) => ({ default: m.TailorCvPage })),
 );
@@ -99,6 +103,14 @@ export function App({
                   <Route path="practice-history" element={<PracticeTrendsPage />} />
                   <Route path="practice/:taskId" element={<PracticePage />} />
                   <Route path="review/:date" element={<ReviewPage />} />
+                  <Route
+                    path="start"
+                    element={
+                      <Suspense fallback={<Loading label="Loading…" />}>
+                        <FirstRunPage />
+                      </Suspense>
+                    }
+                  />
                   <Route
                     path="setup"
                     element={
