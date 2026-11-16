@@ -26,6 +26,7 @@ const ROUTES: Array<[Method, string, unknown?]> = [
     '/me/profile/import',
     { skills: [], rolesHeld: [], yearsExperience: null, education: null, tools: [] },
   ],
+  ['PUT', '/me/profile/skills', { levels: { [skillIds[0]!]: 1 } }],
   ['PATCH', '/me/profile/setup', { status: 'in_progress' }],
   ['DELETE', '/me/profile'],
 ];
@@ -513,6 +514,148 @@ describe.skipIf(!dbAvailable)('user profile (real Postgres, locally signed token
       const ok = await call('DELETE', '/me/profile', await asA());
       expect(ok.statusCode).toBe(200);
       expect(ok.json().setupStatus).toBe('dismissed');
+    });
+  });
+
+  describe('PUT /me/profile/skills', () => {
+    const put = async (levels: unknown, extra: Record<string, unknown> = {}, who = asA) =>
+      call('PUT', '/me/profile/skills', await who(), { levels, ...extra });
+    const skillsOf = async (id: string) =>
+      ((await row(id))?.skills ?? []) as { skillId: string; level: number; source: string }[];
+    const seed = (id: string, skills: unknown[]) =>
+      testDb.admin((c) =>
+        c.query(`insert into rnd.user_profiles (user_id, skills) values ($1, $2::jsonb)`, [
+          id,
+          JSON.stringify(skills),
+        ]),
+      );
+
+    it('saves entries as manual, keeps others, and replaces any source', async () => {
+      await seed(A, [
+        { skillId: skillIds[0], level: 3, source: 'cv' },
+        { skillId: skillIds[1], level: 1, source: 'setup' },
+        { skillId: skillIds[2], level: 2, source: 'manual' },
+      ]);
+      const res = await put({ [skillIds[0]!]: 0, [skillIds[1]!]: 2, [skillIds[3]!]: 1 });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().skills).toEqual([
+        { skillId: skillIds[0], level: 0, source: 'manual' },
+        { skillId: skillIds[1], level: 2, source: 'manual' },
+        { skillId: skillIds[2], level: 2, source: 'manual' },
+        { skillId: skillIds[3], level: 1, source: 'manual' },
+      ]);
+      expect(await skillsOf(A)).toEqual(res.json().skills);
+    });
+
+    it('creates the row when none exists and is idempotent', async () => {
+      const body = { [skillIds[0]!]: 2 };
+      expect((await put(body)).statusCode).toBe(200);
+      expect((await put(body)).statusCode).toBe(200);
+      expect(await skillsOf(A)).toEqual([{ skillId: skillIds[0], level: 2, source: 'manual' }]);
+    });
+
+    it.each([
+      ['an unknown skill id', () => ({ 'not-a-skill': 1 })],
+      ['level 4', () => ({ [skillIds[0]!]: 4 })],
+      ['a negative level', () => ({ [skillIds[0]!]: -1 })],
+      ['a fractional level', () => ({ [skillIds[0]!]: 1.5 })],
+      ['a string level', () => ({ [skillIds[0]!]: '2' })],
+      ['no entries', () => ({})],
+      [
+        'more than 20 entries',
+        () => Object.fromEntries(skillIds.slice(0, 21).map((id) => [id, 1])),
+      ],
+    ])('answers 400 for %s and saves nothing', async (_n, make) => {
+      const res = await put(make());
+      expect(res.statusCode).toBe(400);
+      expect(await row(A)).toBeUndefined();
+    });
+
+    it('accepts exactly 20 entries', async () => {
+      const res = await put(Object.fromEntries(skillIds.slice(0, 20).map((id) => [id, 3])));
+      expect(res.statusCode).toBe(200);
+      expect(res.json().skills).toHaveLength(20);
+    });
+
+    it('answers 400 for a userId or any extra key in the body or levels', async () => {
+      const lv = { [skillIds[0]!]: 1 };
+      expect((await put(lv, { userId: B })).statusCode).toBe(400);
+      expect((await put(lv, { user_id: B })).statusCode).toBe(400);
+      expect((await put({ ...lv, userId: 1 })).statusCode).toBe(400);
+      expect(await row(A)).toBeUndefined();
+      expect(await row(B)).toBeUndefined();
+    });
+
+    // The taxonomy (59 skills) is below the cap of 60, so the cap is only reachable with
+    // legacy entries whose ids are no longer in the taxonomy; seed those directly.
+    const legacy = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({ skillId: `legacy-${i}`, level: 1, source: 'cv' }));
+    const taxo = (from: number, to: number) =>
+      skillIds.slice(from, to).map((id) => ({ skillId: id, level: 1, source: 'cv' }));
+
+    it('answers 409 profile_skills_full when a new skill would pass the cap, and saves nothing', async () => {
+      const full = [...legacy(2), ...taxo(0, skillIds.length - 1)];
+      expect(full).toHaveLength(60);
+      await seed(A, full);
+      const over = await put({ [skillIds[skillIds.length - 1]!]: 1 });
+      expect(over.statusCode).toBe(409);
+      expect(over.json().error.code).toBe('profile_skills_full');
+      expect(await skillsOf(A)).toEqual(full);
+    });
+
+    it('counts only new skills against the cap, so updating at the cap works', async () => {
+      const full = [...legacy(2), ...taxo(0, skillIds.length - 1)];
+      await seed(A, full);
+      const upd = await put({ [skillIds[5]!]: 3 });
+      expect(upd.statusCode).toBe(200);
+      expect(upd.json().skills).toHaveLength(60);
+      expect(upd.json().skills.find((x: { skillId: string }) => x.skillId === skillIds[5])).toEqual(
+        { skillId: skillIds[5], level: 3, source: 'manual' },
+      );
+    });
+
+    it('rejects when two new skills would pass the cap but allows one new plus one existing', async () => {
+      await seed(A, [...legacy(2), ...taxo(0, skillIds.length - 2)]);
+      const last = [skillIds[skillIds.length - 2]!, skillIds[skillIds.length - 1]!];
+      expect((await put({ [last[0]!]: 1, [last[1]!]: 1 })).statusCode).toBe(409);
+      expect((await put({ [last[0]!]: 1, [skillIds[0]!]: 2 })).statusCode).toBe(200);
+    });
+
+    it('leaves other users’ profiles untouched', async () => {
+      await seed(B, [{ skillId: skillIds[0], level: 3, source: 'cv' }]);
+      await put({ [skillIds[0]!]: 1, [skillIds[1]!]: 1 });
+      expect(await skillsOf(B)).toEqual([{ skillId: skillIds[0], level: 3, source: 'cv' }]);
+      expect(await skillsOf(A)).toHaveLength(2);
+    });
+
+    it('stores only ids, numbers and the source', async () => {
+      await put({ [skillIds[0]!]: 2 });
+      const [entry] = await skillsOf(A);
+      expect(Object.keys(entry!).sort()).toEqual(['level', 'skillId', 'source']);
+      const raw = (await row(A))!;
+      expect(raw.answers).toEqual({});
+      expect(raw.roles_held ?? []).toEqual([]);
+    });
+
+    it('serializes concurrent PUTs on the row lock and loses no update', async () => {
+      await seed(A, [{ skillId: skillIds[2], level: 1, source: 'cv' }]);
+      await testDb.admin(async (c) => {
+        await c.query('begin');
+        await c.query('select 1 from rnd.user_profiles where user_id = $1 for update', [A]);
+        const both = Promise.all([put({ [skillIds[0]!]: 1 }), put({ [skillIds[1]!]: 2 })]);
+        // Without `for update` in the repository the requests would read the stale row now.
+        await new Promise((r) => setTimeout(r, 500));
+        await c.query('commit');
+        const [r1, r2] = await both;
+        expect([r1.statusCode, r2.statusCode]).toEqual([200, 200]);
+      });
+      const ids = (await skillsOf(A)).map((s) => s.skillId).sort();
+      expect(ids).toEqual([skillIds[0], skillIds[1], skillIds[2]].sort());
+    });
+
+    it('does not log levels or ids', async () => {
+      await put({ [skillIds[0]!]: 2 });
+      expect(logLines.join('\n')).not.toContain(skillIds[0]!);
     });
   });
 
