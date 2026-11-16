@@ -25,18 +25,33 @@ const LevelSchema = z.number().int().min(0).max(MAX_SKILL_LEVEL);
 export const GOAL_ORIGINS = ['builder', 'import', 'manual'] as const;
 export const GoalOriginSchema = z.enum(GOAL_ORIGINS);
 
-export const GoalSchema = z.strictObject({
-  targetRoleIds: z.array(RoleIdSchema).max(MAX_GOAL_ROLES),
-  skillIds: z.array(SkillIdSchema).max(MAX_GOAL_SKILLS),
-  /** Skill id to the level the user had when the goal was set. */
-  startLevels: z.record(SkillIdSchema, LevelSchema).default({}),
-  /** Optional per-skill target level (1..3); a skill without one aims at `MAX_SUGGESTED_LEVEL`. */
-  targetLevels: z.record(SkillIdSchema, LevelSchema.min(1)).optional(),
-  /** The deadline the goal was set with (a date, never text). */
-  deadline: LocalDateSchema.optional(),
-  /** How the plan came to be. */
-  createdFrom: GoalOriginSchema.optional(),
-});
+export const GoalSchema = z
+  .strictObject({
+    targetRoleIds: z.array(RoleIdSchema).max(MAX_GOAL_ROLES),
+    skillIds: z.array(SkillIdSchema).max(MAX_GOAL_SKILLS),
+    /** Skill id to the level the user had when the goal was set. */
+    startLevels: z.record(SkillIdSchema, LevelSchema).default({}),
+    /** The deadline the goal was set with (a date, never text). */
+    deadline: LocalDateSchema.optional(),
+    /** How the plan came to be. */
+    createdFrom: GoalOriginSchema.optional(),
+  })
+  .superRefine((goal, ctx) => {
+    const inGoal = new Set(goal.skillIds);
+    const keys = Object.keys(goal.startLevels);
+    if (keys.length > MAX_GOAL_SKILLS) {
+      ctx.addIssue({ code: 'custom', message: 'Too many start levels', path: ['startLevels'] });
+    }
+    for (const key of keys) {
+      if (!inGoal.has(key)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'A start level needs its skill in skillIds',
+          path: ['startLevels', key],
+        });
+      }
+    }
+  });
 
 export type Goal = z.infer<typeof GoalSchema>;
 export type GoalInput = z.input<typeof GoalSchema>;
@@ -56,7 +71,6 @@ export interface CreateGoalInput {
   targetRoleIds: readonly string[];
   skillIds: readonly string[];
   startLevels?: Readonly<Record<string, number>>;
-  targetLevels?: Readonly<Record<string, number>>;
   deadline?: string;
   createdFrom?: (typeof GOAL_ORIGINS)[number];
 }
@@ -71,19 +85,17 @@ export function createGoal(input: CreateGoalInput): Goal {
   const pick = (levels: Readonly<Record<string, number>> | undefined, min: number) => {
     const out: Record<string, number> = {};
     for (const id of skillIds) {
-      const v = levels?.[id];
+      const v = levels && Object.hasOwn(levels, id) ? levels[id] : undefined;
       if (typeof v !== 'number' || !Number.isFinite(v)) continue;
       const level = Math.min(MAX_SKILL_LEVEL, Math.max(0, Math.round(v)));
       if (level >= min) out[id] = level;
     }
     return out;
   };
-  const target = pick(input.targetLevels, 1);
   return GoalSchema.parse({
     targetRoleIds: unique(input.targetRoleIds, MAX_GOAL_ROLES, idOk),
     skillIds,
     startLevels: pick(input.startLevels, 0),
-    ...(Object.keys(target).length > 0 ? { targetLevels: target } : {}),
     ...(input.deadline !== undefined ? { deadline: input.deadline } : {}),
     ...(input.createdFrom !== undefined ? { createdFrom: input.createdFrom } : {}),
   });

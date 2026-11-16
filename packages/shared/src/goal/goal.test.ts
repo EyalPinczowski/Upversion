@@ -17,7 +17,6 @@ describe('GoalSchema', () => {
       targetRoleIds: ['operations-associate'],
       skillIds: ['excel', 'bi-visualization'],
       startLevels: { excel: 2, 'bi-visualization': 0 },
-      targetLevels: { excel: 3 },
       deadline: '2027-02-14',
       createdFrom: 'builder',
     });
@@ -37,11 +36,27 @@ describe('GoalSchema', () => {
     ['a sentence as a skill id', { targetRoleIds: [], skillIds: ['I want to learn sql'] }],
     ['level 4', { targetRoleIds: [], skillIds: ['sql'], startLevels: { sql: 4 } }],
     ['fractional level', { targetRoleIds: [], skillIds: ['sql'], startLevels: { sql: 1.5 } }],
-    ['target level 0', { targetRoleIds: [], skillIds: ['sql'], targetLevels: { sql: 0 } }],
+    [
+      'targetLevels (dropped from the goal)',
+      { targetRoleIds: [], skillIds: ['sql'], targetLevels: { sql: 2 } },
+    ],
+    [
+      'start level for a skill not in the goal',
+      { targetRoleIds: [], skillIds: ['sql'], startLevels: { excel: 1 } },
+    ],
     ['bad deadline', { targetRoleIds: [], skillIds: ['sql'], deadline: 'next spring' }],
     ['unknown origin', { targetRoleIds: [], skillIds: ['sql'], createdFrom: 'cv' }],
   ])('rejects %s', (_name, value) => {
     expect(GoalSchema.safeParse(value).success).toBe(false);
+  });
+
+  it('caps the number of start levels', () => {
+    const many = Object.fromEntries(
+      Array.from({ length: MAX_GOAL_SKILLS + 1 }, (_, i) => [`s${i}`, 1]),
+    );
+    expect(
+      GoalSchema.safeParse({ targetRoleIds: [], skillIds: ['s0'], startLevels: many }).success,
+    ).toBe(false);
   });
 
   it('caps the lists', () => {
@@ -57,7 +72,6 @@ describe('createGoal', () => {
       targetRoleIds: ['a', 'a', 'b', 'c', 'Bad Id'],
       skillIds: ['sql', 'sql', 'excel', 'NOPE', 3 as unknown as string],
       startLevels: { sql: 1, other: 2, excel: 9 },
-      targetLevels: { sql: 0, excel: 3 },
       deadline: '2027-01-31',
       createdFrom: 'import',
     });
@@ -65,7 +79,6 @@ describe('createGoal', () => {
       targetRoleIds: ['a', 'b'],
       skillIds: ['sql', 'excel'],
       startLevels: { sql: 1, excel: 3 },
-      targetLevels: { excel: 3 },
       deadline: '2027-01-31',
       createdFrom: 'import',
     });
@@ -81,6 +94,17 @@ describe('createGoal', () => {
 
   it('throws on an invalid deadline', () => {
     expect(() => createGoal({ targetRoleIds: [], skillIds: ['sql'], deadline: 'soon' })).toThrow();
+  });
+});
+
+describe('createGoal prototype keys', () => {
+  it('ignores inherited keys such as constructor', () => {
+    const g = createGoal({
+      targetRoleIds: [],
+      skillIds: ['constructor', 'sql'],
+      startLevels: { sql: 1 },
+    });
+    expect(g.startLevels).toEqual({ sql: 1 });
   });
 });
 

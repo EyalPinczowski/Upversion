@@ -58,6 +58,17 @@ describe('suggestLevelUps (owner rule, ADR 018 Q3)', () => {
     expect(suggest([done('1', 'sql'), open('2', 'sql')], { sql: 0 })).toEqual([]);
   });
 
+  it('does not suggest when a task that builds the skill was skipped', () => {
+    const skipped: ProgressTask = { id: '2', estHours: 2, status: 'skipped', skillIds: ['sql'] };
+    expect(suggest([done('1', 'sql'), skipped], { sql: 0 })).toEqual([]);
+  });
+
+  it('does not throw for profile levels keyed like Object.prototype members', () => {
+    const g = createGoal({ targetRoleIds: [], skillIds: ['constructor'] });
+    const p = skillProgress({ tasks: [done('1', 'constructor')], goal: g });
+    expect(suggestLevelUps(p, {})[0]).toMatchObject({ fromLevel: 0, toLevel: 1 });
+  });
+
   it('does not suggest for a skill with no tasks or only skipped tasks', () => {
     expect(suggest([], { sql: 0 })).toEqual([]);
     expect(

@@ -127,7 +127,7 @@ describe('skillProgress', () => {
     expect(sql.status).toBe('in_progress');
   });
 
-  it('leaves skipped tasks out of every number', () => {
+  it('leaves skipped tasks out of the hours', () => {
     const p = skillProgress({
       tasks: [
         t('1', 4, { skillIds: ['sql'], status: 'done' }),
@@ -135,8 +135,8 @@ describe('skillProgress', () => {
       ],
       goal,
     });
-    expect(p.skills[0]!.status).toBe('done');
-    expect(p.skills[0]!.tasksTotal).toBe(1);
+    expect(p.skills[0]!.status).toBe('in_progress');
+    expect(p.skills[0]!.plannedHours).toBe(4);
     expect(p.unattributedHours).toBe(0);
   });
 
@@ -224,5 +224,54 @@ describe('taskSkills', () => {
     expect(taskSkills({ externalRef: 'catalog:a' }, map)).toEqual(['sql', 'excel']);
     expect(taskSkills({ externalRef: 'catalog:a' }, undefined)).toEqual([]);
     expect(taskSkills({}, map)).toEqual([]);
+  });
+});
+
+describe('review fixes', () => {
+  it('a skipped task still counts in tasksTotal but adds no hours', () => {
+    const p = skillProgress({
+      tasks: [
+        t('1', 4, { skillIds: ['sql'], status: 'done' }),
+        t('2', 4, { skillIds: ['sql'], status: 'skipped' }),
+      ],
+      goal,
+    });
+    const sql = p.skills[0]!;
+    expect(sql.tasksTotal).toBe(2);
+    expect(sql.tasksDone).toBe(1);
+    expect(sql.status).not.toBe('done');
+    expect(sql.plannedHours).toBe(4);
+    expect(p.plannedHours).toBe(4);
+    expect(p.unattributedHours).toBe(0);
+    expect(p.unattributedTasks).toBe(0);
+  });
+
+  it('treats non-finite hours as 0 so coverage stays in 0..1', () => {
+    const p = skillProgress({
+      tasks: [
+        t('1', Number.NaN, { skillIds: ['sql'], doneHours: Number.POSITIVE_INFINITY }),
+        t('2', Number.POSITIVE_INFINITY, { skillIds: ['sql'], doneHours: Number.NaN }),
+        t('3', 2, { skillIds: ['sql'], doneHours: Number.NaN, status: 'in_progress' }),
+        t('4', Number.NaN, { skillIds: ['sql'], status: 'done' }),
+      ],
+      goal,
+    });
+    expect(Number.isFinite(p.coverage)).toBe(true);
+    expect(p.coverage).toBeGreaterThanOrEqual(0);
+    expect(p.coverage).toBeLessThanOrEqual(1);
+    expect(p.plannedHours).toBe(2);
+  });
+
+  it('does not throw for skill ids that are Object.prototype keys', () => {
+    const g = { ...goal, skillIds: ['constructor', '__proto__', 'toString'] };
+    const p = skillProgress({
+      tasks: [t('1', 1, { skillIds: ['constructor'], status: 'done' })],
+      goal: g,
+      profileLevels: {},
+      practiceScores: {},
+    });
+    expect(p.skills.map((s) => s.practice)).toEqual([null, null, null]);
+    expect(p.skills.map((s) => s.level)).toEqual([0, 0, 0]);
+    expect(p.skills[0]!.status).toBe('done');
   });
 });

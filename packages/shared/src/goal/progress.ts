@@ -89,6 +89,19 @@ export function taskSkills(
   return [...new Set(own)];
 }
 
+/** A finite number of at least 0; anything else (NaN, Infinity, undefined) counts as 0. */
+function finite(v: unknown): number {
+  return typeof v === 'number' && Number.isFinite(v) ? Math.max(0, v) : 0;
+}
+
+/** Own-property lookup, so ids like "constructor" or "__proto__" read as missing. */
+export function own<T>(
+  record: Readonly<Record<string, T>> | undefined,
+  key: string,
+): T | undefined {
+  return record && Object.hasOwn(record, key) ? record[key] : undefined;
+}
+
 function practiceOf(scores: readonly number[] | undefined): SkillProgress['practice'] {
   const valid = (scores ?? []).filter((n) => Number.isFinite(n) && n >= 0 && n <= 10);
   if (valid.length === 0) return null;
@@ -114,11 +127,13 @@ export function skillProgress(input: SkillProgressInput): PlanProgress {
   let unattributedTasks = 0;
 
   for (const task of tasks) {
-    if (task.status === 'skipped') continue;
-    const hours = Math.max(0, task.estHours);
-    const taskDone =
-      task.status === 'done' ? hours : Math.min(hours, Math.max(0, task.doneHours ?? 0));
+    const skipped = task.status === 'skipped';
+    // A skipped task adds no hours, but it still counts as a task that builds the skill, so a
+    // skill with a skipped task is never "all tasks done".
+    const hours = skipped ? 0 : finite(task.estHours);
+    const taskDone = task.status === 'done' ? hours : Math.min(hours, finite(task.doneHours));
     const mine = taskSkills(task, itemSkills).filter((id) => acc.has(id));
+    if (skipped && mine.length === 0) continue;
     if (mine.length === 0) {
       unattributedHours += hours;
       unattributedTasks += 1;
@@ -153,8 +168,8 @@ export function skillProgress(input: SkillProgressInput): PlanProgress {
       tasksDone: a.tasksDone,
       tasksTotal: a.tasksTotal,
       status,
-      level: clampLevel(input.profileLevels?.[id]) ?? clampLevel(goal.startLevels[id]) ?? 0,
-      practice: practiceOf(input.practiceScores?.[id]),
+      level: clampLevel(own(input.profileLevels, id)) ?? clampLevel(own(goal.startLevels, id)) ?? 0,
+      practice: practiceOf(own(input.practiceScores, id)),
     };
   });
   return {

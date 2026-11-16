@@ -1,5 +1,5 @@
 import { MAX_SUGGESTED_LEVEL } from './goal';
-import type { PlanProgress, SkillProgress } from './progress';
+import { own, type PlanProgress, type SkillProgress } from './progress';
 
 /**
  * Level-update suggestions (ADR 018, owner's rule Q3). A suggestion is data only: nothing is
@@ -28,7 +28,7 @@ export function suggestLevelUps(
   const out: LevelSuggestion[] = [];
   for (const s of progress.skills) {
     if (s.status !== 'done' || s.tasksTotal === 0 || s.tasksDone !== s.tasksTotal) continue;
-    const rated = profileLevels[s.skillId];
+    const rated = own(profileLevels, s.skillId);
     const current =
       typeof rated === 'number' && Number.isFinite(rated)
         ? Math.max(0, Math.round(rated))
