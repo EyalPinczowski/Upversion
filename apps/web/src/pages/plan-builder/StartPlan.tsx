@@ -5,7 +5,7 @@ import { useBuildPlan } from '../../api/plan-builder-hooks';
 import { Button, ErrorText } from '../../components/ui';
 import { newId } from '../../lib/messages';
 import type { useActivePlan } from '../../plan/context';
-import { ArchiveDialog } from './ArchiveDialog';
+import { ArchiveDialog } from '../../plan/ArchiveDialog';
 import { describeBuildError } from './builder-model';
 
 /**
